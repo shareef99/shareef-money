@@ -31,41 +31,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { LogoutLink } from "@kinde-oss/kinde-auth-nextjs/components";
-import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 
 export default async function DashboardLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const {
-    getAccessToken,
-    getBooleanFlag,
-    getFlag,
-    getIdToken,
-    getIntegerFlag,
-    getOrganization,
-    getPermission,
-    getPermissions,
-    getStringFlag,
-    getUser,
-    getUserOrganizations,
-    isAuthenticated,
-  } = getKindeServerSession();
-
-  console.log("Access Token", await getAccessToken());
-  console.log(await getBooleanFlag("bflag", false));
-  console.log(await getFlag("flag", "x", "s"));
-  console.log(await getIntegerFlag("iflag", 99));
-  console.log(await getOrganization());
-  console.log(await getPermission("eat:chips"));
-  console.log(await getPermissions());
-  console.log(await getStringFlag("sflag", "test"));
-  console.log(await getUser());
-  console.log(await getUserOrganizations());
-  console.log(await isAuthenticated());
-
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
       <div className="hidden border-r bg-muted/40 md:block">
@@ -263,7 +234,6 @@ export default async function DashboardLayout({
                 You can start selling as soon as you add a product.
               </p>
               <Button className="mt-4">Add Product</Button>
-              <LogoutLink>Logout</LogoutLink>
             </div>
           </div>
         </main>

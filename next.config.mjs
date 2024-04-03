@@ -1,12 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   env: {
-    KINDE_CLIENT_ID: process.env.KINDE_CLIENT_ID,
-    KINDE_CLIENT_SECRET: process.env.KINDE_CLIENT_SECRET,
-    KINDE_ISSUER_URL: process.env.KINDE_ISSUER_URL,
-    KINDE_SITE_URL: process.env.KINDE_SITE_URL,
-    KINDE_POST_LOGOUT_REDIRECT_URL: process.env.KINDE_POST_LOGOUT_REDIRECT_URL,
-    KINDE_POST_LOGIN_REDIRECT_URL: process.env.KINDE_POST_LOGIN_REDIRECT_URL,
+    NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
+    GOOGLE_ID: process.env.GOOGLE_ID,
+    GOOGLE_SECRET: process.env.GOOGLE_SECRET,
+    BASE_URL: process.env.BASE_URL,
   },
   experimental: {
     typedRoutes: true,
