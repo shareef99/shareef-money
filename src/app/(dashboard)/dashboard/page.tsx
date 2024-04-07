@@ -1,6 +1,7 @@
 import { baseApi } from "@/api";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { getServerSession } from "next-auth";
+import Link from "next/link";
 
 export default async function Page() {
   const session = await getServerSession(authOptions);
@@ -14,5 +15,10 @@ export default async function Page() {
 
   console.log(data.message);
 
-  return <main>Dashboard</main>;
+  return (
+    <main>
+      Dashboard
+      <Link href="/">Home</Link>
+    </main>
+  );
 }
