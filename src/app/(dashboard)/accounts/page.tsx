@@ -1,7 +1,5 @@
 "use client";
 
-import { clientApi } from "@/api";
-import { Account } from "@/types/account";
 import {
   Table,
   TableBody,
@@ -28,7 +26,6 @@ export default function Page() {
           <Button>Add</Button>
         </Link>
       </div>
-
       {error ? (
         <ErrorMessage error={error} />
       ) : !data ? (
