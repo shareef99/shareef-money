@@ -1,3 +1,5 @@
+"use client";
+
 import { clientApi } from "@/api";
 import { Account } from "@/types/account";
 import {
@@ -11,16 +13,12 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { useAccounts } from "@/app/(dashboard)/accounts/query";
+import ErrorMessage from "@/components/error-message";
+import Loader from "@/components/loader";
 
-export default async function Page() {
-  const res = await clientApi.get("accounts/by-user", {
-    searchParams: {
-      user_id: 22,
-    },
-  });
-  const data = await res.json<{ accounts: Account[] }>();
-  const accounts = data.accounts;
-  console.log(data.accounts);
+export default function Page() {
+  const { data, error } = useAccounts(22);
 
   return (
     <main className="mt-4">
@@ -30,29 +28,36 @@ export default async function Page() {
           <Button>Add</Button>
         </Link>
       </div>
-      <Table className="mt-4">
-        <TableCaption>A list of accounts.</TableCaption>
-        <TableHeader>
-          <TableRow>
-            <TableHead>ID</TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead>Hidden</TableHead>
-            <TableHead className="text-right">Amount</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {accounts.map((account) => (
-            <TableRow key={account.ID}>
-              <TableCell>{account.ID}</TableCell>
-              <TableCell>{account.name}</TableCell>
-              <TableCell>
-                {account.is_hidden ? "Hidden" : "Not Hidden"}
-              </TableCell>
-              <TableCell className="text-right">{account.amount}</TableCell>
+
+      {error ? (
+        <ErrorMessage error={error} />
+      ) : !data ? (
+        <Loader fullscreen />
+      ) : (
+        <Table className="mt-4">
+          <TableCaption>A list of accounts.</TableCaption>
+          <TableHeader>
+            <TableRow>
+              <TableHead>ID</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead>Hidden</TableHead>
+              <TableHead className="text-right">Amount</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {data.accounts.map((account) => (
+              <TableRow key={account.ID}>
+                <TableCell>{account.ID}</TableCell>
+                <TableCell>{account.name}</TableCell>
+                <TableCell>
+                  {account.is_hidden ? "Hidden" : "Not Hidden"}
+                </TableCell>
+                <TableCell className="text-right">{account.amount}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
     </main>
   );
 }

@@ -3,6 +3,7 @@ import "./globals.css";
 import SessionProvider from "@/components/session-providers";
 import { getServerSession } from "next-auth";
 import { ReactNode } from "react";
+import { Providers } from "@/app/providers";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -16,7 +17,9 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <SessionProvider session={session}>{children}</SessionProvider>
+        <Providers>
+          <SessionProvider session={session}>{children}</SessionProvider>
+        </Providers>
       </body>
     </html>
   );

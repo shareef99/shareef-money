@@ -15,3 +15,6 @@ export const weekStartDays = [
   "sat",
   "sun",
 ] as const;
+
+export type TransactionType = "income" | "expense" | "transfer";
+export const transactionTypes = ["income", "expense", "transfer"] as const;

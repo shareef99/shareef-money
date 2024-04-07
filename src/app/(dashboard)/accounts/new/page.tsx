@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { clientApi } from "@/api";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useAddAccount } from "@/app/(dashboard)/accounts/query";
 
 const schema = z.object({
   name: z.string().min(1, "Required"),
@@ -27,12 +28,13 @@ type FormValues = z.infer<typeof schema>;
 export default function Page() {
   const { data: session } = useSession();
   const router = useRouter();
+  const { mutateAsync } = useAddAccount();
 
   // Forms
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
   });
@@ -41,20 +43,20 @@ export default function Page() {
   const onSubmit: SubmitHandler<FormValues> = async (data) => {
     if (!session) return;
 
-    try {
-      await clientApi.post("accounts/", {
-        json: {
-          name: data.name,
-          description: data.description || "null",
-          amount: data.amount,
-          is_hidden: false,
-          user_id: session.user.ID,
+    mutateAsync(
+      {
+        name: data.name,
+        description: data.description || "null",
+        amount: data.amount,
+        is_hidden: false,
+        user_id: session.user.ID,
+      },
+      {
+        onSuccess: () => {
+          router.push("/accounts");
         },
-      });
-      router.push("/accounts");
-    } catch (error) {
-      console.log(error);
-    }
+      }
+    );
   };
 
   return (
@@ -106,7 +108,7 @@ export default function Page() {
                 </p>
               )}
             </div>
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
               Submit
             </Button>
           </form>
