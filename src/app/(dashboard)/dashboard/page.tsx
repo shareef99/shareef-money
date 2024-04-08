@@ -1,24 +1,35 @@
+"use client";
+
 import { baseApi } from "@/api";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { getServerSession } from "next-auth";
+import { Button } from "@/components/ui/button";
+import { cookieKeys } from "@/constants/cookies";
+import { getCookie } from "cookies-next";
 import Link from "next/link";
 
-export default async function Page() {
-  const session = await getServerSession(authOptions);
+export default function Page() {
+  const token = getCookie(cookieKeys.authToken);
 
-  const res = await baseApi.get("users", {
-    headers: {
-      Authorization: `Bearer ${session?.accessToken}`,
-    },
-  });
-  const data = await res.json<{ message: string; users: [] }>();
+  const fetchUser = async () => {
+    try {
+      const data = await baseApi
+        .get("users/22", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+        .json<{ message: string; users: [] }>();
 
-  console.log(data.message);
+      console.log(data.message);
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   return (
     <main>
       Dashboard
       <Link href="/">Home</Link>
+      <Button onClick={() => fetchUser()}>Fetch User</Button>
     </main>
   );
 }

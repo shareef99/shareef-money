@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useAddAccount } from "@/app/(dashboard)/accounts/query";
 
@@ -25,7 +24,6 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 export default function Page() {
-  const { data: session } = useSession();
   const router = useRouter();
   const { mutateAsync } = useAddAccount();
 
@@ -40,15 +38,13 @@ export default function Page() {
 
   // Functions
   const onSubmit: SubmitHandler<FormValues> = async (data) => {
-    if (!session) return;
-
     mutateAsync(
       {
         name: data.name,
         description: data.description || "null",
         amount: data.amount,
         is_hidden: false,
-        user_id: session.user.ID,
+        user_id: 22,
       },
       {
         onSuccess: () => {

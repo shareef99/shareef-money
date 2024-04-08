@@ -10,16 +10,12 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ReactNode } from "react";
 import Sidebar from "@/app/(dashboard)/sidebar";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 export default async function DashboardLayout({
   children,
 }: Readonly<{
   children: ReactNode;
 }>) {
-  const session = await getServerSession(authOptions);
-
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
       <div className="hidden border-r bg-muted/40 md:block">
@@ -27,7 +23,7 @@ export default async function DashboardLayout({
           <div className="flex items-center border-b px-4 py-4 lg:px-6">
             <div className="font-semibold">
               <span className="">
-                {session ? session.user.name : "No Name"}
+                {/* {session ? session.user.name : "No Name"} */}
               </span>
             </div>
           </div>
@@ -55,7 +51,7 @@ export default async function DashboardLayout({
       <div className="flex flex-col">
         <div className="flex justify-between px-4 lg:px-6 items-center">
           <div className="font-semibold md:hidden">
-            <span>{session ? session.user.name : "No Name"}</span>
+            {/* <span>{session ? session.user.name : "No Name"}</span> */}
           </div>
           <header>
             <Sheet>
