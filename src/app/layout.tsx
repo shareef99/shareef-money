@@ -1,8 +1,8 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ReactNode } from "react";
-import { Providers } from "@/app/providers";
-import FirebaseRefreshToken from "@/app/firebase-refresh-token";
+import { Providers } from "@/providers/query-providers";
+import FirebaseRefreshToken from "@/providers/firebase-refresh-token";
 
 const inter = Inter({ subsets: ["latin"] });
 
