@@ -8,10 +8,12 @@ import { auth } from "@/firebaseConfig";
 import { setCookie } from "cookies-next";
 import { cookieKeys } from "@/constants/cookies";
 import { baseApi } from "@/api";
+import { AuthUser, useAuthStore } from "@/store/auth";
+import useStore from "@/store";
 
 export default function Page() {
   const router = useRouter();
-  // const dispatch = useAppDispatch();
+  const authStore = useStore(useAuthStore, (state) => state);
 
   // State
   const [loading, setLoading] = useState<boolean>(false);
@@ -37,9 +39,10 @@ export default function Page() {
             token: token,
           },
         })
-        .json();
+        .json<{ user: AuthUser }>();
       console.log(res);
 
+      authStore?.login(res.user);
       setCookie(cookieKeys.authToken, token);
 
       router.push("/");
@@ -69,7 +72,7 @@ export default function Page() {
   };
 
   return (
-    <main className="min-w-screen min-h-screen bg-p-dark-blue bg-cover sm:bg-[url('/login-bg.png')]">
+    <main className="min-w-screen min-h-screen bg-p-dark-blue bg-cover">
       <section className="container flex h-screen p-0">
         <div
           className={cn(
