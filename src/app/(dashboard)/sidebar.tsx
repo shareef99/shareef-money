@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
+import { SwitchTheme } from "@/components/switch-theme";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -57,6 +58,7 @@ export default function Sidebar() {
           )}
         </Link>
       ))}
+      <SwitchTheme />
     </nav>
   );
 }

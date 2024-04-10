@@ -3,6 +3,8 @@ import "./globals.css";
 import { ReactNode } from "react";
 import { Providers } from "@/providers/query-providers";
 import FirebaseRefreshToken from "@/providers/firebase-refresh-token";
+import { ThemeProvider } from "@/providers/theme-providers";
+import { localStorageKeys } from "@/constants/local-storage";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -15,7 +17,16 @@ export default async function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <Providers>
-          <FirebaseRefreshToken>{children}</FirebaseRefreshToken>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+            themes={["light", "dark", "dark-aqua"]}
+            storageKey={localStorageKeys.theme}
+          >
+            <FirebaseRefreshToken>{children}</FirebaseRefreshToken>
+          </ThemeProvider>
         </Providers>
       </body>
     </html>
