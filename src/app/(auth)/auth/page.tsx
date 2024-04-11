@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { auth } from "@/firebaseConfig";
 import { setCookie } from "cookies-next";
 import { cookieKeys } from "@/constants/cookies";
-import { baseApi } from "@/api";
+import { api } from "@/api";
 import { AuthUser, useAuthStore } from "@/store/auth";
 import useStore from "@/store";
 
@@ -31,7 +31,7 @@ export default function Page() {
 
       const token = await userCredentials.user.getIdToken();
 
-      const res = await baseApi
+      const res = await api
         .post("users/signin", {
           json: {
             name: userCredentials.user.displayName,

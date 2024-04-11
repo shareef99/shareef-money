@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, BookMinus, Home, Wallet } from "lucide-react";
+import { BarChart3, BookMinus, Home, UserRoundCog, Wallet } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -12,15 +12,15 @@ export default function Sidebar() {
 
   const sidebarItems = [
     {
-      name: "Dashboard",
-      href: "/dashboard",
-      icon: Home,
-      count: 0,
-    },
-    {
       name: "Transactions",
       href: "/transactions",
       icon: BookMinus,
+      count: 0,
+    },
+    {
+      name: "Stats",
+      href: "/stats",
+      icon: BarChart3,
       count: 0,
     },
     {
@@ -30,9 +30,9 @@ export default function Sidebar() {
       count: 0,
     },
     {
-      name: "Stats",
-      href: "/stats",
-      icon: BarChart3,
+      name: "Profile",
+      href: "/profile",
+      icon: UserRoundCog,
       count: 0,
     },
   ] as const;
@@ -58,7 +58,9 @@ export default function Sidebar() {
           )}
         </Link>
       ))}
-      <SwitchTheme />
+      <div className="mt-4">
+        <SwitchTheme />
+      </div>
     </nav>
   );
 }

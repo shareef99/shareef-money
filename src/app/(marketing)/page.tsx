@@ -14,7 +14,7 @@ export default function Page() {
   return (
     <main>
       <div className="flex items-start justify-center flex-col">
-        <Link href="/dashboard">GO to Dashboard</Link>
+        <Link href="/transactions">GO to Dashboard</Link>
         <Link href="/auth">GO to Auth</Link>
         {auth ? (
           <div>

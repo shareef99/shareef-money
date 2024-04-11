@@ -11,8 +11,8 @@ export default function Page() {
   const { data, error } = useAccounts(22);
 
   return (
-    <main className="">
-      <div className="my-4 flex items-center justify-between">
+    <main>
+      <div className="mb-4 flex items-center justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">Accounts</h1>
         <Link href="/accounts/new">
           <Button variant="secondary">Add</Button>

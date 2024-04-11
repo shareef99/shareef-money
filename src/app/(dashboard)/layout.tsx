@@ -1,3 +1,5 @@
+"use client";
+
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,21 +12,23 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ReactNode } from "react";
 import Sidebar from "@/app/(dashboard)/sidebar";
+import useStore from "@/store";
+import { useAuthStore } from "@/store/auth";
 
-export default async function DashboardLayout({
+export default function DashboardLayout({
   children,
 }: Readonly<{
   children: ReactNode;
 }>) {
+  const auth = useStore(useAuthStore, (state) => state.auth);
+
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
       <div className="hidden border-r bg-muted/40 md:block">
         <div className="flex h-full max-h-screen flex-col gap-2">
           <div className="flex items-center border-b px-4 py-4 lg:px-6">
             <div className="font-semibold">
-              <span className="">
-                {/* {session ? session.user.name : "No Name"} */}
-              </span>
+              <span className="">{auth ? auth.name : "No Name"}</span>
             </div>
           </div>
           <div className="flex-1">
@@ -51,7 +55,7 @@ export default async function DashboardLayout({
       <div className="flex flex-col">
         <div className="flex justify-between px-4 lg:px-6 items-center">
           <div className="font-semibold md:hidden">
-            {/* <span>{session ? session.user.name : "No Name"}</span> */}
+            <span className="">{auth ? auth.name : "No Name"}</span>
           </div>
           <header>
             <Sheet>
@@ -71,7 +75,7 @@ export default async function DashboardLayout({
             </Sheet>
           </header>
         </div>
-        <section className="px-4 lg:px-6">{children}</section>
+        <section className="px-4 lg:px-6 py-4">{children}</section>
       </div>
     </div>
   );
