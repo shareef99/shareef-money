@@ -4,13 +4,14 @@ import {
   loadingNotification,
   successNotification,
 } from "@/helpers/notification";
-import { Category } from "@/types/category";
+import { Category, SubCategory } from "@/types/category";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 // Keys
 export const profileKeys = {
   categories: (userId?: number) => ["categories", "user id", userId] as const,
   addCategory: ["add category"],
+  addSubCategory: ["add sub category"],
 } as const;
 
 // Queries
@@ -44,6 +45,32 @@ export const useAddCategory = () => {
     onSuccess: async (_, { user_id }) => {
       await queryClient.invalidateQueries({
         queryKey: profileKeys.categories(user_id),
+      });
+    },
+  });
+};
+
+export const useAddSubCategory = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationKey: profileKeys.addSubCategory,
+    mutationFn: async ({
+      payload,
+    }: {
+      payload: Partial<SubCategory>;
+      userId: number;
+    }) => {
+      try {
+        loadingNotification("Adding subcategory...", { id: "add" });
+        await api.post("sub-categories", { json: payload }).json();
+        successNotification("Subcategory added successfully", { id: "add" });
+      } catch (error) {
+        errorNotification("Failed to add subcategory", { id: "add" });
+      }
+    },
+    onSuccess: async (_, { userId }) => {
+      await queryClient.invalidateQueries({
+        queryKey: profileKeys.categories(userId),
       });
     },
   });

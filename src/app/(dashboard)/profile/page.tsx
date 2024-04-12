@@ -17,6 +17,7 @@ import { Plus } from "lucide-react";
 import AddCategory from "@/components/dialog/add-category";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import AddSubCategory from "@/components/dialog/add-sub-category";
 
 export default function Page() {
   const auth = useStore(useAuthStore, (state) => state.auth);
@@ -24,6 +25,9 @@ export default function Page() {
 
   // State
   const [addCategory, setAddCategory] = useState<{ isIncome: boolean }>();
+  const [addSubCategory, setAddSubCategory] = useState<{
+    categoryId: number;
+  }>();
 
   return (
     <main>
@@ -59,7 +63,53 @@ export default function Page() {
                     ) : (
                       data.categories
                         .filter((c) => c.is_income)
-                        .map((c) => <div key={c.ID}>{c.name}</div>)
+                        .map((c) => (
+                          <Accordion key={c.ID} type="multiple">
+                            <AccordionItem value={c.ID.toString()}>
+                              <AccordionTrigger>{c.name}</AccordionTrigger>
+                              <AccordionContent>
+                                <div className="flex justify-between items-center">
+                                  <span>Sub Category</span>
+                                  <Button
+                                    className="rounded-full size-8 p-1"
+                                    variant="secondary"
+                                    size="icon"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setAddSubCategory({ categoryId: c.ID });
+                                    }}
+                                  >
+                                    <Plus />
+                                  </Button>
+                                </div>
+                                <div className="space-y-2 mt-2">
+                                  {c.sub_categories.filter(
+                                    (s) => s.name.toLowerCase() !== "default"
+                                  ).length === 0 ? (
+                                    <div className="ml-4">
+                                      No Sub Category found (sub categories are
+                                      only for Nerds and OCD buddies)
+                                    </div>
+                                  ) : (
+                                    c.sub_categories
+                                      .filter(
+                                        (s) =>
+                                          s.name.toLowerCase() !== "default"
+                                      )
+                                      .map((s) => (
+                                        <div
+                                          className="ml-4"
+                                          key={s.ID.toString()}
+                                        >
+                                          {s.name}
+                                        </div>
+                                      ))
+                                  )}
+                                </div>
+                              </AccordionContent>
+                            </AccordionItem>
+                          </Accordion>
+                        ))
                     )}
                   </AccordionContent>
                 </AccordionItem>
@@ -96,15 +146,38 @@ export default function Page() {
                                     className="rounded-full size-8 p-1"
                                     variant="secondary"
                                     size="icon"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setAddSubCategory({ categoryId: c.ID });
+                                    }}
                                   >
                                     <Plus />
                                   </Button>
                                 </div>
-                                {c.sub_categories.map((s) => (
-                                  <div className="" key={s.ID.toString()}>
-                                    {s.name}
-                                  </div>
-                                ))}
+                                <div className="space-y-2 mt-2">
+                                  {c.sub_categories.filter(
+                                    (s) => s.name.toLowerCase() !== "default"
+                                  ).length === 0 ? (
+                                    <div className="ml-4">
+                                      No Sub Category found (sub categories are
+                                      only for Nerds and OCD buddies)
+                                    </div>
+                                  ) : (
+                                    c.sub_categories
+                                      .filter(
+                                        (s) =>
+                                          s.name.toLowerCase() !== "default"
+                                      )
+                                      .map((s) => (
+                                        <div
+                                          className="ml-4"
+                                          key={s.ID.toString()}
+                                        >
+                                          {s.name}
+                                        </div>
+                                      ))
+                                  )}
+                                </div>
                               </AccordionContent>
                             </AccordionItem>
                           </Accordion>
@@ -129,6 +202,19 @@ export default function Page() {
             }
           }}
           isIncome={addCategory.isIncome}
+          key={Math.random()}
+        />
+      )}
+      {addSubCategory && (
+        <AddSubCategory
+          modal
+          open={!!addSubCategory}
+          onOpenChange={(open) => {
+            if (!open) {
+              setAddSubCategory(undefined);
+            }
+          }}
+          subCategoryId={addSubCategory.categoryId}
           key={Math.random()}
         />
       )}
