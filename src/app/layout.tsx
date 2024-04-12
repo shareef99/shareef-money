@@ -5,6 +5,7 @@ import { Providers } from "@/providers/query-providers";
 import FirebaseRefreshToken from "@/providers/firebase-refresh-token";
 import { ThemeProvider } from "@/providers/theme-providers";
 import { localStorageKeys } from "@/constants/local-storage";
+import { Toaster } from "@/components/ui/sonner";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -25,7 +26,10 @@ export default async function RootLayout({
             themes={["light", "dark", "dark-aqua"]}
             storageKey={localStorageKeys.theme}
           >
-            <FirebaseRefreshToken>{children}</FirebaseRefreshToken>
+            <FirebaseRefreshToken>
+              {children}
+              <Toaster />
+            </FirebaseRefreshToken>
           </ThemeProvider>
         </Providers>
       </body>

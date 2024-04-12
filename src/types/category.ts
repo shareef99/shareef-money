@@ -4,7 +4,7 @@ export type Category = DefaultValues & {
   name: string;
   is_income: boolean;
   user_id: number;
-  sub_category: SubCategory[];
+  sub_categories: SubCategory[];
 };
 
 export type SubCategory = DefaultValues & {
