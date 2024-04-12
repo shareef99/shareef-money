@@ -40,15 +40,12 @@ export default function Page() {
           },
         })
         .json<{ user: AuthUser }>();
-      console.log(res);
 
       authStore?.login(res.user);
       setCookie(cookieKeys.authToken, token);
 
       router.push("/");
     } catch (error) {
-      console.log(error);
-
       if (error && typeof error === "object" && "message" in error) {
         const message = error.message as string;
         if (message.includes("auth/unauthorized-domain")) {
