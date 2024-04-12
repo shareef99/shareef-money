@@ -23,7 +23,7 @@ export default async function RootLayout({
             defaultTheme="system"
             enableSystem
             disableTransitionOnChange
-            themes={["light", "dark", "dark-aqua"]}
+            themes={["light", "dark", "dark-aqua", "light-violet"]}
             storageKey={localStorageKeys.theme}
           >
             <FirebaseRefreshToken>

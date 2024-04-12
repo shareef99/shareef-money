@@ -33,6 +33,9 @@ export function SwitchTheme() {
         <DropdownMenuItem onClick={() => setTheme("dark-aqua")}>
           Dark Aqua
         </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("light-violet")}>
+          Light Violet
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("system")}>
           System
         </DropdownMenuItem>
