@@ -5,13 +5,47 @@ import {
   successNotification,
 } from "@/helpers/notification";
 import { Transaction } from "@/types/account";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 // Keys
 export const transactionKeys = {
   all: (user_id?: number) => ["transactions", "all", user_id],
   addTransaction: ["add transactions"],
 } as const;
+
+// Queries
+export const useTransactions = ({
+  userId,
+  month,
+}: {
+  userId?: number;
+  month: number;
+}) => {
+  return useQuery({
+    queryKey: transactionKeys.all(userId),
+    queryFn: async () => {
+      if (!userId) return undefined;
+
+      const data = await api
+        .get(`transactions/monthly`, {
+          searchParams: {
+            user_id: userId,
+            month: month,
+          },
+        })
+        .json<{
+          transactions: {
+            transaction_at: string;
+            total_income: number;
+            total_expense: number;
+            transactions: Transaction[];
+          }[];
+        }>();
+      return data;
+    },
+    enabled: !!userId,
+  });
+};
 
 // Mutations
 export const useAddTransaction = () => {

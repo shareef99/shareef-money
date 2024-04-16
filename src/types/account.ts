@@ -1,3 +1,4 @@
+import { Category } from "@/types/category";
 import { TransactionType } from "@/types/enums";
 import { DefaultValues } from "@/types/shared";
 
@@ -26,4 +27,6 @@ export type Transaction = DefaultValues & {
   notes: string | null;
   amount: number;
   transaction_at: string;
+  category: Category;
+  account: Account;
 };
