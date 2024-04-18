@@ -5,12 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import useStore from "@/store";
 import { useAuthStore } from "@/store/auth";
+import { CategoryType } from "@/types/enums";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { z } from "zod";
 
 type Props = DialogProps & {
-  isIncome: boolean;
+  type: CategoryType;
 };
 
 const schema = z.object({
@@ -19,7 +20,7 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-export default function AddCategory({ isIncome, ...props }: Props) {
+export default function AddCategory({ type, ...props }: Props) {
   const auth = useStore(useAuthStore, (state) => state.auth);
   const { mutateAsync } = useAddCategory();
 
@@ -40,8 +41,8 @@ export default function AddCategory({ isIncome, ...props }: Props) {
 
     await mutateAsync({
       name: data.name,
-      is_income: isIncome,
-      user_id: auth.ID,
+      type: type,
+      user_id: auth.id,
     });
 
     props.onOpenChange(false);

@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
 import { useAddAccount } from "@/app/(dashboard)/accounts/query";
+import useStore from "@/store";
+import { useAuthStore } from "@/store/auth";
 
 const schema = z.object({
   name: z.string().min(1, "Required"),
@@ -26,6 +28,7 @@ type FormValues = z.infer<typeof schema>;
 export default function Page() {
   const router = useRouter();
   const { mutateAsync } = useAddAccount();
+  const auth = useStore(useAuthStore, (state) => state.auth);
 
   // Forms
   const {
@@ -38,13 +41,15 @@ export default function Page() {
 
   // Functions
   const onSubmit: SubmitHandler<FormValues> = async (data) => {
+    if (!auth) return;
+
     mutateAsync(
       {
         name: data.name,
-        description: data.description || "null",
+        description: data.description,
         amount: data.amount,
         is_hidden: false,
-        user_id: 22,
+        user_id: auth.id,
       },
       {
         onSuccess: () => {

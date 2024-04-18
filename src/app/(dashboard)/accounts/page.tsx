@@ -6,9 +6,15 @@ import { useAccounts } from "@/app/(dashboard)/accounts/query";
 import ErrorMessage from "@/components/error-message";
 import Loader from "@/components/loader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import useStore from "@/store";
+import { useAuthStore } from "@/store/auth";
 
 export default function Page() {
-  const { data, error } = useAccounts(22);
+  const auth = useStore(useAuthStore, (state) => state.auth);
+
+  console.log(auth);
+
+  const { data, error } = useAccounts(auth?.id);
 
   return (
     <main>
@@ -25,7 +31,7 @@ export default function Page() {
       ) : (
         <div className="grid xs:grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
           {data.accounts.map((account) => (
-            <Card key={account.ID} x-chunk="dashboard-01-chunk-0">
+            <Card key={account.id} x-chunk="dashboard-01-chunk-0">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
                   {account.name}

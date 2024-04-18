@@ -18,13 +18,14 @@ import AddCategory from "@/components/dialog/add-category";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import AddSubCategory from "@/components/dialog/add-sub-category";
+import { CategoryType } from "@/types/enums";
 
 export default function Page() {
   const auth = useStore(useAuthStore, (state) => state.auth);
-  const { data, error } = useCategories(auth?.ID);
+  const { data, error } = useCategories(auth?.id);
 
   // State
-  const [addCategory, setAddCategory] = useState<{ isIncome: boolean }>();
+  const [addCategory, setAddCategory] = useState<{ type: CategoryType }>();
   const [addSubCategory, setAddSubCategory] = useState<{
     categoryId: number;
   }>();
@@ -50,7 +51,7 @@ export default function Page() {
                         className="rounded-full flex items-center justify-center size-8 bg-secondary mr-4"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setAddCategory({ isIncome: true });
+                          setAddCategory({ type: "income" });
                         }}
                       >
                         <Plus className="size-6" />
@@ -58,14 +59,15 @@ export default function Page() {
                     </div>
                   </AccordionTrigger>
                   <AccordionContent>
-                    {data.categories.filter((c) => c.is_income).length === 0 ? (
+                    {data.categories.filter((c) => c.type === "income")
+                      .length === 0 ? (
                       <div>No Income Categories</div>
                     ) : (
                       data.categories
-                        .filter((c) => c.is_income)
+                        .filter((c) => c.type === "income")
                         .map((c) => (
-                          <Accordion key={c.ID} type="multiple">
-                            <AccordionItem value={c.ID.toString()}>
+                          <Accordion key={c.id} type="multiple">
+                            <AccordionItem value={c.id.toString()}>
                               <AccordionTrigger>{c.name}</AccordionTrigger>
                               <AccordionContent>
                                 <div className="flex justify-between items-center">
@@ -76,7 +78,7 @@ export default function Page() {
                                     size="icon"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      setAddSubCategory({ categoryId: c.ID });
+                                      setAddSubCategory({ categoryId: c.id });
                                     }}
                                   >
                                     <Plus />
@@ -99,7 +101,7 @@ export default function Page() {
                                       .map((s) => (
                                         <div
                                           className="ml-4"
-                                          key={s.ID.toString()}
+                                          key={s.id.toString()}
                                         >
                                           {s.name}
                                         </div>
@@ -121,7 +123,7 @@ export default function Page() {
                         className="rounded-full flex items-center justify-center size-8 bg-secondary mr-4"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setAddCategory({ isIncome: false });
+                          setAddCategory({ type: "expense" });
                         }}
                       >
                         <Plus className="size-6" />
@@ -129,15 +131,15 @@ export default function Page() {
                     </div>
                   </AccordionTrigger>
                   <AccordionContent>
-                    {data.categories.filter((c) => !c.is_income).length ===
-                    0 ? (
+                    {data.categories.filter((c) => c.type === "expense")
+                      .length === 0 ? (
                       <div>No Expense Categories</div>
                     ) : (
                       data.categories
-                        .filter((c) => !c.is_income)
+                        .filter((c) => c.type === "expense")
                         .map((c) => (
-                          <Accordion key={c.ID} type="multiple">
-                            <AccordionItem value={c.ID.toString()}>
+                          <Accordion key={c.id} type="multiple">
+                            <AccordionItem value={c.id.toString()}>
                               <AccordionTrigger>{c.name}</AccordionTrigger>
                               <AccordionContent>
                                 <div className="flex justify-between items-center">
@@ -148,7 +150,7 @@ export default function Page() {
                                     size="icon"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      setAddSubCategory({ categoryId: c.ID });
+                                      setAddSubCategory({ categoryId: c.id });
                                     }}
                                   >
                                     <Plus />
@@ -171,7 +173,7 @@ export default function Page() {
                                       .map((s) => (
                                         <div
                                           className="ml-4"
-                                          key={s.ID.toString()}
+                                          key={s.id.toString()}
                                         >
                                           {s.name}
                                         </div>
@@ -201,7 +203,7 @@ export default function Page() {
               setAddCategory(undefined);
             }
           }}
-          isIncome={addCategory.isIncome}
+          type={addCategory.type}
           key={Math.random()}
         />
       )}

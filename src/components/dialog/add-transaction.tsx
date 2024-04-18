@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/select";
 import { parseError } from "@/helpers/general";
 import AddCategory from "@/components/dialog/add-category";
-import { TransactionType } from "@/types/enums";
+import { CategoryType, TransactionType } from "@/types/enums";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { SubmitHandler, useForm } from "react-hook-form";
@@ -69,10 +69,10 @@ export default function AddTransaction({ ...props }: Props) {
   const [date, setDate] = useState<Date>(new Date());
   const [time, setTime] = useState<string>(format(new Date(), "HH:mm"));
   const [addCategory, setAddCategory] = useState<{
-    isIncome: boolean;
+    type: CategoryType;
     open: boolean;
   }>({
-    isIncome: transactionType === "income",
+    type: transactionType === "income" ? "income" : "expense",
     open: false,
   });
 
@@ -89,8 +89,8 @@ export default function AddTransaction({ ...props }: Props) {
   });
 
   // Query
-  const { data: categoryData, error: categoryError } = useCategories(auth?.ID);
-  const { data: accountData, error: accountError } = useAccounts(auth?.ID);
+  const { data: categoryData, error: categoryError } = useCategories(auth?.id);
+  const { data: accountData, error: accountError } = useAccounts(auth?.id);
 
   // Mutations
   const { mutateAsync } = useAddTransaction();
@@ -109,13 +109,24 @@ export default function AddTransaction({ ...props }: Props) {
     const transactionAt = utcDateWithTime;
 
     await mutateAsync({
-      transaction_at: transactionAt,
-      amount: data.amount,
-      account_id: +data.account_id,
-      category_id: +data.category_id,
-      notes: data.notes,
-      type: transactionType,
-      user_id: auth.ID,
+      payload: {
+        transaction_at: transactionAt,
+        amount: data.amount,
+        account_id: +data.account_id,
+        category_id: +data.category_id,
+        sub_category_id: data.sub_category_id
+          ? +data.sub_category_id
+          : categoryData?.categories.find((c) => c.id === +data.category_id)
+              ?.id,
+        notes: data.notes,
+        type: transactionType,
+        user_id: auth.id,
+      },
+      refetchData: {
+        userId: auth.id,
+        month: +format(new Date(), "MM"),
+        year: +format(new Date(), "yyyy"),
+      },
     });
     props.onOpenChange(false);
   };
@@ -219,8 +230,8 @@ export default function AddTransaction({ ...props }: Props) {
                       .filter((a) => !a.is_hidden)
                       .map((category) => (
                         <SelectItem
-                          value={category.ID.toString()}
-                          key={category.ID}
+                          value={category.id.toString()}
+                          key={category.id}
                         >
                           {category.name}
                         </SelectItem>
@@ -253,7 +264,8 @@ export default function AddTransaction({ ...props }: Props) {
                     className="w-full"
                     onClick={() =>
                       setAddCategory({
-                        isIncome: transactionType === "income",
+                        type:
+                          transactionType === "income" ? "income" : "expense",
                         open: true,
                       })
                     }
@@ -270,13 +282,13 @@ export default function AddTransaction({ ...props }: Props) {
                     categoryData.categories
                       .filter((c) => {
                         if (transactionType === "income") {
-                          return c.is_income;
-                        } else return !c.is_income;
+                          return c.type === "income";
+                        } else return c.type === "expense";
                       })
                       .map((category) => (
                         <SelectItem
-                          value={category.ID.toString()}
-                          key={category.ID}
+                          value={category.id.toString()}
+                          key={category.id}
                         >
                           {category.name}
                         </SelectItem>
@@ -306,7 +318,7 @@ export default function AddTransaction({ ...props }: Props) {
                   className="w-full"
                   onClick={() =>
                     setAddCategory({
-                      isIncome: transactionType === "income",
+                      type: transactionType === "income" ? "income" : "expense",
                       open: true,
                     })
                   }
@@ -323,22 +335,22 @@ export default function AddTransaction({ ...props }: Props) {
                   categoryData.categories
                     .filter((c) => {
                       if (transactionType === "income") {
-                        return c.is_income;
-                      } else return !c.is_income;
+                        return c.type === "income";
+                      } else return c.type === "expense";
                     })
                     .filter((c) => {
                       if (!watch("category_id")) {
                         return true;
                       }
-                      return c.ID.toString() === watch("category_id");
+                      return c.id.toString() === watch("category_id");
                     })
                     .map((category) => (
-                      <SelectGroup key={category.ID}>
+                      <SelectGroup key={category.id}>
                         <SelectLabel>{category.name}</SelectLabel>
                         {category.sub_categories.map((subcategory) => (
                           <SelectItem
-                            value={subcategory.ID.toString()}
-                            key={subcategory.ID}
+                            value={subcategory.id.toString()}
+                            key={subcategory.id}
                           >
                             {subcategory.name.toLowerCase() === "default"
                               ? category.name
@@ -371,7 +383,7 @@ export default function AddTransaction({ ...props }: Props) {
         onOpenChange={(open) =>
           setAddCategory((prev) => ({ ...prev, open: open }))
         }
-        isIncome={addCategory.isIncome}
+        type={addCategory.type}
       />
     </Dialog>
   );

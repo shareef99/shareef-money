@@ -9,20 +9,28 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 // Keys
 export const transactionKeys = {
-  all: (user_id?: number) => ["transactions", "all", user_id],
+  all: ({ userId, month, year }: TransactionQuery) => [
+    "transactions",
+    "user id",
+    userId,
+    "month",
+    month,
+    "year",
+    year,
+  ],
   addTransaction: ["add transactions"],
 } as const;
 
-// Queries
-export const useTransactions = ({
-  userId,
-  month,
-}: {
+type TransactionQuery = {
   userId?: number;
   month: number;
-}) => {
+  year: number;
+};
+
+// Queries
+export const useTransactions = ({ userId, month, year }: TransactionQuery) => {
   return useQuery({
-    queryKey: transactionKeys.all(userId),
+    queryKey: transactionKeys.all({ userId, month, year }),
     queryFn: async () => {
       if (!userId) return undefined;
 
@@ -31,15 +39,11 @@ export const useTransactions = ({
           searchParams: {
             user_id: userId,
             month: month,
+            year: year,
           },
         })
         .json<{
-          transactions: {
-            transaction_at: string;
-            total_income: number;
-            total_expense: number;
-            transactions: Transaction[];
-          }[];
+          transactions: Transaction[];
         }>();
       return data;
     },
@@ -52,7 +56,12 @@ export const useAddTransaction = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationKey: transactionKeys.addTransaction,
-    mutationFn: async (payload: Partial<Transaction>) => {
+    mutationFn: async ({
+      payload,
+    }: {
+      payload: Partial<Transaction>;
+      refetchData: TransactionQuery;
+    }) => {
       try {
         loadingNotification("Adding transaction...", { id: "add" });
         await api.post("transactions", { json: payload }).json();
@@ -61,9 +70,9 @@ export const useAddTransaction = () => {
         errorNotification("Failed to add transaction", { id: "add" });
       }
     },
-    onSuccess: async (_, { user_id }) => {
+    onSuccess: async (_, { refetchData }) => {
       await queryClient.invalidateQueries({
-        queryKey: transactionKeys.all(user_id),
+        queryKey: transactionKeys.all(refetchData),
       });
     },
   });

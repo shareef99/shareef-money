@@ -18,3 +18,6 @@ export const weekStartDays = [
 
 export type TransactionType = "income" | "expense" | "transfer";
 export const transactionTypes = ["income", "expense", "transfer"] as const;
+
+export type CategoryType = "income" | "expense";
+export const categoryTypes = ["income", "expense"] as const;

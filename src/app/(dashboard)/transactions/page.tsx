@@ -23,8 +23,9 @@ export default function Page() {
 
   // Queries
   const { data, error } = useTransactions({
-    userId: auth?.ID,
+    userId: auth?.id,
     month: +format(new Date(), "MM"),
+    year: +format(new Date(), "yyyy"),
   });
 
   return (
@@ -56,28 +57,36 @@ export default function Page() {
                   <div className="flex flex-col items-center">
                     <span>Income</span>
                     <span className="text-primary">
-                      {data.transactions.reduce((acc, transaction) => {
-                        return acc + transaction.total_income;
-                      }, 0)}
+                      {data.transactions
+                        .filter((t) => t.type === "income")
+                        .reduce((acc, transaction) => {
+                          return acc + transaction.amount;
+                        }, 0)}
                     </span>
                   </div>
                   <div className="flex flex-col items-center">
                     <span>Expense</span>
                     <span className="text-destructive">
-                      {data.transactions.reduce((acc, transaction) => {
-                        return acc + transaction.total_expense;
-                      }, 0)}
+                      {data.transactions
+                        .filter((t) => t.type === "expense")
+                        .reduce((acc, transaction) => {
+                          return acc + transaction.amount;
+                        }, 0)}
                     </span>
                   </div>
                   <div className="flex flex-col items-center">
                     <span>Total</span>
                     <span>
-                      {data.transactions.reduce((acc, transaction) => {
-                        return acc + transaction.total_income;
-                      }, 0) -
-                        data.transactions.reduce((acc, transaction) => {
-                          return acc + transaction.total_expense;
-                        }, 0)}
+                      {data.transactions
+                        .filter((t) => t.type === "income")
+                        .reduce((acc, transaction) => {
+                          return acc + transaction.amount;
+                        }, 0) -
+                        data.transactions
+                          .filter((t) => t.type === "expense")
+                          .reduce((acc, transaction) => {
+                            return acc + transaction.amount;
+                          }, 0)}
                     </span>
                   </div>
                 </div>
@@ -112,22 +121,28 @@ export default function Page() {
                           <div className="flex gap-4">
                             <div className="flex items-center text-primary justify-end w-28">
                               <IndianRupee className="size-4" />
-                              <span>{transaction.total_income}000</span>
+                              <span>
+                                {transaction.type === "income"
+                                  ? transaction.amount
+                                  : 0}
+                              </span>
                             </div>
                             <div className="flex items-center text-destructive justify-end w-28">
                               <IndianRupee className="size-4" />
-                              <span>{transaction.total_expense}</span>
+                              <span>
+                                {transaction.type === "expense"
+                                  ? transaction.amount
+                                  : 0}
+                              </span>
                             </div>
                           </div>
                         </div>
                         <div>
-                          {transaction.transactions.map((t) => (
-                            <div key={t.ID}>
-                              <div>{t.category.name}</div>
-                              <div></div>
-                              <div></div>
-                            </div>
-                          ))}
+                          <div>
+                            <div>{transaction.category.name}</div>
+                            <div></div>
+                            <div></div>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>

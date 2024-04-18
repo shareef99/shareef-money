@@ -20,7 +20,7 @@ export const useCategories = (userId?: number) => {
     queryKey: profileKeys.categories(userId),
     queryFn: async () => {
       const data = await api
-        .get(`categories/by-user/${userId}`)
+        .get(`categories/user/${userId}`)
         .json<{ categories: Category[] }>();
       return data;
     },

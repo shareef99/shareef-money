@@ -1,7 +1,4 @@
-import {
-  useAddCategory,
-  useAddSubCategory,
-} from "@/app/(dashboard)/profile/query";
+import { useAddSubCategory } from "@/app/(dashboard)/profile/query";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogProps } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -46,7 +43,7 @@ export default function AddSubCategory({ subCategoryId, ...props }: Props) {
         name: data.name,
         category_id: subCategoryId,
       },
-      userId: auth.ID,
+      userId: auth.id,
     });
 
     props.onOpenChange(false);

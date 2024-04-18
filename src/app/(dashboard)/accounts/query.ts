@@ -14,11 +14,12 @@ export const useAccounts = (userId?: number) => {
     queryKey: accountKeys.all(userId),
     queryFn: async () => {
       const data = await api
-        .get(`accounts/by-user/${userId}`)
+        .get(`accounts/user/${userId}`)
         .json<{ accounts: Account[] }>();
 
       return data;
     },
+    enabled: !!userId,
   });
 };
 

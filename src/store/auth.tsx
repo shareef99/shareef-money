@@ -1,10 +1,10 @@
 import { WeekStartDay } from "@/types/enums";
-import { DefaultValues } from "@/types/shared";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { create } from "zustand";
 import { localStorageKeys } from "@/constants/local-storage";
 
-export type AuthUser = DefaultValues & {
+export type AuthUser = {
+  id: number;
   name: string;
   email: string;
   mobile: string | null;
@@ -12,6 +12,8 @@ export type AuthUser = DefaultValues & {
   refer_code: string;
   week_start_day: WeekStartDay;
   month_start_date: number;
+  createdAt: string;
+  updatedAt: string;
 };
 
 type AuthState = { auth: AuthUser | null };

@@ -1,13 +1,19 @@
-import { DefaultValues } from "@/types/shared";
+import { CategoryType } from "@/types/enums";
 
-export type Category = DefaultValues & {
+export type Category = {
+  id: number;
   name: string;
-  is_income: boolean;
+  type: CategoryType;
   user_id: number;
   sub_categories: SubCategory[];
+  createdAt: string;
+  updatedAt: string;
 };
 
-export type SubCategory = DefaultValues & {
+export type SubCategory = {
+  id: number;
   name: string;
   category_id: number;
+  createdAt: string;
+  updatedAt: string;
 };
