@@ -29,7 +29,7 @@ export default function Page() {
   });
 
   return (
-    <main className="relative min-h-[calc(100vh-64px)]">
+    <main className="min-h-[calc(100vh-64px)]">
       <Tabs defaultValue="daily">
         <TabsList variant="underline" className="w-full gap-4">
           <TabsTrigger variant="underline" value="daily">
@@ -117,6 +117,12 @@ export default function Page() {
                             <span className="text-xs">
                               {format(transaction.transaction_at, "MM'.'yyyy")}
                             </span>
+                            <span className="text-xs ml-4">
+                              {format(transaction.transaction_at, "HH:mm")}
+                            </span>
+                            <span className="text-xs ml-4">
+                              {transaction.id}
+                            </span>
                           </div>
                           <div className="flex gap-4">
                             <div className="flex items-center text-primary justify-end w-28">
@@ -158,7 +164,7 @@ export default function Page() {
       </Tabs>
 
       <Button
-        className="absolute bottom-0 right-0 rounded-full"
+        className="absolute bottom-8 right-8 rounded-full"
         size="icon"
         onClick={() => setAddTransaction(true)}
       >
