@@ -2,8 +2,7 @@
 
 import { Dialog, DialogContent, DialogProps } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { format, addHours } from "date-fns";
-import { formatInTimeZone } from "date-fns-tz";
+import { format, addHours, addMinutes } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -100,24 +99,20 @@ export default function AddTransaction({ ...props }: Props) {
     if (!auth) return;
 
     const hoursToAdd = +time.split(":")[0];
-    const dateWithTime = addHours(date, hoursToAdd);
-    const utcDateWithTime = formatInTimeZone(
-      dateWithTime,
-      "UTC",
-      "yyyy-MM-dd'T'HH:mm:ss.SSSxxx"
-    );
-    const transactionAt = utcDateWithTime;
+    const minsToAdd = +time.split(":")[1];
+    const dateWithHours = addHours(date, hoursToAdd);
+    const dateWithMinutes = addMinutes(dateWithHours, minsToAdd);
 
     await mutateAsync({
       payload: {
-        transaction_at: transactionAt,
+        transaction_at: format(dateWithMinutes, "yyyy-MM-dd HH:mm:ss"),
         amount: data.amount,
         account_id: +data.account_id,
         category_id: +data.category_id,
         sub_category_id: data.sub_category_id
           ? +data.sub_category_id
           : categoryData?.categories.find((c) => c.id === +data.category_id)
-              ?.id,
+              ?.sub_categories[0]?.id,
         notes: data.notes,
         type: transactionType,
         user_id: auth.id,
