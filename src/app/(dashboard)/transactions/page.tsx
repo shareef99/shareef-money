@@ -10,9 +10,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import useStore from "@/store";
 import { useAuthStore } from "@/store/auth";
+import { Transaction } from "@/types/account";
 import { format } from "date-fns";
 import { IndianRupee, Plus } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+type DailyTransaction = {
+  income: number;
+  expense: number;
+  transactionAt: string;
+  transactions: Transaction[];
+};
 
 export default function Page() {
   const weekends = ["sat", "sun"];
@@ -27,6 +35,40 @@ export default function Page() {
     month: +format(new Date(), "MM"),
     year: +format(new Date(), "yyyy"),
   });
+
+  useEffect(() => {
+    if (data) {
+      const dailyTransactions: DailyTransaction[] = [];
+
+      for (let i = 0; i < data.transactions.length; i++) {
+        const transaction = data.transactions[i];
+        const date = new Date(transaction.transaction_at);
+        const day = date.getDay();
+        if (!dailyTransactions[day]) {
+          dailyTransactions[day] = {
+            income: 0,
+            expense: 0,
+            transactionAt: format(date, "yyyy-MM-dd"),
+            transactions: [],
+          };
+        }
+        if (transaction.type === "income") {
+          dailyTransactions[day].income += transaction.amount;
+        } else {
+          dailyTransactions[day].expense += transaction.amount;
+        }
+        dailyTransactions[day].transactions.push(transaction);
+      }
+
+      dailyTransactions
+        .filter((t) => Boolean(t))
+        .sort(
+          (a, b) =>
+            new Date(b.transactionAt).getTime() -
+            new Date(a.transactionAt).getTime()
+        );
+    }
+  }, [data]);
 
   return (
     <main className="min-h-[calc(100vh-64px)]">
