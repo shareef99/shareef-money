@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
-import { IndianRupee, Plus } from "lucide-react";
+import { IndianRupee, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTransactions } from "@/routes/_dashboard/transactions/-query";
 import ErrorMessage from "@/components/error-message";
@@ -34,14 +34,19 @@ function Page() {
   const [dailyTransactions, setDailyTransactions] = useState<
     DailyTransaction[]
   >([]);
+  const [monthAndYear, setMonthAndYear] = useState<{
+    month: number;
+    year: number;
+  }>({ month: +format(new Date(), "MM"), year: +format(new Date(), "yyyy") });
 
   // Queries
   const { data, error } = useTransactions({
     userId: auth?.id,
-    month: +format(new Date(), "MM"),
-    year: +format(new Date(), "yyyy"),
+    month: monthAndYear.month,
+    year: monthAndYear.year,
   });
 
+  // Effect to convert transactions into daily transactions
   useEffect(() => {
     if (data) {
       const dailyTransactions: DailyTransaction[] = [];
@@ -80,6 +85,58 @@ function Page() {
 
   return (
     <main className="min-h-[calc(100vh-64px)]">
+      <div className="flex items-center justify-between w-full">
+        <div className="flex justify-start items-center">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              if (monthAndYear.month === 1) {
+                setMonthAndYear({
+                  month: 12,
+                  year: monthAndYear.year - 1,
+                });
+              } else {
+                setMonthAndYear({
+                  month: monthAndYear.month - 1,
+                  year: monthAndYear.year,
+                });
+              }
+            }}
+          >
+            <ChevronLeft />
+          </Button>
+          <div className="mx-2">
+            {monthAndYear.month} {monthAndYear.year}
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              if (monthAndYear.month === 12) {
+                setMonthAndYear({
+                  month: 1,
+                  year: monthAndYear.year + 1,
+                });
+              } else {
+                setMonthAndYear({
+                  month: monthAndYear.month + 1,
+                  year: monthAndYear.year,
+                });
+              }
+            }}
+          >
+            <ChevronRight />
+          </Button>
+        </div>
+        <Button
+          className="rounded-full"
+          size="icon"
+          onClick={() => setAddTransaction(true)}
+        >
+          <Plus />
+        </Button>
+      </div>
       <Tabs defaultValue="daily">
         <TabsList variant="underline" className="w-full gap-4">
           <TabsTrigger variant="underline" value="daily">
@@ -165,7 +222,7 @@ function Page() {
                         </div>
                         <div className="mt-2">
                           {transaction.transactions.map((t) => (
-                            <div className="flex items-center justify-between">
+                            <div className="grid grid-cols-3">
                               <div>
                                 {t.category.name}
                                 {t.sub_category.name.toLowerCase() === "default"
@@ -175,7 +232,7 @@ function Page() {
                               <div>{t.account.name}</div>
                               <div
                                 className={cn(
-                                  "flex items-center justify-end w-28",
+                                  "flex items-center justify-end ml-auto w-28",
                                   t.type === "expense"
                                     ? "text-destructive"
                                     : "text-primary"
@@ -199,14 +256,6 @@ function Page() {
         <TabsContent value="monthly">monthly</TabsContent>
         <TabsContent value="total">total</TabsContent>
       </Tabs>
-
-      <Button
-        className="absolute bottom-8 right-8 rounded-full"
-        size="icon"
-        onClick={() => setAddTransaction(true)}
-      >
-        <Plus />
-      </Button>
 
       {/* Dialogs */}
       <AddTransaction
