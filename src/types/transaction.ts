@@ -1,5 +1,5 @@
 import { Account } from "@/types/account";
-import { Category } from "@/types/category";
+import { Category, SubCategory } from "@/types/category";
 import { TransactionType } from "@/types/enums";
 
 export type Transaction = {
@@ -13,6 +13,7 @@ export type Transaction = {
   category_id: number;
   sub_category_id: number;
   category: Category;
+  sub_category: SubCategory;
   account: Account;
   createdAt: string;
   updatedAt: string;

@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 import { useTransactions } from "@/routes/_dashboard/transactions/-query";
 import ErrorMessage from "@/components/error-message";
 import AddTransaction from "@/components/dialogs/add-transaction";
+import { cn } from "@/lib/utils";
 
 export const Route = createLazyFileRoute("/_dashboard/transactions/")({
   component: Page,
@@ -33,8 +34,6 @@ function Page() {
   const [dailyTransactions, setDailyTransactions] = useState<
     DailyTransaction[]
   >([]);
-
-  console.log("Daily Transactions", dailyTransactions);
 
   // Queries
   const { data, error } = useTransactions({
@@ -108,98 +107,85 @@ function Page() {
                   <div className="flex flex-col items-center">
                     <span>Income</span>
                     <span className="text-primary">
-                      {data.transactions
-                        .filter((t) => t.type === "income")
-                        .reduce((acc, transaction) => {
-                          return acc + transaction.amount;
-                        }, 0)}
+                      {dailyTransactions.reduce((acc, t) => acc + t.income, 0)}
                     </span>
                   </div>
                   <div className="flex flex-col items-center">
                     <span>Expense</span>
                     <span className="text-destructive">
-                      {data.transactions
-                        .filter((t) => t.type === "expense")
-                        .reduce((acc, transaction) => {
-                          return acc + transaction.amount;
-                        }, 0)}
+                      {dailyTransactions.reduce((acc, t) => acc + t.expense, 0)}
                     </span>
                   </div>
                   <div className="flex flex-col items-center">
                     <span>Total</span>
                     <span>
-                      {data.transactions
-                        .filter((t) => t.type === "income")
-                        .reduce((acc, transaction) => {
-                          return acc + transaction.amount;
-                        }, 0) -
-                        data.transactions
-                          .filter((t) => t.type === "expense")
-                          .reduce((acc, transaction) => {
-                            return acc + transaction.amount;
-                          }, 0)}
+                      {dailyTransactions.reduce((acc, t) => acc + t.income, 0) -
+                        dailyTransactions.reduce(
+                          (acc, t) => acc + t.expense,
+                          0
+                        )}
                     </span>
                   </div>
                 </div>
                 <div className="flex gap-4 flex-col mt-4">
-                  {data.transactions.map((transaction, i) => (
+                  {dailyTransactions.map((transaction, i) => (
                     <Card key={i}>
                       <CardContent className="py-4">
                         <div className="flex justify-between border-b pb-1 border-card-foreground border-solid">
                           <div className="flex items-center">
                             <span>
-                              {format(transaction.transaction_at, "dd")}
+                              {format(transaction.transactionAt, "dd")}
                             </span>
                             <Badge
                               variant={
                                 weekends.includes(
                                   format(
-                                    transaction.transaction_at,
+                                    transaction.transactionAt,
                                     "EEE"
                                   ).toLowerCase()
                                 )
                                   ? "destructive"
                                   : "secondary"
                               }
-                              className="ml-4 mr-2"
+                              className="ml-2"
                             >
-                              {format(transaction.transaction_at, "EEE")}
+                              {format(transaction.transactionAt, "EEE")}
                             </Badge>
-                            <span className="text-xs">
-                              {format(transaction.transaction_at, "MM'.'yyyy")}
-                            </span>
-                            <span className="text-xs ml-4">
-                              {format(transaction.transaction_at, "HH:mm")}
-                            </span>
-                            <span className="text-xs ml-4">
-                              {transaction.id}
-                            </span>
                           </div>
                           <div className="flex gap-4">
                             <div className="flex items-center text-primary justify-end w-28">
                               <IndianRupee className="size-4" />
-                              <span>
-                                {transaction.type === "income"
-                                  ? transaction.amount
-                                  : 0}
-                              </span>
+                              <span>{transaction.income}</span>
                             </div>
                             <div className="flex items-center text-destructive justify-end w-28">
                               <IndianRupee className="size-4" />
-                              <span>
-                                {transaction.type === "expense"
-                                  ? transaction.amount
-                                  : 0}
-                              </span>
+                              <span>{transaction.expense}</span>
                             </div>
                           </div>
                         </div>
-                        <div>
-                          <div>
-                            <div>{transaction.category.name}</div>
-                            <div></div>
-                            <div></div>
-                          </div>
+                        <div className="mt-2">
+                          {transaction.transactions.map((t) => (
+                            <div className="flex items-center justify-between">
+                              <div>
+                                {t.category.name}
+                                {t.sub_category.name.toLowerCase() === "default"
+                                  ? ""
+                                  : ` / ${t.sub_category.name}`}
+                              </div>
+                              <div>{t.account.name}</div>
+                              <div
+                                className={cn(
+                                  "flex items-center justify-end w-28",
+                                  t.type === "expense"
+                                    ? "text-destructive"
+                                    : "text-primary"
+                                )}
+                              >
+                                <IndianRupee className="size-4" />
+                                <span>{t.amount}</span>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </CardContent>
                     </Card>
