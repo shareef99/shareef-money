@@ -4,6 +4,7 @@ import { Outlet, createRootRoute } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/router-devtools";
 import { Toaster } from "sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -22,6 +23,7 @@ export const Route = createRootRoute({
           <Outlet />
           <Toaster />
           <TanStackRouterDevtools />
+          <ReactQueryDevtools initialIsOpen={false} />
         </FirebaseRefreshToken>
       </QueryClientProvider>
     </ThemeProvider>
