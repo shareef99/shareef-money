@@ -1,4 +1,4 @@
-import { parseError } from "../helpers/general";
+import { parseError } from "@/helpers/general";
 
 type Props = {
   error: unknown;

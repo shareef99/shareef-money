@@ -3,7 +3,7 @@ export function parseError(error: unknown): string | null {
 
   if (typeof error === "string") return error;
 
-  // if (error instanceof KyInstance ) {
+  // if (error instanceof AxiosInstance) {
   //   if (error.response) {
   //     if (error.response.data) {
   //       if (error.response.data.message) {

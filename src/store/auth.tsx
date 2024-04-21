@@ -16,20 +16,23 @@ export type AuthUser = {
   updatedAt: string;
 };
 
-type AuthState = { auth: AuthUser | null };
+type AuthState = { auth: AuthUser | null; token: string | null };
 type AuthAction = {
-  login: (_auth: AuthUser) => void;
+  login: (_auth: { auth: AuthUser; token: string }) => void;
   logout: () => void;
+  updateToken: (_token: string) => void;
 };
 
 export type AuthStore = AuthState & AuthAction;
 
-export const useAuthStore = create<AuthStore>()(
+const useAuthStore = create<AuthStore>()(
   persist(
     (set) => ({
       auth: null,
-      login: (auth) => set({ auth: auth }),
+      token: null,
+      login: (state) => set({ auth: state.auth, token: state.token }),
       logout: () => set({ auth: null }),
+      updateToken: (token) => set({ token }),
     }),
     {
       name: localStorageKeys.authUser,
@@ -37,3 +40,10 @@ export const useAuthStore = create<AuthStore>()(
     }
   )
 );
+
+export const useAuth = () => useAuthStore((state) => state.auth);
+export const useAuthToken = () => useAuthStore((state) => state.token);
+export const useAuthLogin = () => useAuthStore((state) => state.login);
+export const useAuthLogout = () => useAuthStore((state) => state.logout);
+export const useAuthUpdateToken = () =>
+  useAuthStore((state) => state.updateToken);

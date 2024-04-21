@@ -1,8 +1,5 @@
-"use client";
-
-import { cookieKeys } from "@/constants/cookies";
 import { auth } from "@/firebaseConfig";
-import { deleteCookie, getCookie, setCookie } from "cookies-next";
+import { useAuthUpdateToken, useAuthToken } from "@/store/auth";
 import { ReactNode, useEffect } from "react";
 
 export default function FirebaseRefreshToken({
@@ -10,21 +7,22 @@ export default function FirebaseRefreshToken({
 }: {
   children: ReactNode;
 }) {
+  const authToken = useAuthToken();
+  const updateToken = useAuthUpdateToken();
+
   useEffect(() => {
     auth.onAuthStateChanged(async (user) => {
       if (user) {
+        console.log("User is logged in");
         const token = await user.getIdToken();
-        const authToken = getCookie(cookieKeys.authToken);
-
         if (token !== authToken) {
-          setCookie(cookieKeys.authToken, token);
+          if (updateToken) {
+            updateToken(token);
+          }
         }
-      } else {
-        // Only delete token if user is not available, refresh token will come from firebase, but not id
-        deleteCookie(cookieKeys.authToken);
       }
     });
-  }, []);
+  }, [authToken, updateToken]);
 
   return <>{children}</>;
 }

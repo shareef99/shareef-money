@@ -1,4 +1,4 @@
 export const localStorageKeys = {
-  authUser: "shareef-money-user",
+  authUser: "shareef-money-react-user",
   theme: "shareef-money-theme",
 } as const;
