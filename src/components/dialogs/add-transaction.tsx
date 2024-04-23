@@ -35,6 +35,8 @@ import { useCategories } from "@/routes/_dashboard/profile/-query";
 import { useAccounts } from "@/routes/_dashboard/accounts/-query";
 import { useAddTransaction } from "@/routes/_dashboard/transactions/-query";
 import AddCategory from "@/components/dialogs/add-category";
+import { useRouterState } from "@tanstack/react-router";
+import { transactionsSchema } from "@/routes/_dashboard/transactions/index.lazy";
 
 type Props = DialogProps;
 
@@ -60,6 +62,8 @@ type FormValues = z.infer<typeof schema>;
 
 export default function AddTransaction({ ...props }: Props) {
   const auth = useAuth();
+  const router = useRouterState();
+  const search = transactionsSchema.parse(router.location.search);
 
   // State
   const [transactionType, setTransactionType] =
@@ -99,7 +103,10 @@ export default function AddTransaction({ ...props }: Props) {
 
     const hoursToAdd = +time.split(":")[0];
     const minsToAdd = +time.split(":")[1];
-    const dateWithHours = addHours(date, hoursToAdd);
+    const dateWithHours = addHours(
+      `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`,
+      hoursToAdd
+    );
     const dateWithMinutes = addMinutes(dateWithHours, minsToAdd);
 
     await mutateAsync({
@@ -118,8 +125,8 @@ export default function AddTransaction({ ...props }: Props) {
       },
       refetchData: {
         userId: auth.id,
-        month: +format(new Date(), "MM"),
-        year: +format(new Date(), "yyyy"),
+        month: search.month,
+        year: search.year,
       },
     });
     props.onOpenChange(false);
