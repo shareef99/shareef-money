@@ -1,7 +1,3 @@
-import ErrorMessage from "@/components/error-message";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useTransactions } from "@/routes/_dashboard/transactions/-query";
-import { useAuth } from "@/store/auth";
 import { Transaction } from "@/types/transaction";
 import { getDaysInMonth, getDay, getDate } from "date-fns";
 import { useEffect, useState } from "react";
@@ -9,6 +5,7 @@ import { useEffect, useState } from "react";
 type Props = {
   month: number;
   year: number;
+  transactions: Transaction[];
 };
 
 type WeekDay = "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat";
@@ -19,53 +16,46 @@ type CalenderTransaction = {
   expense: number;
 };
 
-export default function CalenderTransactions({ month, year }: Props) {
+export default function CalenderTransactions({
+  month,
+  year,
+  transactions,
+}: Props) {
   const daysOfWeek = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
   const weeklyStartDay: WeekDay = "mon";
-
-  const auth = useAuth();
 
   // State
   const [calenderTransactions, setCalenderTransactions] = useState<
     CalenderTransaction[]
   >([]);
 
-  // Queries
-  const { data, error } = useTransactions({
-    userId: auth?.id,
-    month: month,
-    year: year,
-  });
-
   // Effect
   useEffect(() => {
-    if (data) {
-      const calenderTransactions: CalenderTransaction[] = [];
+    const calenderTransactions: CalenderTransaction[] = [];
 
-      for (let i = 0; i < data.transactions.length; i++) {
-        const transaction = data.transactions[i];
-        const day = getDate(transaction.transaction_at);
-        if (!calenderTransactions[day]) {
-          calenderTransactions[day] = {
-            day: day,
-            transactions: [],
-            income: 0,
-            expense: 0,
-          };
-        }
-
-        calenderTransactions[day].transactions.push(transaction);
-
-        if (transaction.type === "income") {
-          calenderTransactions[day].income += transaction.amount;
-        } else if (transaction.type === "expense") {
-          calenderTransactions[day].expense += transaction.amount;
-        }
+    for (let i = 0; i < transactions.length; i++) {
+      const transaction = transactions[i];
+      const day = getDate(transaction.transaction_at);
+      if (!calenderTransactions[day]) {
+        calenderTransactions[day] = {
+          day: day,
+          transactions: [],
+          income: 0,
+          expense: 0,
+        };
       }
 
-      setCalenderTransactions(calenderTransactions.filter((t) => Boolean(t)));
+      calenderTransactions[day].transactions.push(transaction);
+
+      if (transaction.type === "income") {
+        calenderTransactions[day].income += transaction.amount;
+      } else if (transaction.type === "expense") {
+        calenderTransactions[day].expense += transaction.amount;
+      }
     }
-  }, [data]);
+
+    setCalenderTransactions(calenderTransactions.filter((t) => Boolean(t)));
+  }, [transactions]);
 
   // Functions
   const renderDays = () => {
@@ -88,7 +78,7 @@ export default function CalenderTransactions({ month, year }: Props) {
       );
 
       days.push(
-        <div key={day} className="border flex flex-col h-32 p-2 gap-2">
+        <div key={day} className="border flex flex-col h-28 p-2 gap-1">
           <span>{day}</span>
           {transaction && transaction.income !== 0 && (
             <span className="text-primary">{transaction.income}</span>
@@ -103,11 +93,7 @@ export default function CalenderTransactions({ month, year }: Props) {
     return days;
   };
 
-  return error ? (
-    <ErrorMessage error={error} />
-  ) : !data ? (
-    <Skeleton fullscreen />
-  ) : (
+  return (
     <div className="w-full border-none bg-background text-foreground">
       <div className="grid grid-cols-7 gap-1 p-2">
         {daysOfWeek

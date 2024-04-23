@@ -19,6 +19,7 @@ export const transactionKeys = {
     year,
   ],
   addTransaction: ["add transactions"],
+  monthly: (userId?: number) => ["monthly transactions", "user id", userId],
 } as const;
 
 type TransactionQuery = {
@@ -46,6 +47,21 @@ export const useTransactions = ({ userId, month, year }: TransactionQuery) => {
       return data;
     },
     enabled: !!userId && !!month && !!year,
+  });
+};
+
+export const useMonthlyTransactions = (userId?: number) => {
+  return useQuery({
+    queryKey: transactionKeys.monthly(userId),
+    queryFn: async () => {
+      if (!userId) return undefined;
+
+      const { data } = await axiosClient.get<{
+        transactions: Transaction[];
+      }>(`transactions/user/${userId}`);
+      return data;
+    },
+    enabled: !!userId,
   });
 };
 

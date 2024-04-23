@@ -20,8 +20,8 @@ function DashboardLayout() {
   const auth = useAuth();
 
   return (
-    <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
-      <div className="hidden border-r bg-muted/40 md:block">
+    <div className="grid w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
+      <div className="hidden h-screen sticky top-0 left-0 border-r bg-muted/40 md:block">
         <div className="flex h-full max-h-screen flex-col gap-2">
           <div className="flex items-center border-b px-4 py-4 lg:px-6">
             <div className="font-semibold">

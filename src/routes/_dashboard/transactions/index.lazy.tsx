@@ -9,6 +9,11 @@ import CalenderTransactions from "@/routes/_dashboard/transactions/-components/c
 import { z } from "zod";
 import { transactionTabs } from "@/types/enums";
 import { format } from "date-fns";
+import { useTransactions } from "@/routes/_dashboard/transactions/-query";
+import { useAuth } from "@/store/auth";
+import ErrorMessage from "@/components/error-message";
+import { Skeleton } from "@/components/ui/skeleton";
+import MonthlyTransactions from "@/routes/_dashboard/transactions/-components/monthly-transactions";
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const transactionsSchema = z.object({
@@ -34,8 +39,17 @@ function Page() {
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
 
+  const auth = useAuth();
+
   // State
   const [addTransaction, setAddTransaction] = useState<boolean>(false);
+
+  // Queries
+  const { data, error } = useTransactions({
+    userId: auth?.id,
+    month: search.month,
+    year: search.year,
+  });
 
   // Functions
   const monthChangeHandler = (month: number, year: number) => {
@@ -52,7 +66,7 @@ function Page() {
 
   return (
     <main className="min-h-[calc(100vh-64px)]">
-      <div className="flex items-center justify-between w-full">
+      <div className="flex sticky top-0 pt-4 bg-background items-center justify-between w-full">
         <div className="flex justify-start items-center">
           <Button
             variant="ghost"
@@ -101,7 +115,10 @@ function Page() {
           })
         }
       >
-        <TabsList variant="underline" className="w-full gap-4">
+        <TabsList
+          variant="underline"
+          className="w-full sticky top-14 bg-background gap-4"
+        >
           <TabsTrigger variant="underline" value="daily">
             Daily
           </TabsTrigger>
@@ -115,14 +132,28 @@ function Page() {
             Total
           </TabsTrigger>
         </TabsList>
-        <TabsContent value="daily">
-          <DailyTransactions month={search.month} year={search.year} />
-        </TabsContent>
-        <TabsContent value="calender">
-          <CalenderTransactions month={search.month} year={search.year} />
-        </TabsContent>
-        <TabsContent value="monthly">monthly</TabsContent>
-        <TabsContent value="total">total</TabsContent>
+        {error ? (
+          <ErrorMessage error={error} />
+        ) : !data ? (
+          <Skeleton fullscreen />
+        ) : (
+          <>
+            <TabsContent value="daily">
+              <DailyTransactions transactions={data.transactions} />
+            </TabsContent>
+            <TabsContent value="calender">
+              <CalenderTransactions
+                month={search.month}
+                year={search.year}
+                transactions={data.transactions}
+              />
+            </TabsContent>
+            <TabsContent value="monthly">
+              <MonthlyTransactions />
+            </TabsContent>
+            <TabsContent value="total">total</TabsContent>
+          </>
+        )}
       </Tabs>
 
       {/* Dialogs */}

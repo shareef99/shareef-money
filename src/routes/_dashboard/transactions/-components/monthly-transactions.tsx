@@ -1,102 +1,112 @@
-import { Badge } from "@/components/ui/badge";
+import ErrorMessage from "@/components/error-message";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { useMonthlyTransactions } from "@/routes/_dashboard/transactions/-query";
+import { useAuth } from "@/store/auth";
 import { Transaction } from "@/types/transaction";
-import { format, getDate, getTime } from "date-fns";
+import { format, getMonth, getYear } from "date-fns";
 import { IndianRupee } from "lucide-react";
 import { useEffect, useState } from "react";
 
-type DailyTransaction = {
+type MonthlyTransaction = {
+  month: number;
+  year: number;
   income: number;
   expense: number;
-  transactionAt: string;
   transactions: Transaction[];
 };
 
-type Props = {
-  transactions: Transaction[];
-};
-
-export default function DailyTransactions({ transactions }: Props) {
-  const weekends = ["sat", "sun"];
+export default function MonthlyTransactions() {
+  const auth = useAuth();
 
   // State
-  const [dailyTransactions, setDailyTransactions] = useState<
-    DailyTransaction[]
+  const [monthlyTransactions, setMonthlyTransactions] = useState<
+    MonthlyTransaction[]
   >([]);
 
-  // Effect to convert transactions into daily transactions
-  useEffect(() => {
-    const dailyTransactions: DailyTransaction[] = [];
+  // Queries
+  const { data, error } = useMonthlyTransactions(auth?.id);
 
-    for (let i = 0; i < transactions.length; i++) {
-      const transaction = transactions[i];
-      const day = getDate(transaction.transaction_at);
-      if (!dailyTransactions[day]) {
-        dailyTransactions[day] = {
+  // Effects
+  useEffect(() => {
+    if (!data) return;
+
+    const monthlyTransactionsMap = new Map<string, MonthlyTransaction>();
+
+    for (let i = 0; i < data.transactions.length; i++) {
+      const transaction = data.transactions[i];
+      const month = getMonth(transaction.transaction_at) + 1;
+      const year = getYear(transaction.transaction_at);
+      const key = `${year}-${month}`;
+
+      if (!monthlyTransactionsMap.has(key)) {
+        monthlyTransactionsMap.set(key, {
+          month,
+          year,
           income: 0,
           expense: 0,
-          transactionAt: format(transaction.transaction_at, "yyyy-MM-dd"),
           transactions: [],
-        };
+        });
       }
+
+      const monthlyTransaction = monthlyTransactionsMap.get(key)!;
+
       if (transaction.type === "income") {
-        dailyTransactions[day].income += transaction.amount;
-      } else {
-        dailyTransactions[day].expense += transaction.amount;
+        monthlyTransaction.income += transaction.amount;
+      } else if (transaction.type === "expense") {
+        monthlyTransaction.expense += transaction.amount;
       }
-      dailyTransactions[day].transactions.push(transaction);
+
+      monthlyTransaction.transactions.push(transaction);
     }
 
-    setDailyTransactions(
-      dailyTransactions
+    setMonthlyTransactions(
+      Array.from(monthlyTransactionsMap.values())
         .filter((t) => Boolean(t))
-        .sort((a, b) => getTime(b.transactionAt) - getTime(a.transactionAt))
+        .sort((a, b) => b.year - a.year || b.month - a.month)
     );
-  }, [transactions]);
+  }, [data]);
 
-  return (
+  return error ? (
+    <ErrorMessage error={error} />
+  ) : !data ? (
+    <Skeleton fullscreen />
+  ) : (
     <div className="flex flex-col">
-      <div className="flex gap-4 sticky top-[5.625rem] bg-background justify-around mt-4">
+      <div className="flex gap-4 bg-background sticky top-[5.625rem] justify-around mt-4">
         <div className="flex flex-col items-center">
           <span>Income</span>
           <span className="text-primary">
-            {dailyTransactions.reduce((acc, t) => acc + t.income, 0)}
+            {monthlyTransactions.reduce((acc, t) => acc + t.income, 0)}
           </span>
         </div>
         <div className="flex flex-col items-center">
           <span>Expense</span>
           <span className="text-destructive">
-            {dailyTransactions.reduce((acc, t) => acc + t.expense, 0)}
+            {monthlyTransactions.reduce((acc, t) => acc + t.expense, 0)}
           </span>
         </div>
         <div className="flex flex-col items-center">
           <span>Total</span>
           <span>
-            {dailyTransactions.reduce((acc, t) => acc + t.income, 0) -
-              dailyTransactions.reduce((acc, t) => acc + t.expense, 0)}
+            {monthlyTransactions.reduce((acc, t) => acc + t.income, 0) -
+              monthlyTransactions.reduce((acc, t) => acc + t.expense, 0)}
           </span>
         </div>
       </div>
       <div className="flex gap-4 flex-col mt-4">
-        {dailyTransactions.map((transaction, i) => (
+        {monthlyTransactions.map((transaction, i) => (
           <Card key={i}>
             <CardContent className="py-4">
               <div className="flex justify-between border-b pb-1 border-card-foreground border-solid">
                 <div className="flex items-center">
-                  <span>{format(transaction.transactionAt, "dd")}</span>
-                  <Badge
-                    variant={
-                      weekends.includes(
-                        format(transaction.transactionAt, "EEE").toLowerCase()
-                      )
-                        ? "destructive"
-                        : "secondary"
-                    }
-                    className="ml-2"
-                  >
-                    {format(transaction.transactionAt, "EEE")}
-                  </Badge>
+                  <span>
+                    {format(
+                      `${transaction.year}-${transaction.month}-01`,
+                      "MMM yyyy"
+                    )}
+                  </span>
                 </div>
                 <div className="flex gap-4">
                   <div className="flex items-center text-primary justify-end w-28">
