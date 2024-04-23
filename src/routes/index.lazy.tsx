@@ -1,19 +1,15 @@
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
-import { axiosClient } from "@/api";
-
-const auth = {
-  name: "Nadeem Shareef",
-};
+import { useAuth, useAuthLogout } from "@/store/auth";
+import { signOut } from "firebase/auth";
+import { auth as firebaseAuth } from "@/firebaseConfig";
 
 export const Route = createLazyFileRoute("/")({ component: Page });
 
 function Page() {
-  const fetch = async () => {
-    const { data } = await axiosClient.get("/users");
-    console.log(data);
-  };
+  const auth = useAuth();
+  const logout = useAuthLogout();
 
   return (
     <main>
@@ -26,8 +22,8 @@ function Page() {
             <p>{auth.name}</p>
             <Button
               onClick={() => {
-                // authStore?.logout();
-                fetch();
+                logout();
+                signOut(firebaseAuth);
               }}
             >
               Logout
