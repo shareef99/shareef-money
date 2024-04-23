@@ -68,7 +68,7 @@ function Page() {
             <ChevronLeft />
           </Button>
           <div className="mx-2">
-            {format(new Date(search.year, search.month - 1), "MMM yyyy")}{" "}
+            {format(`${search.year} ${search.month} 0${1}`, "MMM yyyy")}{" "}
           </div>
           <Button
             variant="ghost"

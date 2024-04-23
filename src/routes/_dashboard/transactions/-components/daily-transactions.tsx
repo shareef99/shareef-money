@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { useTransactions } from "@/routes/_dashboard/transactions/-query";
 import { useAuth } from "@/store/auth";
 import { Transaction } from "@/types/transaction";
-import { format } from "date-fns";
+import { format, getDate, getTime } from "date-fns";
 import { IndianRupee } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -46,13 +46,12 @@ export default function DailyTransactions({ month, year }: Props) {
 
       for (let i = 0; i < data.transactions.length; i++) {
         const transaction = data.transactions[i];
-        const date = new Date(transaction.transaction_at);
-        const day = date.getDay();
+        const day = getDate(transaction.transaction_at);
         if (!dailyTransactions[day]) {
           dailyTransactions[day] = {
             income: 0,
             expense: 0,
-            transactionAt: format(date, "yyyy-MM-dd"),
+            transactionAt: format(transaction.transaction_at, "yyyy-MM-dd"),
             transactions: [],
           };
         }
@@ -67,11 +66,7 @@ export default function DailyTransactions({ month, year }: Props) {
       setDailyTransactions(
         dailyTransactions
           .filter((t) => Boolean(t))
-          .sort(
-            (a, b) =>
-              new Date(b.transactionAt).getTime() -
-              new Date(a.transactionAt).getTime()
-          )
+          .sort((a, b) => getTime(b.transactionAt) - getTime(a.transactionAt))
       );
     }
   }, [data]);
