@@ -128,10 +128,7 @@ export default function AddTransaction({ ...props }: Props) {
   return (
     <Dialog {...props}>
       <DialogContent>
-        <form
-          onSubmit={handleSubmit(onSubmit, (e) => console.log(e))}
-          className="flex flex-col gap-4"
-        >
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
           <Tabs
             value={transactionType}
             onValueChange={(value) =>

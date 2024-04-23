@@ -28,8 +28,6 @@ function Page() {
       const googleAuthProvider = new GoogleAuthProvider();
       const userCredentials = await signInWithPopup(auth, googleAuthProvider);
 
-      console.log(userCredentials);
-
       if (!userCredentials.user.email) {
         throw new Error("Email not found");
       }
@@ -45,9 +43,6 @@ function Page() {
         }
       );
 
-      console.log(data);
-
-      console.log(login);
       login({ auth: data.user, token });
 
       successNotification("Signed in successfully", { id: "auth" });
@@ -61,8 +56,6 @@ function Page() {
           return;
         }
       }
-      console.log(error);
-
       errorNotification("Failed to login. Please try again", { id: "auth" });
     } finally {
       setLoading(false);

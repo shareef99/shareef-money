@@ -32,8 +32,6 @@ function Page() {
     categoryId: number;
   }>();
 
-  console.log(addCategory, addSubCategory);
-
   return (
     <main>
       <H1>Welcome, {auth?.name}</H1>

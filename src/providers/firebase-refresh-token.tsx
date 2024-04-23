@@ -13,7 +13,6 @@ export default function FirebaseRefreshToken({
   useEffect(() => {
     auth.onAuthStateChanged(async (user) => {
       if (user) {
-        console.log("User is logged in");
         const token = await user.getIdToken();
         if (token !== authToken) {
           if (updateToken) {
