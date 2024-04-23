@@ -8,6 +8,7 @@ import DailyTransactions from "@/routes/_dashboard/transactions/-components/dail
 import CalenderTransactions from "@/routes/_dashboard/transactions/-components/calender-transactions";
 import { z } from "zod";
 import { transactionTabs } from "@/types/enums";
+import { format } from "date-fns";
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const transactionsSchema = z.object({
@@ -67,7 +68,7 @@ function Page() {
             <ChevronLeft />
           </Button>
           <div className="mx-2">
-            {search.month} {search.year}
+            {format(new Date(search.year, search.month - 1), "MMM yyyy")}{" "}
           </div>
           <Button
             variant="ghost"
@@ -118,7 +119,7 @@ function Page() {
           <DailyTransactions month={search.month} year={search.year} />
         </TabsContent>
         <TabsContent value="calender">
-          <CalenderTransactions />
+          <CalenderTransactions month={search.month} year={search.year} />
         </TabsContent>
         <TabsContent value="monthly">monthly</TabsContent>
         <TabsContent value="total">total</TabsContent>
