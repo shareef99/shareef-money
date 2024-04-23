@@ -39,3 +39,11 @@ export const themes = [
   "light-violet",
   "dark-aqua",
 ] as const;
+
+export type TransactionTab = "daily" | "calender" | "monthly" | "total";
+export const transactionTabs = [
+  "daily",
+  "calender",
+  "monthly",
+  "total",
+] as const;

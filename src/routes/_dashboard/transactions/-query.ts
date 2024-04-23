@@ -45,7 +45,7 @@ export const useTransactions = ({ userId, month, year }: TransactionQuery) => {
       });
       return data;
     },
-    enabled: !!userId,
+    enabled: !!userId && !!month && !!year,
   });
 };
 
