@@ -1,9 +1,5 @@
-import ErrorMessage from "@/components/error-message";
 import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { useMonthlyTransactions } from "@/routes/_dashboard/transactions/-query";
-import { useAuth } from "@/store/auth";
 import { Transaction } from "@/types/transaction";
 import { format, getMonth, getYear } from "date-fns";
 import { IndianRupee } from "lucide-react";
@@ -17,25 +13,22 @@ type MonthlyTransaction = {
   transactions: Transaction[];
 };
 
-export default function MonthlyTransactions() {
-  const auth = useAuth();
+type Props = {
+  transactions: Transaction[];
+};
 
+export default function MonthlyTransactions({ transactions }: Props) {
   // State
   const [monthlyTransactions, setMonthlyTransactions] = useState<
     MonthlyTransaction[]
   >([]);
 
-  // Queries
-  const { data, error } = useMonthlyTransactions(auth?.id);
-
   // Effects
   useEffect(() => {
-    if (!data) return;
-
     const monthlyTransactionsMap = new Map<string, MonthlyTransaction>();
 
-    for (let i = 0; i < data.transactions.length; i++) {
-      const transaction = data.transactions[i];
+    for (let i = 0; i < transactions.length; i++) {
+      const transaction = transactions[i];
       const month = getMonth(transaction.transaction_at) + 1;
       const year = getYear(transaction.transaction_at);
       const key = `${year}-${month}`;
@@ -66,13 +59,9 @@ export default function MonthlyTransactions() {
         .filter((t) => Boolean(t))
         .sort((a, b) => b.year - a.year || b.month - a.month)
     );
-  }, [data]);
+  }, [transactions]);
 
-  return error ? (
-    <ErrorMessage error={error} />
-  ) : !data ? (
-    <Skeleton fullscreen />
-  ) : (
+  return (
     <div className="flex flex-col">
       <div className="flex gap-4 bg-background sticky top-[5.625rem] justify-around mt-4">
         <div className="flex flex-col items-center">

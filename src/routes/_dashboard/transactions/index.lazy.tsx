@@ -9,7 +9,10 @@ import CalenderTransactions from "@/routes/_dashboard/transactions/-components/c
 import { z } from "zod";
 import { transactionTabs } from "@/types/enums";
 import { format } from "date-fns";
-import { useTransactions } from "@/routes/_dashboard/transactions/-query";
+import {
+  useMonthlyTransactions,
+  useTransactions,
+} from "@/routes/_dashboard/transactions/-query";
 import { useAuth } from "@/store/auth";
 import ErrorMessage from "@/components/error-message";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -50,6 +53,9 @@ function Page() {
     month: search.month,
     year: search.year,
   });
+  const { data: monthlyData, error: monthlyError } = useMonthlyTransactions(
+    auth?.id
+  );
 
   // Functions
   const monthChangeHandler = (month: number, year: number) => {
@@ -149,7 +155,13 @@ function Page() {
               />
             </TabsContent>
             <TabsContent value="monthly">
-              <MonthlyTransactions />
+              {monthlyError ? (
+                <ErrorMessage error={monthlyError} />
+              ) : !monthlyData ? (
+                <Skeleton fullscreen />
+              ) : (
+                <MonthlyTransactions transactions={monthlyData.transactions} />
+              )}
             </TabsContent>
             <TabsContent value="total">total</TabsContent>
           </>
