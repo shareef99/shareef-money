@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import { useState } from "react";
 import AddTransaction from "@/components/dialogs/add-transaction";
 import DailyTransactions from "@/routes/_dashboard/transactions/-components/daily-transactions";
 import CalenderTransactions from "@/routes/_dashboard/transactions/-components/calender-transactions";
@@ -31,6 +30,7 @@ export const transactionsSchema = z.object({
     .max(9999, "Required")
     .catch(new Date().getFullYear()),
   tab: z.enum(transactionTabs).catch("daily"),
+  addTransaction: z.boolean().catch(false),
 });
 
 export const Route = createFileRoute("/_dashboard/transactions/")({
@@ -44,9 +44,6 @@ function Page() {
 
   const auth = useAuth();
 
-  // State
-  const [addTransaction, setAddTransaction] = useState<boolean>(false);
-
   // Queries
   const { data, error } = useTransactions({
     userId: auth?.id,
@@ -59,15 +56,7 @@ function Page() {
 
   // Functions
   const monthChangeHandler = (month: number, year: number) => {
-    navigate({
-      from: "/transactions",
-      to: "/transactions",
-      search: transactionsSchema.parse({
-        month,
-        year,
-        tab: search.tab,
-      }),
-    });
+    navigate({ search: transactionsSchema.parse({ ...search, month, year }) });
   };
 
   return (
@@ -107,7 +96,9 @@ function Page() {
         <Button
           className="rounded-full"
           size="icon"
-          onClick={() => setAddTransaction(true)}
+          onClick={() =>
+            navigate({ search: { ...search, addTransaction: true } })
+          }
         >
           <Plus />
         </Button>
@@ -140,7 +131,7 @@ function Page() {
         </TabsList>
         {error ? (
           <ErrorMessage error={error} />
-        ) : !data ? (
+        ) : data === undefined ? (
           <Skeleton fullscreen />
         ) : (
           <>
@@ -157,7 +148,7 @@ function Page() {
             <TabsContent value="monthly">
               {monthlyError ? (
                 <ErrorMessage error={monthlyError} />
-              ) : !monthlyData ? (
+              ) : monthlyData === undefined ? (
                 <Skeleton fullscreen />
               ) : (
                 <MonthlyTransactions transactions={monthlyData.transactions} />
@@ -169,11 +160,15 @@ function Page() {
       </Tabs>
 
       {/* Dialogs */}
-      <AddTransaction
-        modal
-        open={addTransaction}
-        onOpenChange={setAddTransaction}
-      />
+      {search.addTransaction && (
+        <AddTransaction
+          modal
+          open={search.addTransaction}
+          onOpenChange={(open) =>
+            navigate({ search: { ...search, addTransaction: open } })
+          }
+        />
+      )}
     </main>
   );
 }
