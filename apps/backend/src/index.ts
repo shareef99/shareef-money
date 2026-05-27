@@ -1,9 +1,8 @@
 import { serve } from "@hono/node-server";
+import { env } from "./env.js";
 import { app } from "./app.js";
 
-const port = Number(process.env["PORT"]) || 3000;
+console.log(`Server running on http://localhost:${env.PORT}`);
+console.log(`API docs available at http://localhost:${env.PORT}/docs`);
 
-console.log(`Server running on http://localhost:${port}`);
-console.log(`API docs available at http://localhost:${port}/docs`);
-
-serve({ fetch: app.fetch, port });
+serve({ fetch: app.fetch, port: env.PORT });
