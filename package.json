@@ -11,6 +11,9 @@
   "license": "ISC",
   "packageManager": "pnpm@10.29.3",
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild", "better-sqlite3"]
+    "onlyBuiltDependencies": ["esbuild", "better-sqlite3", "msgpackr-extract"],
+    "overrides": {
+      "lightningcss": "1.30.1"
+    }
   }
 }
