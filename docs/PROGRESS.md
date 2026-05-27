@@ -4,10 +4,10 @@
 
 - [x] `packages/db` — Drizzle schema for all tables (users, sessions, accounts, categories, transactions, recurring_rules, settings, sync_log)
 - [x] `packages/db` — Drizzle migrations setup
-- [ ] `packages/shared` — Const arrays and derived types (transactionTypes, categoryTypes, frequencies, weekDays, themes, etc.)
-- [ ] `packages/shared` — Zod validation schemas (transaction, account, category, auth, settings)
-- [ ] `packages/shared` — Utility functions (formatCurrency, date-utils, aggregation)
-- [ ] `packages/shared` — Seed data definitions (default categories, default settings)
+- [x] `packages/shared` — Const arrays and derived types (transactionTypes, categoryTypes, frequencies, weekDays, themes, etc.)
+- [x] `packages/shared` — Zod validation schemas (transaction, account, category, auth, settings)
+- [ ] `packages/shared` — Utility functions (formatCurrency, date-utils, aggregation) — deferred, user will add later
+- [x] `packages/shared` — Seed data definitions (default categories, default settings)
 - [ ] `apps/backend` — Auth endpoints (POST /auth/register, /auth/login, /auth/google, /auth/refresh, /auth/logout)
 - [ ] `apps/backend` — Auth middleware (JWT verification, user_id injection)
 - [ ] `apps/backend` — GET /auth/me, PATCH /auth/me, DELETE /auth/me
