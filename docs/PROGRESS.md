@@ -13,7 +13,7 @@
 - [x] `apps/backend` — Auth endpoints (POST /auth/register, /auth/login, /auth/refresh, /auth/logout)
 - [x] `apps/backend` — Auth middleware (JWT verification, user_id injection)
 - [x] `apps/backend` — GET /auth/me
-- [ ] `apps/backend` — POST /auth/google (Google OAuth token exchange)
+- [x] `apps/backend` — POST /auth/google (Google OAuth token exchange)
 
 ## Phase 2: Mobile Auth + First Screen
 

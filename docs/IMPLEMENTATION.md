@@ -584,15 +584,16 @@ All endpoints use `@hono/zod-openapi` for request/response validation and auto-g
 
 ### 5.2 Backend Architecture Decisions
 
-**File structure: Routes + Services (2-layer, folder-per-feature)**
+### **File structure: Routes + Services (2-layer, folder-per-feature)**
 
 Each feature gets a folder with two files:
+
 - `*.route.ts` — Hono OpenAPI route definitions, request/response handling
 - `*.service.ts` — Pure TypeScript business logic, receives `db` as parameter, no Hono dependency
 
 No barrel files (`index.ts`) — imports reference files directly (e.g., `./routes/auth/auth.route.js`).
 
-**DB access: Hono context variable**
+### **DB access: Hono context variable**
 
 The Drizzle client is created once in `src/db.ts` and injected into every request via a middleware that sets `c.set("db", db)`. Services receive `db` as a parameter — making them testable and decoupled from Hono.
 
@@ -609,6 +610,7 @@ Modern, standards-compliant, TypeScript-first. Access tokens (15min) + refresh t
 Using argon2id via the `argon2` npm package. Configured with 64MB memory, 3 iterations, 1 parallelism.
 
 **Type conventions:**
+
 - Use `type` instead of `interface` for type definitions
 - Service function arguments use `Payload` suffix (e.g., `RegisterPayload`, not `RegisterInput`)
 - Service argument names use `payload` (e.g., `register(db, payload)`)

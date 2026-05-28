@@ -14,7 +14,7 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "package": "com.shareeftwella.mobile"
+      "package": "com.shareef.mobile"
     },
     "web": {
       "output": "static",

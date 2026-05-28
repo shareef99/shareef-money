@@ -2,6 +2,7 @@ import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import {
   registerSchema,
   loginSchema,
+  googleAuthSchema,
   refreshTokenSchema,
 } from "@shareef-money/shared/validation";
 import type { DbVariables } from "../../middleware/db.js";
@@ -88,6 +89,43 @@ authRoute.openapi(loginRoute, async (c) => {
 
   try {
     const tokens = await authService.login(db, body);
+    return c.json(tokens, 200);
+  } catch (error) {
+    if (error instanceof AppError) {
+      return c.json({ message: error.message }, error.status as 401);
+    }
+    throw error;
+  }
+});
+
+const googleRoute = createRoute({
+  method: "post",
+  path: "/google",
+  tags: ["Auth"],
+  summary: "Sign in with Google",
+  request: {
+    body: {
+      content: { "application/json": { schema: googleAuthSchema } },
+    },
+  },
+  responses: {
+    200: {
+      description: "Authenticated with Google",
+      content: { "application/json": { schema: authTokensResponse } },
+    },
+    401: {
+      description: "Invalid Google token",
+      content: { "application/json": { schema: errorResponse } },
+    },
+  },
+});
+
+authRoute.openapi(googleRoute, async (c) => {
+  const db = c.get("db");
+  const body = c.req.valid("json");
+
+  try {
+    const tokens = await authService.googleAuth(db, body);
     return c.json(tokens, 200);
   } catch (error) {
     if (error instanceof AppError) {

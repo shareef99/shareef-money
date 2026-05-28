@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { usersTable, sessionsTable } from "@shareef-money/db/schema";
 import { hashPassword, verifyPassword } from "../../lib/password.js";
 import { signAccessToken, signRefreshToken, verifyToken } from "../../lib/jwt.js";
+import { verifyGoogleIdToken } from "../../lib/google-auth.js";
 import { AppError } from "../../lib/error.js";
 import type { AppDatabase } from "../../db.js";
 
@@ -23,6 +24,12 @@ type LoginPayload = {
 
 type RefreshPayload = {
   refreshToken: string;
+};
+
+type GoogleAuthPayload = {
+  idToken: string;
+  deviceName?: string | undefined;
+  deviceType: "mobile" | "web";
 };
 
 async function createSession(
@@ -110,6 +117,62 @@ export async function login(
   }
 
   return createSession(db, user.id, undefined, "web");
+}
+
+export async function googleAuth(
+  db: AppDatabase,
+  payload: GoogleAuthPayload,
+): Promise<AuthTokens> {
+  let googleUser;
+  try {
+    googleUser = await verifyGoogleIdToken(payload.idToken);
+  } catch {
+    throw new AppError("Invalid Google ID token", 401);
+  }
+
+  const existingByGoogleId = db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.googleId, googleUser.sub))
+    .get();
+
+  if (existingByGoogleId) {
+    return createSession(db, existingByGoogleId.id, payload.deviceName, payload.deviceType);
+  }
+
+  const existingByEmail = db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.email, googleUser.email))
+    .get();
+
+  if (existingByEmail) {
+    db.update(usersTable)
+      .set({
+        googleId: googleUser.sub,
+        avatarUrl: googleUser.picture ?? existingByEmail.avatarUrl,
+        authProvider: "google",
+      })
+      .where(eq(usersTable.id, existingByEmail.id))
+      .run();
+
+    return createSession(db, existingByEmail.id, payload.deviceName, payload.deviceType);
+  }
+
+  const userId = crypto.randomUUID();
+
+  db.insert(usersTable)
+    .values({
+      id: userId,
+      email: googleUser.email,
+      name: googleUser.name,
+      avatarUrl: googleUser.picture ?? null,
+      authProvider: "google",
+      googleId: googleUser.sub,
+    })
+    .run();
+
+  return createSession(db, userId, payload.deviceName, payload.deviceType);
 }
 
 export async function refresh(
