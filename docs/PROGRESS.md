@@ -2,10 +2,12 @@
 
 ## Phase 1: Foundation (no UI)
 
-- [x] `packages/db` — Drizzle schema for all tables (users, sessions, accounts, categories, transactions, recurring_rules, settings, sync_log)
+- [x] `packages/db` — Drizzle schema for all tables (users, sessions, accounts, categories, contacts, locations, transactions, transaction_contacts, recurring_rules, settings, sync_log)
+- [ ] `packages/db` — Add contacts, locations, transaction_contacts tables + update transactions with location_id
 - [x] `packages/db` — Drizzle migrations setup
 - [x] `packages/shared` — Const arrays and derived types (transactionTypes, categoryTypes, frequencies, weekDays, themes, etc.)
 - [x] `packages/shared` — Zod validation schemas (transaction, account, category, auth, settings)
+- [ ] `packages/shared` — Zod validation schemas for contact and location (Tags)
 - [ ] `packages/shared` — Utility functions (formatCurrency, date-utils, aggregation) — deferred, user will add later
 - [x] `packages/shared` — Seed data definitions (default categories, default settings)
 - [ ] `apps/backend` — Auth endpoints (POST /auth/register, /auth/login, /auth/google, /auth/refresh, /auth/logout)
@@ -31,6 +33,8 @@
 - [ ] Add Transaction modal — date/time picker
 - [ ] Add Transaction modal — category picker modal
 - [ ] Add Transaction modal — account picker modal
+- [ ] Add Transaction modal — contact picker (Tags: Who — if enabled)
+- [ ] Add Transaction modal — location picker (Tags: Where — if enabled)
 - [ ] Add Transaction modal — note + description fields
 - [ ] Add Transaction modal — Save / Continue buttons
 - [ ] Add Transaction modal — Transfer: from/to accounts, fees, swap button
@@ -158,6 +162,10 @@
 - [ ] Autocomplete toggle
 - [ ] Input order preference
 - [ ] Note button setting
+- [ ] Tags: Contact toggle (ON/OFF) + required per type (Income/Expense/Transfer)
+- [ ] Tags: Location toggle (ON/OFF) + required per type (Income/Expense/Transfer)
+- [ ] Tags: Manage Contacts screen (list, add, edit, delete)
+- [ ] Tags: Manage Locations screen (list, add, edit, delete)
 - [ ] Passcode (set/change/remove PIN)
 - [ ] Alarm setting (enable/disable, set time)
 - [ ] Theme (Light / Dark / System)
@@ -171,6 +179,14 @@
 - [ ] POST /api/categories (create)
 - [ ] PATCH /api/categories/:id (update)
 - [ ] DELETE /api/categories/:id (soft delete)
+- [ ] GET /api/contacts (list all)
+- [ ] POST /api/contacts (create)
+- [ ] PATCH /api/contacts/:id (update)
+- [ ] DELETE /api/contacts/:id (soft delete)
+- [ ] GET /api/locations (list all)
+- [ ] POST /api/locations (create)
+- [ ] PATCH /api/locations/:id (update)
+- [ ] DELETE /api/locations/:id (soft delete)
 - [ ] GET /api/recurring-rules (list all)
 - [ ] POST /api/recurring-rules (create)
 - [ ] PATCH /api/recurring-rules/:id (update)

@@ -147,25 +147,66 @@ Transaction categories. Supports two levels: parent categories and subcategories
 
 ---
 
-### 1.5 `transactions`
+### 1.5 `contacts`
+
+People or groups that a transaction is associated with (who you transacted with/for). Part of the Tags feature.
+
+| Column      | Type    | Constraints          | Description                                 |
+| ----------- | ------- | -------------------- | ------------------------------------------- |
+| id          | integer | PK, auto-increment   |                                             |
+| user_id     | text    | NOT NULL, FK → users | Owner                                       |
+| name        | text    | NOT NULL             | e.g., "Arbaaz", "Mom", "Office friends"     |
+| is_archived | integer | NOT NULL, DEFAULT 0  | Boolean — soft delete                       |
+| created_at  | integer | NOT NULL             | Unix timestamp                              |
+| updated_at  | integer | NOT NULL             | Unix timestamp                              |
+
+**Relationships:**
+
+- `user_id` → `users.id` (many-to-one)
+- Referenced by `transaction_contacts.contact_id` (many-to-many with transactions)
+
+---
+
+### 1.6 `locations`
+
+Places where a transaction occurred. Part of the Tags feature.
+
+| Column      | Type    | Constraints          | Description                                 |
+| ----------- | ------- | -------------------- | ------------------------------------------- |
+| id          | integer | PK, auto-increment   |                                             |
+| user_id     | text    | NOT NULL, FK → users | Owner                                       |
+| name        | text    | NOT NULL             | e.g., "Paradise Biryani", "DMart", "Amazon" |
+| is_archived | integer | NOT NULL, DEFAULT 0  | Boolean — soft delete                       |
+| created_at  | integer | NOT NULL             | Unix timestamp                              |
+| updated_at  | integer | NOT NULL             | Unix timestamp                              |
+
+**Relationships:**
+
+- `user_id` → `users.id` (many-to-one)
+- Referenced by `transactions.location_id` (one-to-many)
+
+---
+
+### 1.7 `transactions`
 
 The core table. Supports three types: income, expense, and transfer.
 
-| Column        | Type    | Constraints                | Description                              |
-| ------------- | ------- | -------------------------- | ---------------------------------------- |
-| id            | integer | PK, auto-increment         |                                          |
-| user_id       | text    | NOT NULL, FK → users       | Owner                                    |
-| type          | text    | NOT NULL                   | `"income"`, `"expense"`, or `"transfer"` |
-| amount        | integer | NOT NULL                   | Amount in smallest currency unit         |
-| fee           | integer | NOT NULL, DEFAULT 0        | Transfer fee (only for transfers)        |
-| category_id   | integer | FK → categories (nullable) | NULL for transfers                       |
-| account_id    | integer | NOT NULL, FK → accounts    | Source account ("from" for transfers)    |
-| to_account_id | integer | FK → accounts (nullable)   | Destination account (transfers only)     |
-| note          | text    |                            | Short note                               |
-| description   | text    |                            | Longer description                       |
-| date          | integer | NOT NULL                   | Transaction date (Unix timestamp)        |
-| created_at    | integer | NOT NULL                   | Unix timestamp                           |
-| updated_at    | integer | NOT NULL                   | Unix timestamp                           |
+| Column        | Type    | Constraints                 | Description                              |
+| ------------- | ------- | --------------------------- | ---------------------------------------- |
+| id            | integer | PK, auto-increment          |                                          |
+| user_id       | text    | NOT NULL, FK → users        | Owner                                    |
+| type          | text    | NOT NULL                    | `"income"`, `"expense"`, or `"transfer"` |
+| amount        | integer | NOT NULL                    | Amount in smallest currency unit         |
+| fee           | integer | NOT NULL, DEFAULT 0         | Transfer fee (only for transfers)        |
+| category_id   | integer | FK → categories (nullable)  | NULL for transfers                       |
+| account_id    | integer | NOT NULL, FK → accounts     | Source account ("from" for transfers)    |
+| to_account_id | integer | FK → accounts (nullable)    | Destination account (transfers only)     |
+| location_id   | integer | FK → locations (nullable)   | Where the transaction happened           |
+| note          | text    |                             | Short note                               |
+| description   | text    |                             | Longer description                       |
+| date          | integer | NOT NULL                    | Transaction date (Unix timestamp)        |
+| created_at    | integer | NOT NULL                    | Unix timestamp                           |
+| updated_at    | integer | NOT NULL                    | Unix timestamp                           |
 
 **Relationships:**
 
@@ -173,7 +214,9 @@ The core table. Supports three types: income, expense, and transfer.
 - `category_id` → `categories.id` (many-to-one, nullable for transfers)
 - `account_id` → `accounts.id` (many-to-one)
 - `to_account_id` → `accounts.id` (many-to-one, nullable)
+- `location_id` → `locations.id` (many-to-one, nullable)
 - Referenced by `recurring_rules.transaction_id` (one-to-many)
+- Referenced by `transaction_contacts` (many-to-many with contacts)
 
 **Indexes:**
 
@@ -184,7 +227,25 @@ The core table. Supports three types: income, expense, and transfer.
 
 ---
 
-### 1.6 `recurring_rules`
+### 1.8 `transaction_contacts`
+
+Join table linking transactions to contacts (many-to-many). A transaction can have multiple contacts.
+
+| Column         | Type    | Constraints                  | Description |
+| -------------- | ------- | ---------------------------- | ----------- |
+| transaction_id | integer | PK, FK → transactions        |             |
+| contact_id     | integer | PK, FK → contacts            |             |
+
+Composite primary key: `(transaction_id, contact_id)`.
+
+**Relationships:**
+
+- `transaction_id` → `transactions.id` (many-to-one, cascade delete)
+- `contact_id` → `contacts.id` (many-to-one, cascade delete)
+
+---
+
+### 1.10 `recurring_rules`
 
 Defines repeating transaction schedules. Each rule references a template transaction.
 
@@ -209,7 +270,7 @@ Defines repeating transaction schedules. Each rule references a template transac
 
 ---
 
-### 1.7 `settings`
+### 1.11 `settings`
 
 Per-user key-value store for preferences.
 
@@ -241,10 +302,14 @@ Composite primary key: `(user_id, key)`.
 | `subcategory_enabled` | `true`          | Enable subcategories                     |
 | `swipe_action`        | `"change_date"` | Swipe gesture behavior (mobile only)     |
 | `theme`               | `"system"`      | `"light"`, `"dark"`, or `"system"`       |
+| `contacts_enabled`    | `false`         | Global toggle for Tags: Contact          |
+| `contacts_required`   | `{"income": false, "expense": false, "transfer": false}` | Per-type mandatory toggle |
+| `locations_enabled`   | `false`         | Global toggle for Tags: Location         |
+| `locations_required`  | `{"income": false, "expense": false, "transfer": false}` | Per-type mandatory toggle |
 
 ---
 
-### 1.8 `sync_log`
+### 1.12 `sync_log`
 
 Tracks sync state between mobile and server. Server-only table.
 
@@ -309,11 +374,32 @@ Tracks sync state between mobile and server. Server-only table.
        │ category_id (FK) ───→    │     │ interval         │
        │ account_id (FK) ────→    │     │ start_date       │
        │ to_account_id (FK) ──→   │     │ end_date         │
-       │ note, description        │     │ next_occurrence  │
-       │ date                     │     │ is_active        │
-       │ created_at, updated_at   │     │ created_at       │
-       └──────────────────────────┘     │ updated_at       │
-                                        └──────────────────┘
+       │ location_id (FK) ────→   │     │ next_occurrence  │
+       │ note, description        │     │ is_active        │
+       │ date                     │     │ created_at       │
+       │ created_at, updated_at   │     │ updated_at       │
+       └──────────┬───────────────┘     └──────────────────┘
+                  │
+                  │ M:N                    1:N
+        ┌─────────┴─────────┐    ┌─────────────────┐
+        │transaction_contacts│    │    locations      │
+        │───────────────────│    │─────────────────│
+        │ transaction_id(PK)│    │ id (PK)         │
+        │ contact_id (PK)   │    │ user_id (FK)    │
+        └─────────┬─────────┘    │ name            │
+                  │              │ is_archived     │
+                  │ M:N          │ created_at      │
+                  ▼              │ updated_at      │
+        ┌─────────────────┐      └─────────────────┘
+        │    contacts      │
+        │─────────────────│
+        │ id (PK)         │
+        │ user_id (FK)    │
+        │ name            │
+        │ is_archived     │
+        │ created_at      │
+        │ updated_at      │
+        └─────────────────┘
 
 ┌──────────────────┐     ┌──────────────────┐
 │     settings      │     │     sync_log      │
@@ -332,6 +418,8 @@ Tracks sync state between mobile and server. Server-only table.
 - `users` 1 → N `sessions`
 - `users` 1 → N `accounts`
 - `users` 1 → N `categories`
+- `users` 1 → N `contacts`
+- `users` 1 → N `locations`
 - `users` 1 → N `transactions`
 - `users` 1 → N `recurring_rules`
 - `users` 1 → N `settings`
@@ -340,6 +428,8 @@ Tracks sync state between mobile and server. Server-only table.
 - `accounts` 1 → N `transactions` (via `to_account_id`, transfers only)
 - `categories` 1 → N `categories` (self-referencing: parent → subcategories)
 - `categories` 1 → N `transactions` (via `category_id`)
+- `locations` 1 → N `transactions` (via `location_id`)
+- `transactions` M → N `contacts` (via `transaction_contacts`)
 - `transactions` 1 → N `recurring_rules` (via `transaction_id`)
 
 ---
@@ -441,7 +531,7 @@ Mobile App                          Server
 
 ### 4.4 What Syncs
 
-All user-owned tables sync: `accounts`, `categories`, `transactions`, `recurring_rules`, `settings`.
+All user-owned tables sync: `accounts`, `categories`, `contacts`, `locations`, `transactions`, `transaction_contacts`, `recurring_rules`, `settings`.
 
 Auth tables (`users`, `sessions`) and `sync_log` do NOT sync — they exist only on the server.
 
@@ -475,6 +565,14 @@ All data endpoints are RESTful and scoped to the authenticated user.
 | POST   | `/api/categories`          | Create                          |
 | PATCH  | `/api/categories/:id`      | Update                          |
 | DELETE | `/api/categories/:id`      | Soft delete                     |
+| GET    | `/api/contacts`            | List all contacts               |
+| POST   | `/api/contacts`            | Create                          |
+| PATCH  | `/api/contacts/:id`        | Update                          |
+| DELETE | `/api/contacts/:id`        | Soft delete                     |
+| GET    | `/api/locations`           | List all locations              |
+| POST   | `/api/locations`           | Create                          |
+| PATCH  | `/api/locations/:id`       | Update                          |
+| DELETE | `/api/locations/:id`       | Soft delete                     |
 | GET    | `/api/recurring-rules`     | List all rules                  |
 | POST   | `/api/recurring-rules`     | Create                          |
 | PATCH  | `/api/recurring-rules/:id` | Update                          |
@@ -504,6 +602,8 @@ apps/backend/
 │   │   ├── transactions.ts         # Transaction CRUD
 │   │   ├── accounts.ts             # Account CRUD
 │   │   ├── categories.ts           # Category CRUD
+│   │   ├── contacts.ts             # Contact CRUD (Tags)
+│   │   ├── locations.ts            # Location CRUD (Tags)
 │   │   ├── recurring-rules.ts      # Recurring rule CRUD
 │   │   ├── settings.ts             # Settings read/write
 │   │   └── stats.ts                # Aggregation queries
@@ -682,6 +782,15 @@ Settings organized in sections:
 - Subcategory toggle (ON/OFF)
 - Repeat Setting → manage recurring rules
 
+**Tags Section:**
+
+- Contact (Tags: Who) toggle (ON/OFF)
+- Contact required per type (Income / Expense / Transfer toggles)
+- Location (Tags: Where) toggle (ON/OFF)
+- Location required per type (Income / Expense / Transfer toggles)
+- Manage Contacts → contact list (CRUD)
+- Manage Locations → location list (CRUD)
+
 **Configuration Section:**
 
 - Main Currency Setting (display symbol, e.g., INR ₹)
@@ -725,6 +834,8 @@ Unified form for all three transaction types, switchable via segmented control:
 - Amount (numeric keypad)
 - Category picker (income categories)
 - Account picker
+- Contact picker (Tags: Who — if enabled in settings, required/optional per type)
+- Location picker (Tags: Where — if enabled in settings, required/optional per type)
 - Note (text)
 - Description (text)
 - Save / Continue buttons
@@ -740,6 +851,8 @@ Unified form for all three transaction types, switchable via segmented control:
 - Amount + Fees field
 - From account picker
 - To account picker (with swap button)
+- Contact picker (Tags: Who — if enabled)
+- Location picker (Tags: Where — if enabled)
 - Note
 - Description
 - Save / Continue buttons
@@ -868,7 +981,9 @@ packages/db/
 │   │   ├── users.ts              # users + sessions tables
 │   │   ├── accounts.ts           # accounts table
 │   │   ├── categories.ts         # categories table
-│   │   ├── transactions.ts       # transactions table
+│   │   ├── contacts.ts           # contacts table (Tags)
+│   │   ├── locations.ts          # locations table (Tags)
+│   │   ├── transactions.ts       # transactions + transaction_contacts tables
 │   │   ├── recurring-rules.ts    # recurring_rules table
 │   │   ├── settings.ts           # settings table
 │   │   ├── sync-log.ts           # sync_log table (server only)
@@ -891,6 +1006,8 @@ packages/shared/
 │   │   ├── transaction.ts        # Zod schemas for transaction create/update
 │   │   ├── account.ts            # Zod schemas for account create/update
 │   │   ├── category.ts           # Zod schemas for category create/update
+│   │   ├── contact.ts            # Zod schemas for contact create/update (Tags)
+│   │   ├── location.ts           # Zod schemas for location create/update (Tags)
 │   │   ├── auth.ts               # Zod schemas for login/register
 │   │   └── settings.ts           # Zod schemas for settings
 │   ├── utils/
