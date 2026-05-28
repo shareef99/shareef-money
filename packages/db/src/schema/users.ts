@@ -1,11 +1,11 @@
 import { relations } from "drizzle-orm";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import { accountsTable } from "./accounts.js";
-import { categoriesTable } from "./categories.js";
-import { transactionsTable } from "./transactions.js";
-import { recurringRulesTable } from "./recurring-rules.js";
-import { settingsTable } from "./settings.js";
-import { syncLogTable } from "./sync-log.js";
+import { accountsTable } from "./accounts";
+import { categoriesTable } from "./categories";
+import { transactionsTable } from "./transactions";
+import { recurringRulesTable } from "./recurring-rules";
+import { settingsTable } from "./settings";
+import { syncLogTable } from "./sync-log";
 
 export const usersTable = sqliteTable("users", {
   id: text("id").primaryKey(),

@@ -6,12 +6,12 @@ import {
   sqliteTable,
   text,
 } from "drizzle-orm/sqlite-core";
-import { usersTable } from "./users.js";
-import { categoriesTable } from "./categories.js";
-import { accountsTable } from "./accounts.js";
-import { locationsTable } from "./locations.js";
-import { contactsTable } from "./contacts.js";
-import { recurringRulesTable } from "./recurring-rules.js";
+import { usersTable } from "./users";
+import { categoriesTable } from "./categories";
+import { accountsTable } from "./accounts";
+import { locationsTable } from "./locations";
+import { contactsTable } from "./contacts";
+import { recurringRulesTable } from "./recurring-rules";
 
 export const transactionsTable = sqliteTable(
   "transactions",
