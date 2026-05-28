@@ -281,7 +281,7 @@ Using Tailwind's default 4px-based spacing scale. Standard spacing tokens used t
 
 ### 5.10 Inputs
 
-**Text Input**
+#### **Text Input**
 
 - Height: 48px
 - Background: transparent (form style, not boxed)
@@ -294,7 +294,7 @@ Using Tailwind's default 4px-based spacing scale. Standard spacing tokens used t
 - Income amount input: focus border is `border-income` (green)
 - Transfer amount input: focus border is `border-transfer` (blue)
 
-**Picker / Dropdown**
+#### **Picker / Dropdown**
 
 - Same as text input but with chevron-right icon on right side
 - Tappable → opens modal/sheet

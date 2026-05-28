@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../../../../providers/auth-provider";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function MoreScreen() {
   const { user, logout } = useAuth();
