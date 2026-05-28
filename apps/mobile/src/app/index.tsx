@@ -1,14 +1,21 @@
-import { Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Redirect } from "expo-router";
+import { useAuth } from "../providers/auth-provider";
+import { ActivityIndicator, View } from "react-native";
 
-export default function HomeScreen() {
-  return (
-    <View className="flex-1 bg-white dark:bg-black">
-      <SafeAreaView className="flex-1 items-center justify-center">
-        <Text className="text-3xl font-semibold text-black dark:text-white">
-          Shareef Money
-        </Text>
-      </SafeAreaView>
-    </View>
-  );
+export default function IndexScreen() {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <View className="flex-1 bg-background items-center justify-center">
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  if (isAuthenticated) {
+    return <Redirect href="/(app)/(tabs)/transactions" />;
+  }
+
+  return <Redirect href="/(auth)/welcome" />;
 }

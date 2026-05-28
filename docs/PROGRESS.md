@@ -17,13 +17,13 @@
 
 ## Phase 2: Mobile Auth + First Screen
 
-- [ ] Mobile — Auth screens (login, register with email/password)
+- [x] Mobile — Auth screens (welcome screen + login/register bottom sheets)
 - [ ] Mobile — Google Sign-In integration (expo-auth-session)
-- [ ] Mobile — Token storage (expo-secure-store) + auto-refresh
-- [ ] Mobile — Database provider (expo-sqlite + Drizzle, run migrations, seed on first login)
-- [ ] Mobile — Bottom tab navigator shell (Trans., Stats, Accounts, More)
-- [ ] Mobile — Auth gate (redirect to login if not authenticated)
-- [ ] Mobile — Passcode gate (lock screen if enabled)
+- [x] Mobile — Token storage (expo-secure-store) + auto-refresh
+- [x] Mobile — Database provider (expo-sqlite + Drizzle, run migrations)
+- [x] Mobile — Bottom tab navigator shell (Trans., Stats, Accounts, More)
+- [x] Mobile — Auth gate (redirect to login if not authenticated)
+- [ ] Mobile — Passcode gate (lock screen if enabled) — deferred to Phase 6
 
 ## Phase 3: Transactions (mobile → web)
 

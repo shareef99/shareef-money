@@ -3,3 +3,74 @@
 @import "tailwindcss/utilities.css";
 
 @import "nativewind/theme";
+
+@theme {
+  --color-income: #16A34A;
+  --color-expense: #DC2626;
+  --color-transfer: #2563EB;
+
+  --color-primary: #2563EB;
+  --color-primary-foreground: #FFFFFF;
+
+  --color-fab: #F97316;
+  --color-fab-foreground: #FFFFFF;
+
+  --color-success: #16A34A;
+  --color-warning: #D97706;
+  --color-error: #DC2626;
+  --color-info: #2563EB;
+
+  --color-background: var(--color-bg);
+  --color-card: var(--color-card-bg);
+  --color-card-alt: var(--color-card-alt-bg);
+  --color-surface: var(--color-surface-bg);
+  --color-text: var(--color-text-primary);
+  --color-text-secondary: var(--color-text-sec);
+  --color-text-muted: var(--color-text-mut);
+  --color-border: var(--color-border-color);
+  --color-divider: var(--color-divider-color);
+  --color-tab-bar: var(--color-tab-bar-bg);
+  --color-tab-bar-border: var(--color-tab-bar-b);
+  --color-tab-active: var(--color-tab-act);
+  --color-tab-inactive: var(--color-tab-inact);
+}
+
+:root {
+  --color-bg: #FFFFFF;
+  --color-card-bg: #F4F4F5;
+  --color-card-alt-bg: #E4E4E7;
+  --color-surface-bg: #FAFAFA;
+  --color-text-primary: #09090B;
+  --color-text-sec: #71717A;
+  --color-text-mut: #A1A1AA;
+  --color-border-color: #E4E4E7;
+  --color-divider-color: #F4F4F5;
+  --color-tab-bar-bg: #FFFFFF;
+  --color-tab-bar-b: #E4E4E7;
+  --color-tab-act: #2563EB;
+  --color-tab-inact: #71717A;
+
+  --color-income: #16A34A;
+  --color-expense: #DC2626;
+  --color-transfer: #2563EB;
+}
+
+.dark {
+  --color-bg: #0A0A0A;
+  --color-card-bg: #18181B;
+  --color-card-alt-bg: #27272A;
+  --color-surface-bg: #111111;
+  --color-text-primary: #FAFAFA;
+  --color-text-sec: #A1A1AA;
+  --color-text-mut: #52525B;
+  --color-border-color: #27272A;
+  --color-divider-color: #1C1C1E;
+  --color-tab-bar-bg: #0A0A0A;
+  --color-tab-bar-b: #27272A;
+  --color-tab-act: #3B82F6;
+  --color-tab-inact: #52525B;
+
+  --color-income: #4ADE80;
+  --color-expense: #F87171;
+  --color-transfer: #60A5FA;
+}
