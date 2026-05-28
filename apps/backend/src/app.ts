@@ -1,10 +1,18 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { swaggerUI } from "@hono/swagger-ui";
-import { healthRoute } from "./routes/health.js";
+import { dbMiddleware, type DbVariables } from "./middleware/db.js";
+import type { AuthVariables } from "./middleware/auth.js";
+import { healthRoute } from "./routes/health/health.route.js";
+import { authRoute } from "./routes/auth/auth.route.js";
 
-const app = new OpenAPIHono();
+type AppEnv = { Variables: DbVariables & AuthVariables };
+
+const app = new OpenAPIHono<AppEnv>();
+
+app.use("*", dbMiddleware);
 
 app.route("/", healthRoute);
+app.route("/auth", authRoute);
 
 app.doc("/openapi.json", {
   openapi: "3.1.0",

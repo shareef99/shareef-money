@@ -6,7 +6,7 @@ A personal finance tracker with a local-first mobile app and a full-featured web
 
 **Architecture:**
 
-```
+```bash
 Mobile (expo-sqlite)  ←──sync──→  Hono Backend (SQLite)  ←──API──→  Web Dashboard (React)
      ↓                                  ↓                              ↓
 works offline                   source of truth                  always online
@@ -18,15 +18,15 @@ local-first                     auth + sync API                  full mirror of 
 | Layer    | Technology                                                                   |
 | -------- | ---------------------------------------------------------------------------- |
 | Mobile   | Expo SDK 56, React Native 0.85, expo-router, NativeWind v5 + Tailwind CSS v4 |
-| Backend  | Hono, Node.js, @hono/zod-openapi, Swagger UI                                |
-| Web      | React (Vite), Mantine UI + Tailwind CSS v4, TanStack Router, TanStack Query |
-| Database | Drizzle ORM — expo-sqlite (mobile), better-sqlite3 (server)                 |
-| Auth     | Custom JWT + bcrypt, Google OAuth                                            |
+| Backend  | Hono, Node.js, @hono/zod-openapi, Swagger UI                                 |
+| Web      | React (Vite), Mantine UI + Tailwind CSS v4, TanStack Router, TanStack Query  |
+| Database | Drizzle ORM — expo-sqlite (mobile), better-sqlite3 (server)                  |
+| Auth     | Custom JWT (jose) + argon2, Google OAuth                                     |
 | Language | TypeScript (strict mode) everywhere                                          |
 
 **Monorepo Structure:**
 
-```
+```bash
 shareef-money/
 ├── apps/
 │   ├── mobile/          # Expo React Native app
@@ -75,15 +75,15 @@ User accounts for authentication. Server-only table — does not sync to mobile.
 
 Active login sessions for JWT refresh token management. Server-only table.
 
-| Column        | Type    | Constraints          | Description                |
-| ------------- | ------- | -------------------- | -------------------------- |
-| id            | text    | PK                   | UUID                       |
-| user_id       | text    | NOT NULL, FK → users | Session owner              |
-| refresh_token | text    | NOT NULL, UNIQUE     | Hashed refresh token       |
+| Column        | Type    | Constraints          | Description               |
+| ------------- | ------- | -------------------- | ------------------------- |
+| id            | text    | PK                   | UUID                      |
+| user_id       | text    | NOT NULL, FK → users | Session owner             |
+| refresh_token | text    | NOT NULL, UNIQUE     | Hashed refresh token      |
 | device_name   | text    |                      | e.g., "Pixel 7", "Chrome" |
 | device_type   | text    | NOT NULL             | `"mobile"` or `"web"`     |
-| expires_at    | integer | NOT NULL             | Unix timestamp             |
-| created_at    | integer | NOT NULL             | Unix timestamp             |
+| expires_at    | integer | NOT NULL             | Unix timestamp            |
+| created_at    | integer | NOT NULL             | Unix timestamp            |
 
 **Relationships:**
 
@@ -99,7 +99,7 @@ Individual financial accounts (e.g., "HDFC Savings", "Wallet Cash", "Credit Card
 | --------------- | ------- | -------------------- | ----------------------------------- |
 | id              | integer | PK, auto-increment   |                                     |
 | user_id         | text    | NOT NULL, FK → users | Owner                               |
-| name            | text    | NOT NULL             | e.g., "HDFC Savings"               |
+| name            | text    | NOT NULL             | e.g., "HDFC Savings"                |
 | initial_balance | integer | NOT NULL, DEFAULT 0  | Starting balance (in smallest unit) |
 | description     | text    |                      | Optional description                |
 | icon            | text    |                      | Icon identifier                     |
@@ -126,8 +126,8 @@ Transaction categories. Supports two levels: parent categories and subcategories
 | id          | integer | PK, auto-increment         |                                     |
 | user_id     | text    | NOT NULL, FK → users       | Owner                               |
 | parent_id   | integer | FK → categories (nullable) | NULL = top-level, set = subcategory |
-| name        | text    | NOT NULL                   | e.g., "Food", "Transport"          |
-| type        | text    | NOT NULL                   | `"income"` or `"expense"`          |
+| name        | text    | NOT NULL                   | e.g., "Food", "Transport"           |
+| type        | text    | NOT NULL                   | `"income"` or `"expense"`           |
 | icon        | text    |                            | Emoji or icon identifier            |
 | color       | text    |                            | Hex color code for charts           |
 | sort_order  | integer | NOT NULL, DEFAULT 0        | User-defined ordering               |
@@ -151,14 +151,14 @@ Transaction categories. Supports two levels: parent categories and subcategories
 
 People or groups that a transaction is associated with (who you transacted with/for). Part of the Tags feature.
 
-| Column      | Type    | Constraints          | Description                                 |
-| ----------- | ------- | -------------------- | ------------------------------------------- |
-| id          | integer | PK, auto-increment   |                                             |
-| user_id     | text    | NOT NULL, FK → users | Owner                                       |
-| name        | text    | NOT NULL             | e.g., "Arbaaz", "Mom", "Office friends"     |
-| is_archived | integer | NOT NULL, DEFAULT 0  | Boolean — soft delete                       |
-| created_at  | integer | NOT NULL             | Unix timestamp                              |
-| updated_at  | integer | NOT NULL             | Unix timestamp                              |
+| Column      | Type    | Constraints          | Description                             |
+| ----------- | ------- | -------------------- | --------------------------------------- |
+| id          | integer | PK, auto-increment   |                                         |
+| user_id     | text    | NOT NULL, FK → users | Owner                                   |
+| name        | text    | NOT NULL             | e.g., "Arbaaz", "Mom", "Office friends" |
+| is_archived | integer | NOT NULL, DEFAULT 0  | Boolean — soft delete                   |
+| created_at  | integer | NOT NULL             | Unix timestamp                          |
+| updated_at  | integer | NOT NULL             | Unix timestamp                          |
 
 **Relationships:**
 
@@ -191,22 +191,22 @@ Places where a transaction occurred. Part of the Tags feature.
 
 The core table. Supports three types: income, expense, and transfer.
 
-| Column        | Type    | Constraints                 | Description                              |
-| ------------- | ------- | --------------------------- | ---------------------------------------- |
-| id            | integer | PK, auto-increment          |                                          |
-| user_id       | text    | NOT NULL, FK → users        | Owner                                    |
-| type          | text    | NOT NULL                    | `"income"`, `"expense"`, or `"transfer"` |
-| amount        | integer | NOT NULL                    | Amount in smallest currency unit         |
-| fee           | integer | NOT NULL, DEFAULT 0         | Transfer fee (only for transfers)        |
-| category_id   | integer | FK → categories (nullable)  | NULL for transfers                       |
-| account_id    | integer | NOT NULL, FK → accounts     | Source account ("from" for transfers)    |
-| to_account_id | integer | FK → accounts (nullable)    | Destination account (transfers only)     |
-| location_id   | integer | FK → locations (nullable)   | Where the transaction happened           |
-| note          | text    |                             | Short note                               |
-| description   | text    |                             | Longer description                       |
-| date          | integer | NOT NULL                    | Transaction date (Unix timestamp)        |
-| created_at    | integer | NOT NULL                    | Unix timestamp                           |
-| updated_at    | integer | NOT NULL                    | Unix timestamp                           |
+| Column        | Type    | Constraints                | Description                              |
+| ------------- | ------- | -------------------------- | ---------------------------------------- |
+| id            | integer | PK, auto-increment         |                                          |
+| user_id       | text    | NOT NULL, FK → users       | Owner                                    |
+| type          | text    | NOT NULL                   | `"income"`, `"expense"`, or `"transfer"` |
+| amount        | integer | NOT NULL                   | Amount in smallest currency unit         |
+| fee           | integer | NOT NULL, DEFAULT 0        | Transfer fee (only for transfers)        |
+| category_id   | integer | FK → categories (nullable) | NULL for transfers                       |
+| account_id    | integer | NOT NULL, FK → accounts    | Source account ("from" for transfers)    |
+| to_account_id | integer | FK → accounts (nullable)   | Destination account (transfers only)     |
+| location_id   | integer | FK → locations (nullable)  | Where the transaction happened           |
+| note          | text    |                            | Short note                               |
+| description   | text    |                            | Longer description                       |
+| date          | integer | NOT NULL                   | Transaction date (Unix timestamp)        |
+| created_at    | integer | NOT NULL                   | Unix timestamp                           |
+| updated_at    | integer | NOT NULL                   | Unix timestamp                           |
 
 **Relationships:**
 
@@ -231,10 +231,10 @@ The core table. Supports three types: income, expense, and transfer.
 
 Join table linking transactions to contacts (many-to-many). A transaction can have multiple contacts.
 
-| Column         | Type    | Constraints                  | Description |
-| -------------- | ------- | ---------------------------- | ----------- |
-| transaction_id | integer | PK, FK → transactions        |             |
-| contact_id     | integer | PK, FK → contacts            |             |
+| Column         | Type    | Constraints           | Description |
+| -------------- | ------- | --------------------- | ----------- |
+| transaction_id | integer | PK, FK → transactions |             |
+| contact_id     | integer | PK, FK → contacts     |             |
 
 Composite primary key: `(transaction_id, contact_id)`.
 
@@ -284,28 +284,28 @@ Composite primary key: `(user_id, key)`.
 
 **Default settings:**
 
-| Key                   | Default Value   | Description                              |
-| --------------------- | --------------- | ---------------------------------------- |
-| `currency_symbol`     | `"₹"`           | Display currency symbol                  |
-| `currency_code`       | `"INR"`         | ISO currency code                        |
-| `start_screen`        | `"daily"`       | Default transactions view                |
-| `monthly_start_date`  | `1`             | Day of month period starts               |
-| `weekly_start_day`    | `"monday"`      | Day of week period starts                |
-| `carry_over`          | `true`          | Carry over balance to next period        |
-| `passcode`            | `null`          | App lock passcode (hashed, mobile only)  |
-| `passcode_enabled`    | `false`         | Whether app lock is active (mobile only) |
-| `alarm_enabled`       | `true`          | Daily reminder (mobile only)             |
-| `alarm_time`          | `"21:00"`       | Reminder time (mobile only)              |
-| `show_description`    | `true`          | Show description field in form           |
-| `autocomplete`        | `true`          | Autocomplete suggestions                 |
-| `input_order`         | `"amount"`      | First field focus in transaction form    |
-| `subcategory_enabled` | `true`          | Enable subcategories                     |
-| `swipe_action`        | `"change_date"` | Swipe gesture behavior (mobile only)     |
-| `theme`               | `"system"`      | `"light"`, `"dark"`, or `"system"`       |
-| `contacts_enabled`    | `false`         | Global toggle for Tags: Contact          |
-| `contacts_required`   | `{"income": false, "expense": false, "transfer": false}` | Per-type mandatory toggle |
-| `locations_enabled`   | `false`         | Global toggle for Tags: Location         |
-| `locations_required`  | `{"income": false, "expense": false, "transfer": false}` | Per-type mandatory toggle |
+| Key                   | Default Value                                            | Description                              |
+| --------------------- | -------------------------------------------------------- | ---------------------------------------- |
+| `currency_symbol`     | `"₹"`                                                    | Display currency symbol                  |
+| `currency_code`       | `"INR"`                                                  | ISO currency code                        |
+| `start_screen`        | `"daily"`                                                | Default transactions view                |
+| `monthly_start_date`  | `1`                                                      | Day of month period starts               |
+| `weekly_start_day`    | `"monday"`                                               | Day of week period starts                |
+| `carry_over`          | `true`                                                   | Carry over balance to next period        |
+| `passcode`            | `null`                                                   | App lock passcode (hashed, mobile only)  |
+| `passcode_enabled`    | `false`                                                  | Whether app lock is active (mobile only) |
+| `alarm_enabled`       | `true`                                                   | Daily reminder (mobile only)             |
+| `alarm_time`          | `"21:00"`                                                | Reminder time (mobile only)              |
+| `show_description`    | `true`                                                   | Show description field in form           |
+| `autocomplete`        | `true`                                                   | Autocomplete suggestions                 |
+| `input_order`         | `"amount"`                                               | First field focus in transaction form    |
+| `subcategory_enabled` | `true`                                                   | Enable subcategories                     |
+| `swipe_action`        | `"change_date"`                                          | Swipe gesture behavior (mobile only)     |
+| `theme`               | `"system"`                                               | `"light"`, `"dark"`, or `"system"`       |
+| `contacts_enabled`    | `false`                                                  | Global toggle for Tags: Contact          |
+| `contacts_required`   | `{"income": false, "expense": false, "transfer": false}` | Per-type mandatory toggle                |
+| `locations_enabled`   | `false`                                                  | Global toggle for Tags: Location         |
+| `locations_required`  | `{"income": false, "expense": false, "transfer": false}` | Per-type mandatory toggle                |
 
 ---
 
@@ -326,7 +326,7 @@ Tracks sync state between mobile and server. Server-only table.
 
 ## 2. Entity Relationship Diagram
 
-```
+```bash
 ┌──────────────┐
 │    users      │
 │──────────────│
@@ -442,7 +442,7 @@ Custom JWT-based auth with email/password and Google OAuth.
 
 **Token flow:**
 
-```
+```bash
 Login/Register → Server returns { accessToken (15min), refreshToken (30 days) }
                      ↓
 Mobile stores tokens in expo-secure-store
@@ -463,12 +463,10 @@ On 401 → auto-refresh using refreshToken → new accessToken
 | POST   | `/auth/refresh`  | Refresh access token          |
 | POST   | `/auth/logout`   | Invalidate session            |
 | GET    | `/auth/me`       | Get current user profile      |
-| PATCH  | `/auth/me`       | Update user profile           |
-| DELETE | `/auth/me`       | Delete account + all data     |
 
 ### 3.3 Password Handling
 
-- Hash with bcrypt (cost factor 12)
+- Hash with argon2id (memory: 64MB, iterations: 3, parallelism: 1)
 - Minimum 8 characters
 - Server-side validation with Zod
 
@@ -504,7 +502,7 @@ The mobile app is the primary data entry point. It works fully offline. When con
 
 ### 4.2 Sync Flow
 
-```
+```bash
 Mobile App                          Server
     │                                  │
     ├── POST /sync/push ──────────────→│  Send local changes since last sync
@@ -522,12 +520,12 @@ Mobile App                          Server
 
 ### 4.3 Sync Endpoints
 
-| Method | Path           | Description                                    |
-| ------ | -------------- | ---------------------------------------------- |
-| POST   | `/sync/push`   | Upload local changes to server                 |
-| POST   | `/sync/pull`   | Download server changes since last sync        |
-| POST   | `/sync/ack`    | Confirm sync completion, update sync_log       |
-| GET    | `/sync/status` | Get last sync timestamps per table per device  |
+| Method | Path           | Description                                   |
+| ------ | -------------- | --------------------------------------------- |
+| POST   | `/sync/push`   | Upload local changes to server                |
+| POST   | `/sync/pull`   | Download server changes since last sync       |
+| POST   | `/sync/ack`    | Confirm sync completion, update sync_log      |
+| GET    | `/sync/status` | Get last sync timestamps per table per device |
 
 ### 4.4 What Syncs
 
@@ -584,33 +582,89 @@ All data endpoints are RESTful and scoped to the authenticated user.
 
 All endpoints use `@hono/zod-openapi` for request/response validation and auto-generated OpenAPI docs at `/docs`.
 
-### 5.2 Backend File Structure
+### 5.2 Backend Architecture Decisions
 
-```
+**File structure: Routes + Services (2-layer, folder-per-feature)**
+
+Each feature gets a folder with two files:
+- `*.route.ts` — Hono OpenAPI route definitions, request/response handling
+- `*.service.ts` — Pure TypeScript business logic, receives `db` as parameter, no Hono dependency
+
+No barrel files (`index.ts`) — imports reference files directly (e.g., `./routes/auth/auth.route.js`).
+
+**DB access: Hono context variable**
+
+The Drizzle client is created once in `src/db.ts` and injected into every request via a middleware that sets `c.set("db", db)`. Services receive `db` as a parameter — making them testable and decoupled from Hono.
+
+**Error handling: Centralized `AppError`**
+
+A single `AppError` class in `src/lib/error.ts` is used by all services. The HTTP status code differentiates error types — no per-feature error classes.
+
+**JWT: `jose` library**
+
+Modern, standards-compliant, TypeScript-first. Access tokens (15min) + refresh tokens (30 days) with SHA-256 hashed storage in sessions table. Refresh tokens include a `jti` (JWT ID) claim for uniqueness.
+
+**Password hashing: `argon2` (native C)**
+
+Using argon2id via the `argon2` npm package. Configured with 64MB memory, 3 iterations, 1 parallelism.
+
+**Type conventions:**
+- Use `type` instead of `interface` for type definitions
+- Service function arguments use `Payload` suffix (e.g., `RegisterPayload`, not `RegisterInput`)
+- Service argument names use `payload` (e.g., `register(db, payload)`)
+
+### 5.3 Backend File Structure
+
+```bash
 apps/backend/
 ├── src/
-│   ├── index.ts                    # Server entry point
-│   ├── app.ts                      # Hono app setup, swagger, middleware
-│   ├── env.ts                      # Environment validation (Zod)
-│   ├── db.ts                       # Server DB client (better-sqlite3 + Drizzle)
+│   ├── index.ts                          # Server entry point
+│   ├── app.ts                            # Hono app, global middleware, route wiring
+│   ├── env.ts                            # Environment validation (Zod)
+│   ├── db.ts                             # Drizzle client singleton (better-sqlite3)
+│   ├── migrate.ts                        # Migration runner script
 │   ├── middleware/
-│   │   ├── auth.ts                 # JWT verification middleware
-│   │   └── cors.ts                 # CORS config for web dashboard
-│   ├── routes/
-│   │   ├── auth.ts                 # Auth endpoints
-│   │   ├── sync.ts                 # Sync endpoints
-│   │   ├── transactions.ts         # Transaction CRUD
-│   │   ├── accounts.ts             # Account CRUD
-│   │   ├── categories.ts           # Category CRUD
-│   │   ├── contacts.ts             # Contact CRUD (Tags)
-│   │   ├── locations.ts            # Location CRUD (Tags)
-│   │   ├── recurring-rules.ts      # Recurring rule CRUD
-│   │   ├── settings.ts             # Settings read/write
-│   │   └── stats.ts                # Aggregation queries
-│   └── lib/
-│       ├── jwt.ts                  # JWT sign/verify helpers
-│       ├── password.ts             # bcrypt hash/compare
-│       └── google-auth.ts          # Google token verification
+│   │   ├── auth.ts                       # JWT verification → sets userId in context
+│   │   └── db.ts                         # Injects db into Hono context
+│   ├── lib/
+│   │   ├── error.ts                      # Centralized AppError class
+│   │   ├── jwt.ts                        # jose: sign/verify access + refresh tokens
+│   │   ├── password.ts                   # argon2: hash/verify
+│   │   └── google-auth.ts               # Google ID token verification
+│   └── routes/
+│       ├── health/
+│       │   └── health.route.ts           # GET /health
+│       ├── auth/
+│       │   ├── auth.route.ts             # OpenAPI route definitions
+│       │   └── auth.service.ts           # register, login, refresh, logout, me
+│       ├── transactions/
+│       │   ├── transactions.route.ts     # Transaction CRUD routes
+│       │   └── transactions.service.ts   # Transaction business logic
+│       ├── accounts/
+│       │   ├── accounts.route.ts         # Account CRUD routes
+│       │   └── accounts.service.ts       # Account business logic
+│       ├── categories/
+│       │   ├── categories.route.ts       # Category CRUD routes
+│       │   └── categories.service.ts     # Category business logic
+│       ├── contacts/
+│       │   ├── contacts.route.ts         # Contact CRUD routes (Tags)
+│       │   └── contacts.service.ts       # Contact business logic
+│       ├── locations/
+│       │   ├── locations.route.ts        # Location CRUD routes (Tags)
+│       │   └── locations.service.ts      # Location business logic
+│       ├── recurring-rules/
+│       │   ├── recurring-rules.route.ts  # Recurring rule CRUD routes
+│       │   └── recurring-rules.service.ts
+│       ├── settings/
+│       │   ├── settings.route.ts         # Settings read/write routes
+│       │   └── settings.service.ts       # Settings business logic
+│       ├── stats/
+│       │   ├── stats.route.ts            # Stats aggregation routes
+│       │   └── stats.service.ts          # Stats queries
+│       └── sync/
+│           ├── sync.route.ts             # Sync push/pull/ack routes
+│           └── sync.service.ts           # Sync business logic
+├── .env                                  # Environment variables (not committed)
 ├── package.json
 └── tsconfig.json
 ```
@@ -621,7 +675,7 @@ apps/backend/
 
 ### 6.1 Navigation Structure
 
-```
+```bash
 Root (_layout.tsx)
 ├── (auth)/                          ← Unauthenticated screens
 │   ├── login.tsx                    ← Email/password + Google sign-in
@@ -895,7 +949,7 @@ The web dashboard is a full mirror of the mobile app. It connects directly to th
 
 ### 7.2 Web File Structure
 
-```
+```bash
 apps/web/
 ├── src/
 │   ├── main.tsx                      # Entry point
@@ -951,14 +1005,14 @@ apps/web/
 
 The web dashboard maps 1:1 to mobile screens but uses a sidebar navigation instead of bottom tabs.
 
-| Sidebar Item | Page                 | Mobile Equivalent     |
-| ------------ | -------------------- | --------------------- |
-| Transactions | Daily list (default) | Tab 1: Daily View     |
-| Calendar     | Calendar grid        | Tab 1: Calendar View  |
-| Monthly      | Monthly summary      | Tab 1: Monthly View   |
-| Statistics   | Pie charts + lists   | Tab 2: Stats          |
-| Accounts     | Account list + cards | Tab 3: Accounts       |
-| Settings     | Settings form        | Tab 4: More           |
+| Sidebar Item | Page                 | Mobile Equivalent    |
+| ------------ | -------------------- | -------------------- |
+| Transactions | Daily list (default) | Tab 1: Daily View    |
+| Calendar     | Calendar grid        | Tab 1: Calendar View |
+| Monthly      | Monthly summary      | Tab 1: Monthly View  |
+| Statistics   | Pie charts + lists   | Tab 2: Stats         |
+| Accounts     | Account list + cards | Tab 3: Accounts      |
+| Settings     | Settings form        | Tab 4: More          |
 
 **Additional web-specific features:**
 
@@ -974,7 +1028,7 @@ The web dashboard maps 1:1 to mobile screens but uses a sidebar navigation inste
 
 Shared Drizzle schema used by both mobile and backend. Does NOT include a driver — each consumer provides its own.
 
-```
+```bash
 packages/db/
 ├── src/
 │   ├── schema/
@@ -998,7 +1052,7 @@ packages/db/
 
 Shared types, const arrays, Zod validation schemas, and pure utility functions used by all three apps (mobile, backend, web).
 
-```
+```bash
 packages/shared/
 ├── src/
 │   ├── types.ts                  # Inferred DB types + const arrays + derived types
@@ -1065,7 +1119,12 @@ Same schema, same types, same validation, same utilities — different data acce
 ### 9.1 Database Types (from Drizzle schema)
 
 ```typescript
-import { transactions, accounts, categories, users } from "@shareef-money/db/schema";
+import {
+  transactions,
+  accounts,
+  categories,
+  users,
+} from "@shareef-money/db/schema";
 
 type Transaction = typeof transactions.$inferSelect;
 type NewTransaction = typeof transactions.$inferInsert;
@@ -1094,7 +1153,12 @@ export const frequencies = ["daily", "weekly", "monthly", "yearly"] as const;
 export type Frequency = (typeof frequencies)[number];
 
 // Stats period
-export const statsPeriods = ["weekly", "monthly", "annually", "custom"] as const;
+export const statsPeriods = [
+  "weekly",
+  "monthly",
+  "annually",
+  "custom",
+] as const;
 export type StatsPeriod = (typeof statsPeriods)[number];
 
 // Auth provider
@@ -1106,7 +1170,15 @@ export const deviceTypes = ["mobile", "web"] as const;
 export type DeviceType = (typeof deviceTypes)[number];
 
 // Days of week
-export const weekDays = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"] as const;
+export const weekDays = [
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday",
+] as const;
 export type WeekDay = (typeof weekDays)[number];
 
 // Themes
@@ -1155,7 +1227,13 @@ const recurringRuleSchema = z.object({
 All string union fields reference types from the const arrays in 9.2 — no inline string literals.
 
 ```typescript
-import type { WeekDay, Theme, StartScreen, InputOrder, SwipeAction } from "@shareef-money/shared/types";
+import type {
+  WeekDay,
+  Theme,
+  StartScreen,
+  InputOrder,
+  SwipeAction,
+} from "@shareef-money/shared/types";
 
 interface AppSettings {
   currency_symbol: string;
@@ -1193,7 +1271,9 @@ function useTransactions(filters: TransactionFilters): {
 **Web (TanStack Query):**
 
 ```typescript
-function useTransactions(filters: TransactionFilters): UseQueryResult<Transaction[]>;
+function useTransactions(
+  filters: TransactionFilters,
+): UseQueryResult<Transaction[]>;
 ```
 
 ---
