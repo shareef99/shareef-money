@@ -1,11 +1,17 @@
 import { z } from "zod";
 import { transactionTypes } from "../types.js";
 
+const tagsFields = {
+  locationId: z.number().int().positive().nullable().optional(),
+  contactIds: z.array(z.number().int().positive()).optional(),
+};
+
 const baseFields = {
   amount: z.number().int().positive(),
   note: z.string().max(200).optional(),
   description: z.string().max(1000).optional(),
   date: z.number().int().positive(),
+  ...tagsFields,
 };
 
 const incomeExpenseFields = {
@@ -53,6 +59,8 @@ export const transactionUpdateSchema = z
     categoryId: z.number().int().positive().nullable().optional(),
     accountId: z.number().int().positive().optional(),
     toAccountId: z.number().int().positive().nullable().optional(),
+    locationId: z.number().int().positive().nullable().optional(),
+    contactIds: z.array(z.number().int().positive()).optional(),
     note: z.string().max(200).nullable().optional(),
     description: z.string().max(1000).nullable().optional(),
     date: z.number().int().positive().optional(),
@@ -65,6 +73,8 @@ export const transactionFiltersSchema = z
     type: z.enum(transactionTypes).optional(),
     categoryIds: z.array(z.number().int().positive()).optional(),
     accountIds: z.array(z.number().int().positive()).optional(),
+    contactIds: z.array(z.number().int().positive()).optional(),
+    locationIds: z.array(z.number().int().positive()).optional(),
     dateFrom: z.number().int().positive().optional(),
     dateTo: z.number().int().positive().optional(),
     limit: z.number().int().positive().max(500).default(100),

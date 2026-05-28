@@ -3,11 +3,11 @@
 ## Phase 1: Foundation (no UI)
 
 - [x] `packages/db` — Drizzle schema for all tables (users, sessions, accounts, categories, contacts, locations, transactions, transaction_contacts, recurring_rules, settings, sync_log)
-- [ ] `packages/db` — Add contacts, locations, transaction_contacts tables + update transactions with location_id
+- [x] `packages/db` — Add contacts, locations, transaction_contacts tables + update transactions with location_id
 - [x] `packages/db` — Drizzle migrations setup
 - [x] `packages/shared` — Const arrays and derived types (transactionTypes, categoryTypes, frequencies, weekDays, themes, etc.)
 - [x] `packages/shared` — Zod validation schemas (transaction, account, category, auth, settings)
-- [ ] `packages/shared` — Zod validation schemas for contact and location (Tags)
+- [x] `packages/shared` — Zod validation schemas for contact and location (Tags)
 - [ ] `packages/shared` — Utility functions (formatCurrency, date-utils, aggregation) — deferred, user will add later
 - [x] `packages/shared` — Seed data definitions (default categories, default settings)
 - [ ] `apps/backend` — Auth endpoints (POST /auth/register, /auth/login, /auth/google, /auth/refresh, /auth/logout)

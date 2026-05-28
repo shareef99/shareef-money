@@ -7,6 +7,14 @@ import {
   swipeActions,
 } from "../types.js";
 
+const tagsRequiredPerTypeSchema = z
+  .object({
+    income: z.boolean(),
+    expense: z.boolean(),
+    transfer: z.boolean(),
+  })
+  .strict();
+
 export const settingsUpdateSchema = z
   .object({
     currency_symbol: z.string().min(1).max(5).optional(),
@@ -28,6 +36,10 @@ export const settingsUpdateSchema = z
     subcategory_enabled: z.boolean().optional(),
     swipe_action: z.enum(swipeActions).optional(),
     theme: z.enum(themes).optional(),
+    contacts_enabled: z.boolean().optional(),
+    contacts_required: tagsRequiredPerTypeSchema.optional(),
+    locations_enabled: z.boolean().optional(),
+    locations_required: tagsRequiredPerTypeSchema.optional(),
   })
   .strict();
 export type SettingsUpdateInput = z.infer<typeof settingsUpdateSchema>;

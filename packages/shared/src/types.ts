@@ -41,6 +41,12 @@ export type SwipeAction = (typeof swipeActions)[number];
 
 // ── Settings interface ───────────────────────────────────────
 
+export interface TagsRequiredPerType {
+  income: boolean;
+  expense: boolean;
+  transfer: boolean;
+}
+
 export interface AppSettings {
   currency_symbol: string;
   currency_code: string;
@@ -58,4 +64,8 @@ export interface AppSettings {
   subcategory_enabled: boolean;
   swipe_action: SwipeAction;
   theme: Theme;
+  contacts_enabled: boolean;
+  contacts_required: TagsRequiredPerType;
+  locations_enabled: boolean;
+  locations_required: TagsRequiredPerType;
 }

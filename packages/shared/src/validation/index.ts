@@ -39,6 +39,20 @@ export {
 } from "./category.js";
 
 export {
+  contactCreateSchema,
+  contactUpdateSchema,
+  type ContactCreateInput,
+  type ContactUpdateInput,
+} from "./contact.js";
+
+export {
+  locationCreateSchema,
+  locationUpdateSchema,
+  type LocationCreateInput,
+  type LocationUpdateInput,
+} from "./location.js";
+
+export {
   settingsUpdateSchema,
   type SettingsUpdateInput,
 } from "./settings.js";

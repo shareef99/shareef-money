@@ -1,8 +1,16 @@
 import { relations } from "drizzle-orm";
-import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import {
+  index,
+  integer,
+  primaryKey,
+  sqliteTable,
+  text,
+} from "drizzle-orm/sqlite-core";
 import { usersTable } from "./users.js";
 import { categoriesTable } from "./categories.js";
 import { accountsTable } from "./accounts.js";
+import { locationsTable } from "./locations.js";
+import { contactsTable } from "./contacts.js";
 import { recurringRulesTable } from "./recurring-rules.js";
 
 export const transactionsTable = sqliteTable(
@@ -20,6 +28,7 @@ export const transactionsTable = sqliteTable(
       .notNull()
       .references(() => accountsTable.id),
     toAccountId: integer("to_account_id").references(() => accountsTable.id),
+    locationId: integer("location_id").references(() => locationsTable.id),
     note: text("note"),
     description: text("description"),
     date: integer("date", { mode: "timestamp" }).notNull(),
@@ -60,6 +69,40 @@ export const transactionsRelations = relations(
       references: [accountsTable.id],
       relationName: "destinationAccount",
     }),
+    location: one(locationsTable, {
+      fields: [transactionsTable.locationId],
+      references: [locationsTable.id],
+    }),
+    transactionContacts: many(transactionContactsTable),
     recurringRules: many(recurringRulesTable),
+  }),
+);
+
+export const transactionContactsTable = sqliteTable(
+  "transaction_contacts",
+  {
+    transactionId: integer("transaction_id")
+      .notNull()
+      .references(() => transactionsTable.id, { onDelete: "cascade" }),
+    contactId: integer("contact_id")
+      .notNull()
+      .references(() => contactsTable.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    primaryKey({ columns: [table.transactionId, table.contactId] }),
+  ],
+);
+
+export const transactionContactsRelations = relations(
+  transactionContactsTable,
+  ({ one }) => ({
+    transaction: one(transactionsTable, {
+      fields: [transactionContactsTable.transactionId],
+      references: [transactionsTable.id],
+    }),
+    contact: one(contactsTable, {
+      fields: [transactionContactsTable.contactId],
+      references: [contactsTable.id],
+    }),
   }),
 );

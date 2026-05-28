@@ -42,6 +42,10 @@ export const defaultSettings: AppSettings = {
   subcategory_enabled: true,
   swipe_action: "change_date",
   theme: "system",
+  contacts_enabled: false,
+  contacts_required: { income: false, expense: false, transfer: false },
+  locations_enabled: false,
+  locations_required: { income: false, expense: false, transfer: false },
 };
 
 export const defaultAccountName = "Account";
