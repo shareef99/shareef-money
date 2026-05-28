@@ -8,7 +8,7 @@
 - [x] `packages/shared` — Const arrays and derived types (transactionTypes, categoryTypes, frequencies, weekDays, themes, etc.)
 - [x] `packages/shared` — Zod validation schemas (transaction, account, category, auth, settings)
 - [x] `packages/shared` — Zod validation schemas for contact and location (Tags)
-- [ ] `packages/shared` — Utility functions (formatCurrency, date-utils, aggregation) — deferred, user will add later
+- [x] `packages/shared` — Utility functions (formatCurrency, date-utils, aggregation) — deferred, user will add later
 - [x] `packages/shared` — Seed data definitions (default categories, default settings)
 - [ ] `apps/backend` — Auth endpoints (POST /auth/register, /auth/login, /auth/google, /auth/refresh, /auth/logout)
 - [ ] `apps/backend` — Auth middleware (JWT verification, user_id injection)
