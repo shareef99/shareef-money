@@ -1,6 +1,6 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import { accountCreateSchema, accountUpdateSchema } from "@shareef-money/shared/validation";
-import type { Account } from "@shareef-money/db/schema";
+
 import type { AppEnv } from "../../app.js";
 import { authMiddleware } from "../../middleware/auth.js";
 import { AppError } from "../../lib/error.js";
@@ -12,14 +12,6 @@ accountsRoute.use("*", authMiddleware);
 
 const errorResponse = z.object({ message: z.string() });
 
-function serializeAccount(account: Account) {
-  return {
-    ...account,
-    createdAt: account.createdAt instanceof Date ? account.createdAt.getTime() : account.createdAt,
-    updatedAt: account.updatedAt instanceof Date ? account.updatedAt.getTime() : account.updatedAt,
-  };
-}
-
 const listRoute = createRoute({
   method: "get",
   path: "/",
@@ -27,7 +19,10 @@ const listRoute = createRoute({
   summary: "List all accounts",
   security: [{ Bearer: [] }],
   responses: {
-    200: { description: "List of accounts", content: { "application/json": { schema: z.any() } } },
+    200: {
+      description: "List of accounts",
+      content: { "application/json": { schema: z.any() } },
+    },
   },
 });
 
@@ -35,7 +30,7 @@ accountsRoute.openapi(listRoute, (c) => {
   const db = c.get("db");
   const userId = c.get("userId");
   const accounts = accountsService.list(db, userId);
-  return c.json(accounts.map(serializeAccount), 200);
+  return c.json(accounts, 200);
 });
 
 const createAccountRoute = createRoute({
@@ -48,7 +43,10 @@ const createAccountRoute = createRoute({
     body: { content: { "application/json": { schema: accountCreateSchema } } },
   },
   responses: {
-    201: { description: "Account created", content: { "application/json": { schema: z.any() } } },
+    201: {
+      description: "Account created",
+      content: { "application/json": { schema: z.any() } },
+    },
   },
 });
 
@@ -57,7 +55,7 @@ accountsRoute.openapi(createAccountRoute, (c) => {
   const userId = c.get("userId");
   const body = c.req.valid("json");
   const account = accountsService.create(db, userId, body);
-  return c.json(serializeAccount(account), 201);
+  return c.json(account, 201);
 });
 
 const getAccountRoute = createRoute({
@@ -70,8 +68,14 @@ const getAccountRoute = createRoute({
     params: z.object({ id: z.string().transform(Number) }),
   },
   responses: {
-    200: { description: "Account details", content: { "application/json": { schema: z.any() } } },
-    404: { description: "Account not found", content: { "application/json": { schema: errorResponse } } },
+    200: {
+      description: "Account details",
+      content: { "application/json": { schema: z.any() } },
+    },
+    404: {
+      description: "Account not found",
+      content: { "application/json": { schema: errorResponse } },
+    },
   },
 });
 
@@ -82,7 +86,7 @@ accountsRoute.openapi(getAccountRoute, (c) => {
 
   try {
     const account = accountsService.getById(db, userId, id);
-    return c.json(serializeAccount(account), 200);
+    return c.json(account, 200);
   } catch (error) {
     if (error instanceof AppError) {
       return c.json({ message: error.message }, error.status as 404);
@@ -102,8 +106,14 @@ const updateAccountRoute = createRoute({
     body: { content: { "application/json": { schema: accountUpdateSchema } } },
   },
   responses: {
-    200: { description: "Account updated", content: { "application/json": { schema: z.any() } } },
-    404: { description: "Account not found", content: { "application/json": { schema: errorResponse } } },
+    200: {
+      description: "Account updated",
+      content: { "application/json": { schema: z.any() } },
+    },
+    404: {
+      description: "Account not found",
+      content: { "application/json": { schema: errorResponse } },
+    },
   },
 });
 
@@ -115,7 +125,7 @@ accountsRoute.openapi(updateAccountRoute, (c) => {
 
   try {
     const account = accountsService.update(db, userId, id, body);
-    return c.json(serializeAccount(account), 200);
+    return c.json(account, 200);
   } catch (error) {
     if (error instanceof AppError) {
       return c.json({ message: error.message }, error.status as 404);
@@ -134,8 +144,14 @@ const deleteAccountRoute = createRoute({
     params: z.object({ id: z.string().transform(Number) }),
   },
   responses: {
-    200: { description: "Account archived", content: { "application/json": { schema: z.object({ message: z.string() }) } } },
-    404: { description: "Account not found", content: { "application/json": { schema: errorResponse } } },
+    200: {
+      description: "Account archived",
+      content: { "application/json": { schema: z.object({ message: z.string() }) } },
+    },
+    404: {
+      description: "Account not found",
+      content: { "application/json": { schema: errorResponse } },
+    },
   },
 });
 

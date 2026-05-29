@@ -34,7 +34,9 @@ const listRoute = createRoute({
   responses: {
     200: {
       description: "List of transactions",
-      content: { "application/json": { schema: z.any() } },
+      content: {
+        "application/json": { schema: z.any() },
+      },
     },
   },
 });

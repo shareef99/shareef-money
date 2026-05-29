@@ -1,20 +1,24 @@
 import { eq, and } from "drizzle-orm";
-import { categoriesTable, type Category } from "@shareef-money/db/schema";
+import { categoriesTable } from "@shareef-money/db/schema";
 import type { CategoryCreateInput, CategoryUpdateInput } from "@shareef-money/shared/validation";
 import { AppError } from "../../lib/error.js";
 import type { AppDatabase } from "../../db.js";
 
-export function list(db: AppDatabase, userId: string): Category[] {
-  return db.query.categoriesTable.findMany({
-    where: and(eq(categoriesTable.userId, userId), eq(categoriesTable.isArchived, false)),
-    orderBy: categoriesTable.sortOrder,
-  }) as unknown as Category[];
+export function list(db: AppDatabase, userId: string) {
+  return db
+    .select()
+    .from(categoriesTable)
+    .where(and(eq(categoriesTable.userId, userId), eq(categoriesTable.isArchived, false)))
+    .orderBy(categoriesTable.sortOrder)
+    .all();
 }
 
-export function getById(db: AppDatabase, userId: string, id: number): Category {
-  const category = db.query.categoriesTable.findFirst({
-    where: and(eq(categoriesTable.id, id), eq(categoriesTable.userId, userId)),
-  }) as unknown as Category | undefined;
+export function getById(db: AppDatabase, userId: string, id: number) {
+  const category = db
+    .select()
+    .from(categoriesTable)
+    .where(and(eq(categoriesTable.id, id), eq(categoriesTable.userId, userId)))
+    .get();
 
   if (!category) {
     throw new AppError("Category not found", 404);

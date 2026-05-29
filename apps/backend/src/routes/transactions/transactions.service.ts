@@ -1,5 +1,10 @@
 import { eq, and, gte, lte, inArray, desc } from "drizzle-orm";
-import { transactionsTable, transactionContactsTable } from "@shareef-money/db/schema";
+import {
+  transactionsTable,
+  transactionContactsTable,
+  categoriesTable,
+  accountsTable,
+} from "@shareef-money/db/schema";
 import type {
   TransactionCreateInput,
   TransactionUpdateInput,
@@ -27,33 +32,79 @@ export function list(db: AppDatabase, userId: string, filters: TransactionFilter
     conditions.push(inArray(transactionsTable.categoryId, filters.categoryIds));
   }
 
-  return db.query.transactionsTable.findMany({
-    where: and(...conditions),
-    orderBy: desc(transactionsTable.date),
-    limit: filters.limit,
-    offset: filters.offset,
-    with: {
-      category: true,
-      account: true,
-    },
-  }) as unknown as any[];
+  return db
+    .select({
+      id: transactionsTable.id,
+      userId: transactionsTable.userId,
+      type: transactionsTable.type,
+      amount: transactionsTable.amount,
+      fee: transactionsTable.fee,
+      categoryId: transactionsTable.categoryId,
+      accountId: transactionsTable.accountId,
+      toAccountId: transactionsTable.toAccountId,
+      locationId: transactionsTable.locationId,
+      note: transactionsTable.note,
+      description: transactionsTable.description,
+      date: transactionsTable.date,
+      createdAt: transactionsTable.createdAt,
+      updatedAt: transactionsTable.updatedAt,
+      categoryName: categoriesTable.name,
+      categoryIcon: categoriesTable.icon,
+      categoryColor: categoriesTable.color,
+      accountName: accountsTable.name,
+    })
+    .from(transactionsTable)
+    .leftJoin(categoriesTable, eq(transactionsTable.categoryId, categoriesTable.id))
+    .leftJoin(accountsTable, eq(transactionsTable.accountId, accountsTable.id))
+    .where(and(...conditions))
+    .orderBy(desc(transactionsTable.date))
+    .limit(filters.limit)
+    .offset(filters.offset)
+    .all();
 }
 
 export function getById(db: AppDatabase, userId: string, id: number) {
-  const transaction = db.query.transactionsTable.findFirst({
-    where: and(eq(transactionsTable.id, id), eq(transactionsTable.userId, userId)),
-    with: {
-      category: true,
-      account: true,
-      transactionContacts: true,
-    },
-  }) as unknown as Record<string, unknown> | undefined;
+  const transaction = db
+    .select({
+      id: transactionsTable.id,
+      userId: transactionsTable.userId,
+      type: transactionsTable.type,
+      amount: transactionsTable.amount,
+      fee: transactionsTable.fee,
+      categoryId: transactionsTable.categoryId,
+      accountId: transactionsTable.accountId,
+      toAccountId: transactionsTable.toAccountId,
+      locationId: transactionsTable.locationId,
+      note: transactionsTable.note,
+      description: transactionsTable.description,
+      date: transactionsTable.date,
+      createdAt: transactionsTable.createdAt,
+      updatedAt: transactionsTable.updatedAt,
+      categoryName: categoriesTable.name,
+      categoryIcon: categoriesTable.icon,
+      categoryColor: categoriesTable.color,
+      accountName: accountsTable.name,
+    })
+    .from(transactionsTable)
+    .leftJoin(categoriesTable, eq(transactionsTable.categoryId, categoriesTable.id))
+    .leftJoin(accountsTable, eq(transactionsTable.accountId, accountsTable.id))
+    .where(and(eq(transactionsTable.id, id), eq(transactionsTable.userId, userId)))
+    .get();
 
   if (!transaction) {
     throw new AppError("Transaction not found", 404);
   }
 
-  return transaction;
+  const contacts = db
+    .select({ contactId: transactionContactsTable.contactId })
+    .from(transactionContactsTable)
+    .where(eq(transactionContactsTable.transactionId, id))
+    .all();
+
+  return {
+    ...transaction,
+    contactIds: contacts.map((c) => c.contactId),
+  };
 }
 
 export function create(db: AppDatabase, userId: string, payload: TransactionCreateInput) {
@@ -89,9 +140,11 @@ export function create(db: AppDatabase, userId: string, payload: TransactionCrea
 }
 
 export function update(db: AppDatabase, userId: string, id: number, payload: TransactionUpdateInput) {
-  const existing = db.query.transactionsTable.findFirst({
-    where: and(eq(transactionsTable.id, id), eq(transactionsTable.userId, userId)),
-  }) as any;
+  const existing = db
+    .select({ id: transactionsTable.id })
+    .from(transactionsTable)
+    .where(and(eq(transactionsTable.id, id), eq(transactionsTable.userId, userId)))
+    .get();
 
   if (!existing) {
     throw new AppError("Transaction not found", 404);
@@ -134,9 +187,11 @@ export function update(db: AppDatabase, userId: string, id: number, payload: Tra
 }
 
 export function archive(db: AppDatabase, userId: string, id: number) {
-  const existing = db.query.transactionsTable.findFirst({
-    where: and(eq(transactionsTable.id, id), eq(transactionsTable.userId, userId)),
-  }) as any;
+  const existing = db
+    .select({ id: transactionsTable.id })
+    .from(transactionsTable)
+    .where(and(eq(transactionsTable.id, id), eq(transactionsTable.userId, userId)))
+    .get();
 
   if (!existing) {
     throw new AppError("Transaction not found", 404);
