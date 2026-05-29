@@ -39,6 +39,34 @@ app.doc("/openapi.json", {
   },
 });
 
-app.get("/docs", swaggerUI({ url: "/openapi.json" }));
+app.get(
+  "/docs",
+  swaggerUI({
+    url: "/openapi.json",
+    manuallySwaggerUIHtml: (asset) => `
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Shareef Money API</title>
+        ${asset.css.map((url) => `<link rel="stylesheet" href="${url}" />`).join("")}
+        <style>
+          body { background: #1a1a2e; }
+          .swagger-ui { filter: invert(88%) hue-rotate(180deg); }
+          .swagger-ui .microlight { filter: invert(100%) hue-rotate(180deg); }
+          .swagger-ui svg.arrow { filter: invert(100%) hue-rotate(180deg); }
+          .swagger-ui img { filter: invert(100%) hue-rotate(180deg); }
+        </style>
+      </head>
+      <body>
+        <div id="swagger-ui"></div>
+        ${asset.js.map((url) => `<script src="${url}" crossorigin="anonymous"></script>`).join("")}
+        <script>
+          SwaggerUIBundle({ url: "/openapi.json", dom_id: "#swagger-ui" });
+        </script>
+      </body>
+    </html>`,
+  }),
+);
 
 export { app };
