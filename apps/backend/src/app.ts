@@ -5,8 +5,12 @@ import { dbMiddleware, type DbVariables } from "./middleware/db.js";
 import type { AuthVariables } from "./middleware/auth.js";
 import { healthRoute } from "./routes/health/health.route.js";
 import { authRoute } from "./routes/auth/auth.route.js";
+import { accountsRoute } from "./routes/accounts/accounts.route.js";
+import { categoriesRoute } from "./routes/categories/categories.route.js";
+import { transactionsRoute } from "./routes/transactions/transactions.route.js";
+import { syncRoute } from "./routes/sync/sync.route.js";
 
-type AppEnv = { Variables: DbVariables & AuthVariables };
+export type AppEnv = { Variables: DbVariables & AuthVariables };
 
 const app = new OpenAPIHono<AppEnv>();
 
@@ -15,6 +19,10 @@ app.use("*", dbMiddleware);
 
 app.route("/", healthRoute);
 app.route("/auth", authRoute);
+app.route("/api/accounts", accountsRoute);
+app.route("/api/categories", categoriesRoute);
+app.route("/api/transactions", transactionsRoute);
+app.route("/sync", syncRoute);
 
 app.openAPIRegistry.registerComponent("securitySchemes", "Bearer", {
   type: "http",

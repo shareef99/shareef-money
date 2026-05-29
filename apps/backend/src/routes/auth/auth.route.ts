@@ -5,15 +5,12 @@ import {
   googleAuthSchema,
   refreshTokenSchema,
 } from "@shareef-money/shared/validation";
-import type { DbVariables } from "../../middleware/db.js";
-import type { AuthVariables } from "../../middleware/auth.js";
+import type { AppEnv } from "../../app.js";
 import { authMiddleware } from "../../middleware/auth.js";
 import { AppError } from "../../lib/error.js";
 import * as authService from "./auth.service.js";
 
-type AuthEnv = { Variables: DbVariables & AuthVariables };
-
-export const authRoute = new OpenAPIHono<AuthEnv>();
+export const authRoute = new OpenAPIHono<AppEnv>();
 
 const authTokensResponse = z.object({
   accessToken: z.string(),
