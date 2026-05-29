@@ -22,18 +22,27 @@ export function parseError(
 
   if (typeof error === "string") return error;
 
-  if (error instanceof Error) return error.message;
+  if (typeof error === "object" && error !== null) {
+    const obj = error as Record<string, unknown>;
 
-  if (typeof error === "object") {
-    const data = error as Record<string, unknown>;
+    if ("response" in obj && typeof obj.response === "object" && obj.response !== null) {
+      const response = obj.response as Record<string, unknown>;
+      if (typeof response.data === "object" && response.data !== null) {
+        const extracted = extractFromResponseData(response.data as Record<string, unknown>);
+        if (extracted) return extracted;
+      }
+      if (typeof response.data === "string") return response.data;
+    }
 
-    const extracted = extractFromResponseData(data);
+    const extracted = extractFromResponseData(obj);
     if (extracted) return extracted;
 
-    if ("message" in data && typeof data.message === "string") {
-      return data.message;
+    if ("message" in obj && typeof obj.message === "string") {
+      return obj.message;
     }
   }
+
+  if (error instanceof Error) return error.message;
 
   return defaultError;
 }

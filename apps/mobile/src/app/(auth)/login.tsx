@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useForm } from "@tanstack/react-form";
-import { zodValidator } from "@tanstack/zod-form-adapter";
 import { loginSchema } from "@shareef-money/shared/validation";
 import { useAuth } from "../../providers/auth-provider";
 import { parseError } from "@shareef-money/shared/utils";
@@ -13,7 +12,6 @@ export default function LoginScreen() {
 
   const form = useForm({
     defaultValues: { email: "", password: "" },
-    validatorAdapter: zodValidator(),
     validators: { onChange: loginSchema },
     onSubmit: async ({ value }) => {
       setSubmitError("");
@@ -50,7 +48,8 @@ export default function LoginScreen() {
                   autoCapitalize="none"
                   autoCorrect={false}
                 />
-                {field.state.meta.isTouched && field.state.meta.errors.length > 0 ? (
+                {field.state.meta.isTouched &&
+                field.state.meta.errors.length > 0 ? (
                   <Text className="text-error text-xs mt-1">
                     {field.state.meta.errors[0]?.message}
                   </Text>
@@ -74,7 +73,8 @@ export default function LoginScreen() {
                   onBlur={field.handleBlur}
                   secureTextEntry
                 />
-                {field.state.meta.isTouched && field.state.meta.errors.length > 0 ? (
+                {field.state.meta.isTouched &&
+                field.state.meta.errors.length > 0 ? (
                   <Text className="text-error text-xs mt-1">
                     {field.state.meta.errors[0]?.message}
                   </Text>
@@ -84,7 +84,9 @@ export default function LoginScreen() {
           </form.Field>
         </View>
 
-        <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
+        <form.Subscribe
+          selector={(state) => [state.canSubmit, state.isSubmitting]}
+        >
           {([canSubmit, isSubmitting]) => (
             <Pressable
               className="h-12 bg-primary items-center justify-center rounded-lg active:opacity-80"
