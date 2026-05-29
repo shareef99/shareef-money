@@ -10,7 +10,8 @@
     "./types": "./src/types.ts",
     "./validation": "./src/validation/index.ts",
     "./seed": "./src/seed.ts",
-    "./utils": "./src/utils/index.ts"
+    "./utils": "./src/utils/index.ts",
+    "./constants": "./src/constants.ts"
   },
   "dependencies": {
     "dayjs": "^1.11.0",

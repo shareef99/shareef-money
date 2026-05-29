@@ -27,8 +27,8 @@ export {
 export {
   accountCreateSchema,
   accountUpdateSchema,
-  type AccountCreateInput,
-  type AccountUpdateInput,
+  type AccountCreatePayload,
+  type AccountUpdatePayload,
 } from "./account";
 
 export {
@@ -52,7 +52,13 @@ export {
   type LocationUpdateInput,
 } from "./location";
 
+export { settingsUpdateSchema, type SettingsUpdateInput } from "./settings";
+
 export {
-  settingsUpdateSchema,
-  type SettingsUpdateInput,
-} from "./settings";
+  syncPushSchema,
+  syncPullSchema,
+  syncAckSchema,
+  type SyncPushInput,
+  type SyncPullInput,
+  type SyncAckInput,
+} from "./sync";

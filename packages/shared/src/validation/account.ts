@@ -12,7 +12,7 @@ export const accountCreateSchema = z
       .optional(),
   })
   .strict();
-export type AccountCreateInput = z.infer<typeof accountCreateSchema>;
+export type AccountCreatePayload = z.infer<typeof accountCreateSchema>;
 
 export const accountUpdateSchema = z
   .object({
@@ -30,4 +30,4 @@ export const accountUpdateSchema = z
     isArchived: z.boolean().optional(),
   })
   .strict();
-export type AccountUpdateInput = z.infer<typeof accountUpdateSchema>;
+export type AccountUpdatePayload = z.infer<typeof accountUpdateSchema>;

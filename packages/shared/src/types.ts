@@ -39,6 +39,16 @@ export type InputOrder = (typeof inputOrders)[number];
 export const swipeActions = ["change_date", "change_tab"] as const;
 export type SwipeAction = (typeof swipeActions)[number];
 
+export const viewTabs = ["daily", "calendar", "monthly", "total"] as const;
+export type ViewTab = (typeof viewTabs)[number];
+
+export const viewTabLabels: Array<{ key: ViewTab; label: string }> = [
+  { key: "daily", label: "Daily" },
+  { key: "calendar", label: "Calendar" },
+  { key: "monthly", label: "Monthly" },
+  { key: "total", label: "Total" },
+];
+
 // ── Settings interface ───────────────────────────────────────
 
 export interface TagsRequiredPerType {
