@@ -5,7 +5,7 @@ import {
   startScreens,
   inputOrders,
   swipeActions,
-} from "../types.js";
+} from "../types";
 
 const tagsRequiredPerTypeSchema = z
   .object({

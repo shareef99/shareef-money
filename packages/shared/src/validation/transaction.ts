@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { transactionTypes } from "../types.js";
+import { transactionTypes } from "../types";
 
 const tagsFields = {
   locationId: z.number().int().positive().nullable().optional(),

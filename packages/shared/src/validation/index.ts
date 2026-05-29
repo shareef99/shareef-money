@@ -13,7 +13,7 @@ export {
   type UpdateProfileInput,
   type AuthTokens,
   type UserProfile,
-} from "./auth.js";
+} from "./auth";
 
 export {
   transactionCreateSchema,
@@ -22,37 +22,37 @@ export {
   type TransactionCreateInput,
   type TransactionUpdateInput,
   type TransactionFilters,
-} from "./transaction.js";
+} from "./transaction";
 
 export {
   accountCreateSchema,
   accountUpdateSchema,
   type AccountCreateInput,
   type AccountUpdateInput,
-} from "./account.js";
+} from "./account";
 
 export {
   categoryCreateSchema,
   categoryUpdateSchema,
   type CategoryCreateInput,
   type CategoryUpdateInput,
-} from "./category.js";
+} from "./category";
 
 export {
   contactCreateSchema,
   contactUpdateSchema,
   type ContactCreateInput,
   type ContactUpdateInput,
-} from "./contact.js";
+} from "./contact";
 
 export {
   locationCreateSchema,
   locationUpdateSchema,
   type LocationCreateInput,
   type LocationUpdateInput,
-} from "./location.js";
+} from "./location";
 
 export {
   settingsUpdateSchema,
   type SettingsUpdateInput,
-} from "./settings.js";
+} from "./settings";

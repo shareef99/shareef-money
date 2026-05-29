@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { authProviders, deviceTypes } from "../types.js";
+import { authProviders, deviceTypes } from "../types";
 
 export const registerSchema = z
   .object({

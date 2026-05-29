@@ -1,4 +1,4 @@
-import type { CategoryType, AppSettings } from "./types.js";
+import type { CategoryType, AppSettings } from "./types";
 
 export interface SeedCategory {
   name: string;

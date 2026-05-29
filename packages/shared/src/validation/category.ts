@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { categoryTypes } from "../types.js";
+import { categoryTypes } from "../types";
 
 export const categoryCreateSchema = z
   .object({

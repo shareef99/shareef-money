@@ -1,9 +1,9 @@
-export { capitalize, formatNumber } from "./format.js";
-export { dateFormat, formatDate } from "./dates.js";
-export { parseError, parseResponseError } from "./error.js";
+export { capitalize, formatNumber } from "./format";
+export { dateFormat, formatDate } from "./dates";
+export { parseError, parseResponseError } from "./error";
 export {
   toSmallestUnit,
   fromSmallestUnit,
   formatCurrency,
   formatAmount,
-} from "./currency.js";
+} from "./currency";
