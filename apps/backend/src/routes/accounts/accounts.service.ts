@@ -1,20 +1,24 @@
 import { eq, and } from "drizzle-orm";
-import { accountsTable, type Account } from "@shareef-money/db/schema";
+import { accountsTable } from "@shareef-money/db/schema";
 import type { AccountCreatePayload, AccountUpdatePayload } from "@shareef-money/shared/validation";
 import { AppError } from "../../lib/error.js";
 import type { AppDatabase } from "../../db.js";
 
-export function list(db: AppDatabase, userId: string): Account[] {
-  return db.query.accountsTable.findMany({
-    where: and(eq(accountsTable.userId, userId), eq(accountsTable.isArchived, false)),
-    orderBy: accountsTable.sortOrder,
-  }) as unknown as Account[];
+export function list(db: AppDatabase, userId: string) {
+  return db
+    .select()
+    .from(accountsTable)
+    .where(and(eq(accountsTable.userId, userId), eq(accountsTable.isArchived, false)))
+    .orderBy(accountsTable.sortOrder)
+    .all();
 }
 
-export function getById(db: AppDatabase, userId: string, id: number): Account {
-  const account = db.query.accountsTable.findFirst({
-    where: and(eq(accountsTable.id, id), eq(accountsTable.userId, userId)),
-  }) as unknown as Account | undefined;
+export function getById(db: AppDatabase, userId: string, id: number) {
+  const account = db
+    .select()
+    .from(accountsTable)
+    .where(and(eq(accountsTable.id, id), eq(accountsTable.userId, userId)))
+    .get();
 
   if (!account) {
     throw new AppError("Account not found", 404);
