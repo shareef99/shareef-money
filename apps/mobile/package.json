@@ -5,6 +5,9 @@
   "dependencies": {
     "@shareef-money/db": "workspace:*",
     "@shareef-money/shared": "workspace:*",
+    "@tanstack/react-form": "^1.33.0",
+    "@tanstack/zod-form-adapter": "^0.42.1",
+    "axios": "^1.16.1",
     "drizzle-orm": "^0.44.7",
     "expo": "~56.0.5",
     "expo-auth-session": "~56.0.12",

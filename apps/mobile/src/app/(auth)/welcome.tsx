@@ -1,9 +1,11 @@
 import { Pressable, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useGoogleAuth } from "../../hooks/use-google-auth";
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  const { promptGoogleLogin, isReady } = useGoogleAuth();
 
   return (
     <SafeAreaView style={{ flex: 1 }} className="bg-background">
@@ -31,6 +33,23 @@ export default function WelcomeScreen() {
           >
             <Text className="text-text font-semibold text-base">
               Create Account
+            </Text>
+          </Pressable>
+
+          <View className="flex-row items-center gap-3 my-2">
+            <View className="flex-1 h-px bg-border" />
+            <Text className="text-text-muted text-xs">OR</Text>
+            <View className="flex-1 h-px bg-border" />
+          </View>
+
+          <Pressable
+            className="h-12 bg-card border border-border flex-row items-center justify-center rounded-lg gap-2 active:opacity-80"
+            onPress={() => promptGoogleLogin()}
+            disabled={!isReady}
+          >
+            <Text className="text-lg">G</Text>
+            <Text className="text-text font-semibold text-base">
+              Continue with Google
             </Text>
           </Pressable>
         </View>

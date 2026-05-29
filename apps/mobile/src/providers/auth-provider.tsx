@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import { useRouter, useSegments } from "expo-router";
-import { apiRequest } from "../lib/api";
+import { api } from "../lib/api";
 import {
   getAccessToken,
   getRefreshToken,
@@ -34,8 +34,8 @@ type AuthContextValue = {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
+  googleLogin: (idToken: string) => Promise<void>;
   logout: () => Promise<void>;
-  accessToken: string | null;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -50,24 +50,19 @@ export function useAuth(): AuthContextValue {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const segments = useSegments();
   const router = useRouter();
 
-  const fetchUser = useCallback(async (token: string) => {
+  const fetchUser = useCallback(async () => {
     try {
-      const profile = await apiRequest<User & { createdAt: number }>(
-        "/auth/me",
-        {},
-        token,
-      );
+      const { data } = await api.get<User & { createdAt: number }>("/auth/me");
       setUser({
-        id: profile.id,
-        email: profile.email,
-        name: profile.name,
-        avatarUrl: profile.avatarUrl,
-        authProvider: profile.authProvider,
+        id: data.id,
+        email: data.email,
+        name: data.name,
+        avatarUrl: data.avatarUrl,
+        authProvider: data.authProvider,
       });
       return true;
     } catch {
@@ -75,44 +70,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const refreshAccessToken = useCallback(async (): Promise<string | null> => {
-    const refreshToken = await getRefreshToken();
-    if (!refreshToken) return null;
-
-    try {
-      const tokens = await apiRequest<AuthTokens>("/auth/refresh", {
-        method: "POST",
-        body: { refreshToken },
-      });
+  const handleAuthSuccess = useCallback(
+    async (tokens: AuthTokens) => {
       await setTokens(tokens.accessToken, tokens.refreshToken);
-      setAccessToken(tokens.accessToken);
-      return tokens.accessToken;
-    } catch {
-      await clearTokens();
-      setAccessToken(null);
-      setUser(null);
-      return null;
-    }
-  }, []);
+      await fetchUser();
+    },
+    [fetchUser],
+  );
 
   useEffect(() => {
     const bootstrap = async () => {
       const storedToken = await getAccessToken();
       if (storedToken) {
-        const success = await fetchUser(storedToken);
-        if (success) {
-          setAccessToken(storedToken);
-        } else {
-          const newToken = await refreshAccessToken();
-          if (newToken) {
-            await fetchUser(newToken);
+        const success = await fetchUser();
+        if (!success) {
+          const refreshToken = await getRefreshToken();
+          if (refreshToken) {
+            try {
+              const { data } = await api.post<AuthTokens>("/auth/refresh", {
+                refreshToken,
+              });
+              await setTokens(data.accessToken, data.refreshToken);
+              await fetchUser();
+            } catch {
+              await clearTokens();
+            }
           }
         }
       }
       setIsLoading(false);
     };
     bootstrap();
-  }, [fetchUser, refreshAccessToken]);
+  }, [fetchUser]);
 
   useEffect(() => {
     if (isLoading) return;
@@ -129,50 +118,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(
     async (email: string, password: string) => {
-      setIsLoading(true);
-      try {
-        const tokens = await apiRequest<AuthTokens>("/auth/login", {
-          method: "POST",
-          body: { email, password },
-        });
-        await setTokens(tokens.accessToken, tokens.refreshToken);
-        setAccessToken(tokens.accessToken);
-        await fetchUser(tokens.accessToken);
-      } finally {
-        setIsLoading(false);
-      }
+      const { data } = await api.post<AuthTokens>("/auth/login", {
+        email,
+        password,
+      });
+      await handleAuthSuccess(data);
     },
-    [fetchUser],
+    [handleAuthSuccess],
   );
 
   const register = useCallback(
     async (name: string, email: string, password: string) => {
-      setIsLoading(true);
-      try {
-        const tokens = await apiRequest<AuthTokens>("/auth/register", {
-          method: "POST",
-          body: { email, password, name },
-        });
-        await setTokens(tokens.accessToken, tokens.refreshToken);
-        setAccessToken(tokens.accessToken);
-        await fetchUser(tokens.accessToken);
-      } finally {
-        setIsLoading(false);
-      }
+      const { data } = await api.post<AuthTokens>("/auth/register", {
+        email,
+        password,
+        name,
+      });
+      await handleAuthSuccess(data);
     },
-    [fetchUser],
+    [handleAuthSuccess],
+  );
+
+  const googleLogin = useCallback(
+    async (idToken: string) => {
+      const { data } = await api.post<AuthTokens>("/auth/google", {
+        idToken,
+        deviceType: "mobile",
+      });
+      await handleAuthSuccess(data);
+    },
+    [handleAuthSuccess],
   );
 
   const logout = useCallback(async () => {
     const refreshToken = await getRefreshToken();
     if (refreshToken) {
-      apiRequest("/auth/logout", {
-        method: "POST",
-        body: { refreshToken },
-      }).catch(() => {});
+      api.post("/auth/logout", { refreshToken }).catch(() => {});
     }
     await clearTokens();
-    setAccessToken(null);
     setUser(null);
   }, []);
 
@@ -184,8 +167,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: !!user,
         login,
         register,
+        googleLogin,
         logout,
-        accessToken,
       }}
     >
       {children}
