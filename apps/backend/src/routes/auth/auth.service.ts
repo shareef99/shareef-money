@@ -1,5 +1,17 @@
 import { eq } from "drizzle-orm";
-import { usersTable, sessionsTable } from "@shareef-money/db/schema";
+import {
+  usersTable,
+  sessionsTable,
+  accountsTable,
+  categoriesTable,
+  settingsTable,
+} from "@shareef-money/db/schema";
+import {
+  defaultExpenseCategories,
+  defaultIncomeCategories,
+  defaultSettings,
+  defaultAccountName,
+} from "@shareef-money/shared/seed";
 import { hashPassword, verifyPassword } from "../../lib/password.js";
 import { signAccessToken, signRefreshToken, verifyToken } from "../../lib/jwt.js";
 import { verifyGoogleIdToken } from "../../lib/google-auth.js";
@@ -67,6 +79,35 @@ async function hashRefreshToken(token: string): Promise<string> {
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+function seedUserDefaults(db: AppDatabase, userId: string): void {
+  const allCategories = [...defaultExpenseCategories, ...defaultIncomeCategories];
+  for (const cat of allCategories) {
+    db.insert(categoriesTable)
+      .values({
+        userId,
+        name: cat.name,
+        type: cat.type,
+        icon: cat.icon,
+        color: cat.color,
+        isDefault: true,
+      })
+      .run();
+  }
+
+  db.insert(accountsTable)
+    .values({ userId, name: defaultAccountName })
+    .run();
+
+  const entries = Object.entries(defaultSettings).map(([key, val]) => ({
+    userId,
+    key,
+    value: typeof val === "string" ? val : JSON.stringify(val),
+  }));
+  for (const entry of entries) {
+    db.insert(settingsTable).values(entry).run();
+  }
+}
+
 export async function register(
   db: AppDatabase,
   payload: RegisterPayload,
@@ -93,6 +134,8 @@ export async function register(
       authProvider: "email",
     })
     .run();
+
+  seedUserDefaults(db, userId);
 
   return createSession(db, userId, undefined, "web");
 }
@@ -171,6 +214,8 @@ export async function googleAuth(
       googleId: googleUser.sub,
     })
     .run();
+
+  seedUserDefaults(db, userId);
 
   return createSession(db, userId, payload.deviceName, payload.deviceType);
 }
