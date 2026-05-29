@@ -3,23 +3,41 @@ import {
   registerSchema,
   loginSchema,
   googleAuthSchema,
-  refreshTokenSchema,
 } from "@shareef-money/shared/validation";
+import { getCookie } from "hono/cookie";
 import type { AppEnv } from "../../app.js";
 import { authMiddleware } from "../../middleware/auth.js";
 import { AppError } from "../../lib/error.js";
+import { setAuthCookies, clearAuthCookies } from "../../lib/cookies.js";
 import * as authService from "./auth.service.js";
+import type { Context } from "hono";
 
 export const authRoute = new OpenAPIHono<AppEnv>();
 
 const authTokensResponse = z.object({
-  accessToken: z.string(),
-  refreshToken: z.string(),
+  accessToken: z.string().optional(),
+  refreshToken: z.string().optional(),
+  message: z.string().optional(),
 });
 
 const errorResponse = z.object({
   message: z.string(),
 });
+
+function isWebClient(c: Context) {
+  return !!c.req.header("Origin");
+}
+
+function applyTokens(
+  c: Context,
+  tokens: { accessToken: string; refreshToken: string },
+) {
+  if (isWebClient(c)) {
+    setAuthCookies(c, tokens.accessToken, tokens.refreshToken);
+    return { message: "ok" };
+  }
+  return tokens;
+}
 
 const registerRoute = createRoute({
   method: "post",
@@ -49,7 +67,7 @@ authRoute.openapi(registerRoute, async (c) => {
 
   try {
     const tokens = await authService.register(db, body);
-    return c.json(tokens, 201);
+    return c.json(applyTokens(c, tokens), 201);
   } catch (error) {
     if (error instanceof AppError) {
       return c.json({ message: error.message }, error.status as 409);
@@ -86,7 +104,7 @@ authRoute.openapi(loginRoute, async (c) => {
 
   try {
     const tokens = await authService.login(db, body);
-    return c.json(tokens, 200);
+    return c.json(applyTokens(c, tokens), 200);
   } catch (error) {
     if (error instanceof AppError) {
       return c.json({ message: error.message }, error.status as 401);
@@ -123,7 +141,7 @@ authRoute.openapi(googleRoute, async (c) => {
 
   try {
     const tokens = await authService.googleAuth(db, body);
-    return c.json(tokens, 200);
+    return c.json(applyTokens(c, tokens), 200);
   } catch (error) {
     if (error instanceof AppError) {
       return c.json({ message: error.message }, error.status as 401);
@@ -139,7 +157,11 @@ const refreshRoute = createRoute({
   summary: "Refresh access token",
   request: {
     body: {
-      content: { "application/json": { schema: refreshTokenSchema } },
+      content: {
+        "application/json": {
+          schema: z.object({ refreshToken: z.string().optional() }).optional(),
+        },
+      },
     },
   },
   responses: {
@@ -157,12 +179,18 @@ const refreshRoute = createRoute({
 authRoute.openapi(refreshRoute, async (c) => {
   const db = c.get("db");
   const body = c.req.valid("json");
+  const refreshToken = body?.refreshToken ?? getCookie(c, "refresh_token");
+
+  if (!refreshToken) {
+    return c.json({ message: "Missing refresh token" }, 401);
+  }
 
   try {
-    const tokens = await authService.refresh(db, body);
-    return c.json(tokens, 200);
+    const tokens = await authService.refresh(db, { refreshToken });
+    return c.json(applyTokens(c, tokens), 200);
   } catch (error) {
     if (error instanceof AppError) {
+      clearAuthCookies(c);
       return c.json({ message: error.message }, error.status as 401);
     }
     throw error;
@@ -176,7 +204,11 @@ const logoutRoute = createRoute({
   summary: "Logout and invalidate session",
   request: {
     body: {
-      content: { "application/json": { schema: refreshTokenSchema } },
+      content: {
+        "application/json": {
+          schema: z.object({ refreshToken: z.string().optional() }).optional(),
+        },
+      },
     },
   },
   responses: {
@@ -192,8 +224,13 @@ const logoutRoute = createRoute({
 authRoute.openapi(logoutRoute, async (c) => {
   const db = c.get("db");
   const body = c.req.valid("json");
+  const refreshToken = body?.refreshToken ?? getCookie(c, "refresh_token");
 
-  await authService.logout(db, body.refreshToken);
+  if (refreshToken) {
+    await authService.logout(db, refreshToken);
+  }
+
+  clearAuthCookies(c);
   return c.json({ message: "Logged out" }, 200);
 });
 

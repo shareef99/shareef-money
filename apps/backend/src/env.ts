@@ -8,6 +8,7 @@ const envSchema = z.object({
   JWT_ACCESS_EXPIRY: z.string().default("15m"),
   JWT_REFRESH_EXPIRY: z.string().default("30d"),
   GOOGLE_CLIENT_ID: z.string().optional(),
+  WEB_URL: z.string().default("http://localhost:3100"),
 });
 
 type Env = z.infer<typeof envSchema>;
