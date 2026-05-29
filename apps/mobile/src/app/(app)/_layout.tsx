@@ -1,7 +1,8 @@
-import { Slot } from "expo-router";
+import { Stack } from "expo-router";
 import { ActivityIndicator, View } from "react-native";
 import { useAuth } from "../../providers/auth-provider";
 import { DatabaseProvider } from "../../providers/database-provider";
+import { SyncProvider } from "../../providers/sync-provider";
 
 export default function AppLayout() {
   const { isLoading } = useAuth();
@@ -16,7 +17,15 @@ export default function AppLayout() {
 
   return (
     <DatabaseProvider>
-      <Slot />
+      <SyncProvider>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen
+            name="(modals)/add-transaction"
+            options={{ presentation: "modal" }}
+          />
+        </Stack>
+      </SyncProvider>
     </DatabaseProvider>
   );
 }

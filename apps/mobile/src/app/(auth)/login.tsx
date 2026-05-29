@@ -1,14 +1,16 @@
 import { useState } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import { Pressable, Text, TextInput, useColorScheme, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useForm } from "@tanstack/react-form";
 import { loginSchema } from "@shareef-money/shared/validation";
 import { useAuth } from "../../providers/auth-provider";
 import { parseError } from "@shareef-money/shared/utils";
+import { getColors } from "../../lib/colors";
 
 export default function LoginScreen() {
   const { login } = useAuth();
   const [submitError, setSubmitError] = useState("");
+  const { textMuted } = getColors(useColorScheme());
 
   const form = useForm({
     defaultValues: { email: "", password: "" },
@@ -40,7 +42,7 @@ export default function LoginScreen() {
                 <TextInput
                   className="h-12 border-b border-border text-text text-base"
                   placeholder="your@email.com"
-                  placeholderTextColor="#A1A1AA"
+                  placeholderTextColor={textMuted}
                   value={field.state.value}
                   onChangeText={field.handleChange}
                   onBlur={field.handleBlur}
@@ -67,7 +69,7 @@ export default function LoginScreen() {
                 <TextInput
                   className="h-12 border-b border-border text-text text-base"
                   placeholder="Enter your password"
-                  placeholderTextColor="#A1A1AA"
+                  placeholderTextColor={textMuted}
                   value={field.state.value}
                   onChangeText={field.handleChange}
                   onBlur={field.handleBlur}
