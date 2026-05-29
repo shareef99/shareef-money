@@ -29,43 +29,46 @@
 
 ### Mobile
 
-- [ ] Add Transaction modal — segmented control (Income / Expense / Transfer)
-- [ ] Add Transaction modal — numeric keypad for amount input
-- [ ] Add Transaction modal — date/time picker
-- [ ] Add Transaction modal — category picker modal
-- [ ] Add Transaction modal — account picker modal
+- [x] Add Transaction modal — segmented control (Income / Expense / Transfer)
+- [x] Add Transaction modal — numeric keypad for amount input
+- [x] Add Transaction modal — date/time picker
+- [x] Add Transaction modal — category picker modal
+- [x] Add Transaction modal — account picker modal
 - [ ] Add Transaction modal — contact picker (Tags: Who — if enabled)
 - [ ] Add Transaction modal — location picker (Tags: Where — if enabled)
-- [ ] Add Transaction modal — note + description fields
-- [ ] Add Transaction modal — Save / Continue buttons
-- [ ] Add Transaction modal — Transfer: from/to accounts, fees, swap button
-- [ ] Daily View — transaction list grouped by date
-- [ ] Daily View — summary bar (income, expenses, total)
-- [ ] Daily View — month/year navigation
-- [ ] Daily View — FAB (+ button) to open add transaction
-- [ ] Calendar View — month grid with daily totals
-- [ ] Calendar View — tap day to navigate to daily view
-- [ ] Monthly View — year navigation, monthly income/expense/net
+- [x] Add Transaction modal — note + description fields
+- [x] Add Transaction modal — Save / Continue buttons
+- [x] Add Transaction modal — Transfer: from/to accounts, fees, swap button
+- [x] Daily View — transaction list grouped by date
+- [x] Daily View — summary bar (income, expenses, total)
+- [x] Daily View — month/year navigation
+- [x] Daily View — FAB (+ button) to open add transaction
+- [x] Calendar View — month grid with daily totals
+- [x] Calendar View — tap day to navigate to daily view
+- [x] Monthly View — year navigation, monthly income/expense/net
 - [ ] Monthly View — expandable weekly breakdowns
-- [ ] Total View — all-time aggregated totals
-- [ ] Edit transaction (tap to open pre-filled form)
-- [ ] Delete transaction (swipe or long-press)
+- [x] Total View — all-time aggregated totals
+- [x] Edit transaction (tap to open pre-filled form)
+- [x] Delete transaction (delete button in edit modal)
 
 ### Backend
 
-- [ ] GET /api/transactions (list with filters, pagination)
-- [ ] POST /api/transactions (create)
-- [ ] GET /api/transactions/:id (get one)
-- [ ] PATCH /api/transactions/:id (update)
-- [ ] DELETE /api/transactions/:id (soft delete)
+- [x] GET /api/transactions (list with filters, pagination)
+- [x] POST /api/transactions (create)
+- [x] GET /api/transactions/:id (get one)
+- [x] PATCH /api/transactions/:id (update)
+- [x] DELETE /api/transactions/:id (soft delete)
+- [x] GET /api/accounts (list), POST, PATCH /:id, DELETE /:id
+- [x] GET /api/categories (list), POST, PATCH /:id, DELETE /:id
+- [x] Seed default categories, account, settings on registration
 
 ### Sync
 
-- [ ] POST /sync/push — upload local changes
-- [ ] POST /sync/pull — download server changes
-- [ ] POST /sync/ack — confirm sync completion
-- [ ] GET /sync/status — last sync timestamps
-- [ ] Mobile sync triggers (foreground, after write, manual, on login)
+- [x] POST /sync/push — upload local changes
+- [x] POST /sync/pull — download server changes
+- [x] POST /sync/ack — confirm sync completion
+- [x] GET /sync/status — last sync timestamps
+- [x] Mobile sync triggers (foreground, after write, manual, on login)
 
 ### Web
 
