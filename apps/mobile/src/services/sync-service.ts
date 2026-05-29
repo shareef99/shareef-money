@@ -1,0 +1,163 @@
+import { gt, eq } from "drizzle-orm";
+import {
+  accountsTable,
+  categoriesTable,
+  contactsTable,
+  locationsTable,
+  transactionsTable,
+  settingsTable,
+} from "@shareef-money/db/schema";
+import * as SecureStore from "expo-secure-store";
+import * as Crypto from "expo-crypto";
+import type { Db } from "../db/client";
+import type { AxiosInstance } from "axios";
+
+const LAST_SYNC_KEY = "last_sync_at";
+const DEVICE_ID_KEY = "device_id";
+
+export async function getDeviceId(): Promise<string> {
+  let deviceId = await SecureStore.getItemAsync(DEVICE_ID_KEY);
+  if (!deviceId) {
+    deviceId = Crypto.randomUUID();
+    await SecureStore.setItemAsync(DEVICE_ID_KEY, deviceId);
+  }
+  return deviceId;
+}
+
+export async function getLastSyncAt(): Promise<number> {
+  const val = await SecureStore.getItemAsync(LAST_SYNC_KEY);
+  return val ? Number(val) : 0;
+}
+
+export async function setLastSyncAt(timestamp: number): Promise<void> {
+  await SecureStore.setItemAsync(LAST_SYNC_KEY, String(timestamp));
+}
+
+const syncableTables = {
+  accounts: accountsTable,
+  categories: categoriesTable,
+  contacts: contactsTable,
+  locations: locationsTable,
+  transactions: transactionsTable,
+} as const;
+
+export async function pullChanges(db: Db, api: AxiosInstance, userId: string) {
+  const lastSyncAt = await getLastSyncAt();
+
+  const { data } = await api.post<{
+    changes: Record<string, Array<Record<string, unknown>>>;
+    syncedAt: number;
+  }>("/sync/pull", { lastSyncAt });
+
+  for (const [tableName, rows] of Object.entries(data.changes)) {
+    if (!rows?.length) continue;
+
+    if (tableName === "settings") {
+      for (const row of rows) {
+        const key = row.key as string;
+        const value = row.value as string;
+
+        const existing = db
+          .select()
+          .from(settingsTable)
+          .where(eq(settingsTable.key, key))
+          .get();
+
+        if (existing) {
+          db.update(settingsTable)
+            .set({ value })
+            .where(eq(settingsTable.key, key))
+            .run();
+        } else {
+          db.insert(settingsTable)
+            .values({ userId, key, value })
+            .run();
+        }
+      }
+      continue;
+    }
+
+    const table = syncableTables[tableName as keyof typeof syncableTables];
+    if (!table) continue;
+
+    for (const row of rows) {
+      const id = row.id as number;
+      const rowData = {
+        ...row,
+        userId,
+        date: row.date ? new Date(row.date as number) : undefined,
+        createdAt: new Date(row.createdAt as number),
+        updatedAt: new Date(row.updatedAt as number),
+      };
+      if (!rowData.date) delete rowData.date;
+
+      const existing = db
+        .select({ id: (table as typeof accountsTable).id })
+        .from(table as typeof accountsTable)
+        .where(eq((table as typeof accountsTable).id, id))
+        .get();
+
+      if (existing) {
+        const updateData = { ...rowData };
+        delete updateData.id;
+        delete updateData.createdAt;
+
+        db.update(table as typeof accountsTable)
+          .set(updateData as Record<string, unknown>)
+          .where(eq((table as typeof accountsTable).id, id))
+          .run();
+      } else {
+        db.insert(table as typeof accountsTable)
+          .values(rowData as Record<string, unknown>)
+          .run();
+      }
+    }
+  }
+
+  await setLastSyncAt(data.syncedAt);
+  return data.syncedAt;
+}
+
+export async function pushChanges(db: Db, api: AxiosInstance, userId: string) {
+  const lastSyncAt = await getLastSyncAt();
+  const since = new Date(lastSyncAt);
+  const deviceId = await getDeviceId();
+
+  const changes: Array<{ table: string; action: string; data: Record<string, unknown>; updatedAt: number }> = [];
+
+  for (const [tableName, table] of Object.entries(syncableTables)) {
+    const rows = db
+      .select()
+      .from(table as typeof accountsTable)
+      .where(gt((table as typeof accountsTable).updatedAt, since))
+      .all();
+
+    for (const row of rows) {
+      const r = row as Record<string, unknown>;
+      const updatedAt = r.updatedAt instanceof Date ? r.updatedAt.getTime() : (r.updatedAt as number);
+      changes.push({
+        table: tableName,
+        action: "upsert",
+        data: {
+          ...r,
+          date: r.date instanceof Date ? r.date.getTime() : r.date,
+          createdAt: r.createdAt instanceof Date ? r.createdAt.getTime() : r.createdAt,
+          updatedAt,
+        },
+        updatedAt,
+      });
+    }
+  }
+
+  if (changes.length === 0) return;
+
+  await api.post("/sync/push", { changes, deviceId });
+  const syncedAt = Date.now();
+  await api.post("/sync/ack", { deviceId, syncedAt });
+  await setLastSyncAt(syncedAt);
+}
+
+export async function fullSync(db: Db, api: AxiosInstance, userId: string) {
+  await pushChanges(db, api, userId);
+  await pullChanges(db, api, userId);
+}

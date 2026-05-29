@@ -5,3 +5,5 @@ import * as schema from "@shareef-money/db/schema";
 const expo = openDatabaseSync("shareef-money.db");
 
 export const db = drizzle(expo, { schema });
+
+export type Db = typeof db;

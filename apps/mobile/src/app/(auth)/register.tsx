@@ -1,14 +1,16 @@
 import { useState } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import { Pressable, Text, TextInput, useColorScheme, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useForm } from "@tanstack/react-form";
 import { registerSchema } from "@shareef-money/shared/validation";
 import { useAuth } from "../../providers/auth-provider";
 import { parseError } from "@shareef-money/shared/utils";
+import { getColors } from "../../lib/colors";
 
 export default function RegisterScreen() {
   const { register } = useAuth();
   const [submitError, setSubmitError] = useState("");
+  const { textMuted } = getColors(useColorScheme());
 
   const form = useForm({
     defaultValues: { name: "", email: "", password: "" },
@@ -42,7 +44,7 @@ export default function RegisterScreen() {
                 <TextInput
                   className="h-12 border-b border-border text-text text-base"
                   placeholder="Your name"
-                  placeholderTextColor="#A1A1AA"
+                  placeholderTextColor={textMuted}
                   value={field.state.value}
                   onChangeText={field.handleChange}
                   onBlur={field.handleBlur}
@@ -65,7 +67,7 @@ export default function RegisterScreen() {
                 <TextInput
                   className="h-12 border-b border-border text-text text-base"
                   placeholder="your@email.com"
-                  placeholderTextColor="#A1A1AA"
+                  placeholderTextColor={textMuted}
                   value={field.state.value}
                   onChangeText={field.handleChange}
                   onBlur={field.handleBlur}
@@ -92,7 +94,7 @@ export default function RegisterScreen() {
                 <TextInput
                   className="h-12 border-b border-border text-text text-base"
                   placeholder="Min. 8 characters"
-                  placeholderTextColor="#A1A1AA"
+                  placeholderTextColor={textMuted}
                   value={field.state.value}
                   onChangeText={field.handleChange}
                   onBlur={field.handleBlur}

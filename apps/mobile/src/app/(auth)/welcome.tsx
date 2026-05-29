@@ -20,7 +20,7 @@ export default function WelcomeScreen() {
         <View className="gap-3">
           <Pressable
             className="h-12 bg-primary items-center justify-center rounded-lg active:opacity-80"
-            onPress={() => router.push("/(auth)/login")}
+            onPress={() => router.push("/login")}
           >
             <Text className="text-primary-foreground font-semibold text-base">
               Sign In
@@ -29,7 +29,7 @@ export default function WelcomeScreen() {
 
           <Pressable
             className="h-12 bg-card border border-border items-center justify-center rounded-lg active:opacity-80"
-            onPress={() => router.push("/(auth)/register")}
+            onPress={() => router.push("/register")}
           >
             <Text className="text-text font-semibold text-base">
               Create Account

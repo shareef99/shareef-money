@@ -3,9 +3,11 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "dependencies": {
+    "@react-native-community/datetimepicker": "9.1.0",
     "@shareef-money/db": "workspace:*",
     "@shareef-money/shared": "workspace:*",
     "@tanstack/react-form": "^1.33.0",
+    "@tanstack/react-query": "^5.100.14",
     "@tanstack/zod-form-adapter": "^0.42.1",
     "axios": "^1.16.1",
     "drizzle-orm": "^0.44.7",
@@ -32,7 +34,8 @@
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "4.25.2",
     "react-native-svg": "15.15.4",
-    "react-native-web": "~0.21.0"
+    "react-native-web": "~0.21.0",
+    "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.0",

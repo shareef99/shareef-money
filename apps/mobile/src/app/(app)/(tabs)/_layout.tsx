@@ -6,34 +6,21 @@ import {
   MoreHorizontal,
 } from "lucide-react-native";
 import { useColorScheme } from "react-native";
-
-const LIGHT_COLORS = {
-  tabBar: "#FFFFFF",
-  tabBarBorder: "#E4E4E7",
-  tabActive: "#2563EB",
-  tabInactive: "#71717A",
-};
-
-const DARK_COLORS = {
-  tabBar: "#0A0A0A",
-  tabBarBorder: "#27272A",
-  tabActive: "#3B82F6",
-  tabInactive: "#52525B",
-};
+import { getColors } from "../../../lib/colors";
 
 export default function TabLayout() {
   const scheme = useColorScheme();
-  const colors = scheme === "dark" ? DARK_COLORS : LIGHT_COLORS;
+  const c = getColors(scheme);
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.tabActive,
-        tabBarInactiveTintColor: colors.tabInactive,
+        tabBarActiveTintColor: c.tabActive,
+        tabBarInactiveTintColor: c.tabInactive,
         tabBarStyle: {
-          backgroundColor: colors.tabBar,
-          borderTopColor: colors.tabBarBorder,
+          backgroundColor: c.tabBar,
+          borderTopColor: c.tabBarBorder,
           borderTopWidth: 1,
           height: 56,
           paddingBottom: 4,
