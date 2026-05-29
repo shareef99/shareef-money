@@ -1,4 +1,5 @@
 import { createMiddleware } from "hono/factory";
+import { getCookie } from "hono/cookie";
 import { verifyToken } from "../lib/jwt.js";
 
 export type AuthVariables = {
@@ -8,11 +9,17 @@ export type AuthVariables = {
 export const authMiddleware = createMiddleware<{ Variables: AuthVariables }>(
   async (c, next) => {
     const header = c.req.header("Authorization");
-    if (!header?.startsWith("Bearer ")) {
-      return c.json({ message: "Missing or invalid authorization header" }, 401);
+    let token: string | undefined;
+
+    if (header?.startsWith("Bearer ")) {
+      token = header.slice(7);
+    } else {
+      token = getCookie(c, "access_token");
     }
 
-    const token = header.slice(7);
+    if (!token) {
+      return c.json({ message: "Missing or invalid authorization" }, 401);
+    }
 
     try {
       const payload = await verifyToken(token);
