@@ -1,7 +1,68 @@
 @import "tailwindcss";
 
+@theme {
+  --breakpoint-xs: 24rem;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-foreground-secondary: var(--foreground-secondary);
+  --color-foreground-muted: var(--foreground-muted);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-divider: var(--divider);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-ring: var(--ring);
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #09090b;
+  --foreground-secondary: #71717a;
+  --foreground-muted: #a1a1aa;
+  --card: #f4f4f5;
+  --card-foreground: #09090b;
+  --surface: #fafafa;
+  --border: #e4e4e7;
+  --divider: #f4f4f5;
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #18181b;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --ring: #3b82f6;
+}
+
+[data-mantine-color-scheme="dark"] {
+  --background: #0a0a0a;
+  --foreground: #fafafa;
+  --foreground-secondary: #a1a1aa;
+  --foreground-muted: #52525b;
+  --card: #18181b;
+  --card-foreground: #fafafa;
+  --surface: #111111;
+  --border: #27272a;
+  --divider: #1c1c1e;
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+  --secondary: #27272a;
+  --secondary-foreground: #fafafa;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --ring: #2563eb;
+}
+
 body {
   margin: 0;
+  background-color: var(--background);
+  color: var(--foreground);
 }
 
 #root {
