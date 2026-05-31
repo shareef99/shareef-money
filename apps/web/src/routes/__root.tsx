@@ -1,5 +1,6 @@
 import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import MantineProvider from "../providers/mantine";
 
 type RouteContext = {
   queryClient: QueryClient;
@@ -14,7 +15,9 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
+      <MantineProvider>
+        <Outlet />
+      </MantineProvider>
     </QueryClientProvider>
   );
 }
