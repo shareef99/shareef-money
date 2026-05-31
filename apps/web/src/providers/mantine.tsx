@@ -38,6 +38,30 @@ const variantColorResolver: VariantColorsResolver = (input) => {
         border: "1px solid var(--primary)",
       };
 
+    case "secondary":
+      return {
+        background: "var(--secondary)",
+        hover: "color-mix(in srgb, var(--secondary) 80%, var(--foreground))",
+        color: "var(--secondary-foreground)",
+        border: "none",
+      };
+
+    case "destructive":
+      return {
+        background: "var(--destructive)",
+        hover: "color-mix(in srgb, var(--destructive) 90%, black)",
+        color: "var(--destructive-foreground)",
+        border: "none",
+      };
+
+    case "ghost":
+      return {
+        background: "transparent",
+        hover: "color-mix(in srgb, var(--foreground) 8%, transparent)",
+        color: "var(--foreground)",
+        border: "none",
+      };
+
     default:
       return defaultColors;
   }
@@ -56,6 +80,18 @@ const theme = createTheme({
       "var(--primary)",
       "var(--primary)",
       "var(--primary)",
+    ],
+    destructive: [
+      "var(--destructive)",
+      "var(--destructive)",
+      "var(--destructive)",
+      "var(--destructive)",
+      "var(--destructive)",
+      "var(--destructive)",
+      "var(--destructive)",
+      "var(--destructive)",
+      "var(--destructive)",
+      "var(--destructive)",
     ],
     secondary: [
       "var(--secondary)",
