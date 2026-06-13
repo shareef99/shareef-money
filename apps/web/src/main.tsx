@@ -16,10 +16,10 @@ const queryClient = new QueryClient({
   },
 });
 
-const router = createRouter({
+export const router = createRouter({
   routeTree,
   defaultPreload: "viewport",
-  context: { queryClient },
+  context: { queryClient, user: null },
   defaultPreloadStaleTime: 0,
   defaultPendingComponent: () => <Loader fullscreen />,
   defaultErrorComponent: ({ error }) => <ErrorMessage error={error} />,
