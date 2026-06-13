@@ -12,10 +12,14 @@ import {
 } from "../../../queries/use-transactions";
 import { useCategories } from "../../../queries/use-categories";
 import { useAccounts } from "../../../queries/use-accounts";
+import { useLocations, useCreateLocation } from "../../../queries/use-locations";
+import { useContacts, useCreateContact } from "../../../queries/use-contacts";
 import { TransactionTypeTabs } from "../../../components/transaction-type-tabs";
 import { NumericKeypad } from "../../../components/numeric-keypad";
 import { CategoryPicker } from "../../../components/category-picker";
 import { AccountPicker } from "../../../components/account-picker";
+import { LocationPicker } from "../../../components/location-picker";
+import { ContactPicker } from "../../../components/contact-picker";
 import { toSmallestUnit } from "@shareef-money/shared/utils";
 import type { TransactionType } from "@shareef-money/shared/types";
 import { cn } from "../../../lib/cn";
@@ -37,11 +41,15 @@ export default function AddTransactionScreen() {
   const [categoryId, setCategoryId] = useState<number | null>(null);
   const [accountId, setAccountId] = useState<number | null>(null);
   const [toAccountId, setToAccountId] = useState<number | null>(null);
+  const [locationId, setLocationId] = useState<number | null>(null);
+  const [contactIds, setContactIds] = useState<number[]>([]);
   const [note, setNote] = useState("");
   const [description, setDescription] = useState("");
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showAccountPicker, setShowAccountPicker] = useState(false);
   const [showToAccountPicker, setShowToAccountPicker] = useState(false);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [showContactPicker, setShowContactPicker] = useState(false);
   const [showKeypad, setShowKeypad] = useState(true);
   const [editingFee, setEditingFee] = useState(false);
   const { textMuted } = getColors(useColorScheme());
@@ -50,11 +58,15 @@ export default function AddTransactionScreen() {
     type === "transfer" ? undefined : type,
   );
   const { data: accounts = [] } = useAccounts();
+  const { data: locations = [] } = useLocations();
+  const { data: contacts = [] } = useContacts();
   const { data: allTransactions = [] } = useTransactions({});
 
   const createTransaction = useCreateTransaction();
   const updateTransaction = useUpdateTransaction();
   const deleteTransaction = useDeleteTransaction();
+  const createLocation = useCreateLocation();
+  const createContact = useCreateContact();
 
   const selectedCategory = useMemo(
     () => categories.find((c) => c.id === categoryId),
@@ -82,6 +94,19 @@ export default function AddTransactionScreen() {
     [accounts, toAccountId],
   );
 
+  const selectedLocation = useMemo(
+    () => locations.find((l) => l.id === locationId),
+    [locations, locationId],
+  );
+
+  const contactSummary = useMemo(() => {
+    if (contactIds.length === 0) return " ";
+    const names = contactIds
+      .map((id) => contacts.find((c) => c.id === id)?.name)
+      .filter(Boolean);
+    return names.join(", ");
+  }, [contactIds, contacts]);
+
   useEffect(() => {
     if (accounts.length > 0 && !accountId) {
       setAccountId(accounts[0]!.id);
@@ -100,6 +125,10 @@ export default function AddTransactionScreen() {
       setCategoryId(tx.categoryId);
       setAccountId(tx.accountId);
       setToAccountId(tx.toAccountId);
+      setLocationId(tx.locationId ?? null);
+      setContactIds(
+        (tx.transactionContacts ?? []).map((tc) => tc.contactId),
+      );
       setNote(tx.note ?? "");
       setDescription(tx.description ?? "");
     }
@@ -138,6 +167,8 @@ export default function AddTransactionScreen() {
         categoryId: type === "transfer" ? null : categoryId,
         accountId,
         toAccountId: type === "transfer" ? toAccountId : null,
+        locationId,
+        contactIds,
         note: note || null,
         description: description || null,
         date: date.getTime(),
@@ -151,7 +182,8 @@ export default function AddTransactionScreen() {
     },
     [
       amountStr, feeStr, type, categoryId, accountId, toAccountId,
-      note, description, date, editId, createTransaction, updateTransaction,
+      locationId, contactIds, note, description, date, editId,
+      createTransaction, updateTransaction,
     ],
   );
 
@@ -165,6 +197,8 @@ export default function AddTransactionScreen() {
       setFeeStr("");
       setShowFeeRow(false);
       setCategoryId(null);
+      setLocationId(null);
+      setContactIds([]);
       setNote("");
       setDescription("");
       setEditingFee(false);
@@ -342,6 +376,30 @@ export default function AddTransactionScreen() {
             </View>
           </View>
 
+          <View className="flex-row items-center py-1.5">
+            <Text className="w-20 text-sm text-text-secondary">Location</Text>
+            <Pressable
+              className="flex-1 py-2 border-b border-border"
+              onPress={() => { setShowKeypad(false); setShowLocationPicker(true); }}
+            >
+              <Text className="text-base text-text">
+                {selectedLocation?.name ?? " "}
+              </Text>
+            </Pressable>
+          </View>
+
+          <View className="flex-row items-center py-1.5">
+            <Text className="w-20 text-sm text-text-secondary">People</Text>
+            <Pressable
+              className="flex-1 py-2 border-b border-border"
+              onPress={() => { setShowKeypad(false); setShowContactPicker(true); }}
+            >
+              <Text className="text-base text-text" numberOfLines={1}>
+                {contactSummary}
+              </Text>
+            </Pressable>
+          </View>
+
           <View className="h-3 bg-divider -mx-4 mt-4" />
 
           <View className="border-b border-border">
@@ -416,6 +474,37 @@ export default function AddTransactionScreen() {
           onSelect={(acc) => { setToAccountId(acc.id); setShowToAccountPicker(false); }}
           accounts={accounts.filter((a) => a.id !== accountId)}
           title="To Account"
+        />
+
+        <LocationPicker
+          visible={showLocationPicker}
+          locations={locations}
+          selectedId={locationId}
+          onClose={() => setShowLocationPicker(false)}
+          onSelect={(loc) => { setLocationId(loc?.id ?? null); setShowLocationPicker(false); }}
+          onCreate={(name) =>
+            createLocation.mutate(name, {
+              onSuccess: (loc) => loc && setLocationId(loc.id),
+            })
+          }
+        />
+
+        <ContactPicker
+          visible={showContactPicker}
+          contacts={contacts}
+          selectedIds={contactIds}
+          onClose={() => setShowContactPicker(false)}
+          onToggle={(id) =>
+            setContactIds((prev) =>
+              prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id],
+            )
+          }
+          onCreate={(name) =>
+            createContact.mutate(name, {
+              onSuccess: (contact) =>
+                contact && setContactIds((prev) => [...prev, contact.id]),
+            })
+          }
         />
       </View>
     </SafeAreaView>

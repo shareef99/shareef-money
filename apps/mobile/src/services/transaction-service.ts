@@ -50,6 +50,7 @@ export async function getTransactions(db: Db, userId: string, filters: Transacti
     with: {
       category: true,
       account: true,
+      transactionContacts: true,
     },
   });
 }
