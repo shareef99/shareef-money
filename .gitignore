@@ -3,3 +3,6 @@ node_modules/
 .env.*
 !.env.example
 CLAUDE.md
+
+# SQLite runtime data (db + WAL/SHM) — recreated by the migrate step
+apps/backend/data/
