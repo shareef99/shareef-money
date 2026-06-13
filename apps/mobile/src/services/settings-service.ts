@@ -9,6 +9,15 @@ export async function getSetting(db: Db, userId: string, key: string) {
   return row?.value ?? null;
 }
 
+export async function getAllSettings(db: Db, userId: string) {
+  const rows = await db.query.settingsTable.findMany({
+    where: eq(settingsTable.userId, userId),
+  });
+  const map: Record<string, string> = {};
+  for (const row of rows) map[row.key] = row.value;
+  return map;
+}
+
 export async function setSetting(db: Db, userId: string, key: string, value: string) {
   await db
     .insert(settingsTable)
