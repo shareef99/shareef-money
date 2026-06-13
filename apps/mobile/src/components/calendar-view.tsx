@@ -20,14 +20,18 @@ export function CalendarView({ currentDate, transactions, onSelectDate }: Props)
   let startDow = firstDay.getDay() - 1;
   if (startDow < 0) startDow = 6;
 
-  const dailyTotals = new Map<number, number>();
+  const dailyTotals = new Map<number, { income: number; expense: number }>();
   for (const tx of transactions) {
     const date = tx.date instanceof Date ? tx.date : new Date(tx.date as number);
     const day = date.getDate();
-    const current = dailyTotals.get(day) ?? 0;
-    const sign = tx.type === "expense" ? -1 : 1;
-    dailyTotals.set(day, current + sign * tx.amount);
+    const current = dailyTotals.get(day) ?? { income: 0, expense: 0 };
+    if (tx.type === "income") current.income += tx.amount;
+    else if (tx.type === "expense") current.expense += tx.amount;
+    dailyTotals.set(day, current);
   }
+
+  const compact = (n: number) =>
+    fromSmallestUnit(n).toLocaleString("en-IN", { maximumFractionDigits: 0 });
 
   const weeks: Array<Array<number | null>> = [];
   let currentWeek: Array<number | null> = Array(startDow).fill(null);
@@ -63,13 +67,13 @@ export function CalendarView({ currentDate, transactions, onSelectDate }: Props)
               return <View key={di} className="flex-1 h-16" />;
             }
 
-            const net = dailyTotals.get(day);
+            const totals = dailyTotals.get(day);
             const isToday = isCurrentMonth && today.getDate() === day;
 
             return (
               <Pressable
                 key={di}
-                className={`flex-1 h-16 items-center justify-center border border-border/30 ${
+                className={`flex-1 h-16 items-center border border-border/30 pt-1 ${
                   isToday ? "bg-primary/10" : ""
                 }`}
                 onPress={() => {
@@ -82,16 +86,18 @@ export function CalendarView({ currentDate, transactions, onSelectDate }: Props)
                 >
                   {day}
                 </Text>
-                {net !== undefined && net !== 0 && (
-                  <Text
-                    className={`text-[10px] mt-0.5 ${net > 0 ? "text-income" : "text-expense"}`}
-                    numberOfLines={1}
-                  >
-                    {fromSmallestUnit(Math.abs(net)).toLocaleString("en-IN", {
-                      maximumFractionDigits: 0,
-                    })}
-                  </Text>
-                )}
+                <View className="flex-1 justify-end pb-0.5">
+                  {totals && totals.income > 0 && (
+                    <Text className="text-[9px] text-income" numberOfLines={1}>
+                      {compact(totals.income)}
+                    </Text>
+                  )}
+                  {totals && totals.expense > 0 && (
+                    <Text className="text-[9px] text-expense" numberOfLines={1}>
+                      {compact(totals.expense)}
+                    </Text>
+                  )}
+                </View>
               </Pressable>
             );
           })}
