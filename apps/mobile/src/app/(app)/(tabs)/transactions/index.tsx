@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react-native";
+import { ChevronLeft, ChevronRight, Plus, Search } from "lucide-react-native";
 import { useTransactions } from "../../../../queries/use-transactions";
 import { DailyView } from "../../../../components/daily-view";
 import { CalendarView } from "../../../../components/calendar-view";
@@ -53,15 +53,18 @@ export default function TransactionsScreen() {
   return (
     <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
       <View className="flex-1 bg-background">
-        <View className="flex-row items-center justify-between px-4 py-2">
+        <View className="flex-row items-center px-4 py-2">
           <Pressable onPress={() => navigateMonth(-1)} className="p-2">
             <ChevronLeft size={20} className="text-text" />
           </Pressable>
-          <Text className="text-base font-semibold text-text">
+          <Text className="flex-1 text-center text-base font-semibold text-text">
             {monthLabel}
           </Text>
           <Pressable onPress={() => navigateMonth(1)} className="p-2">
             <ChevronRight size={20} className="text-text" />
+          </Pressable>
+          <Pressable onPress={() => router.push("/search")} className="p-2">
+            <Search size={20} className="text-text" />
           </Pressable>
         </View>
 
