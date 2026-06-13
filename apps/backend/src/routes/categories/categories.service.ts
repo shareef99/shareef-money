@@ -35,7 +35,6 @@ export function create(db: AppDatabase, userId: string, payload: CategoryCreateI
       parentId: payload.parentId ?? null,
       name: payload.name,
       type: payload.type,
-      icon: payload.icon ?? null,
       color: payload.color ?? null,
     })
     .returning()
