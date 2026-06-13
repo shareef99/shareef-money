@@ -16,68 +16,87 @@ export function push(db: AppDatabase, userId: string, input: SyncPushInput) {
   const results: Array<{ table: string; action: string; id: unknown; status: string }> = [];
 
   for (const change of input.changes) {
-    const data = change.data as Record<string, any>;
-
-    if (change.table === "settings") {
-      const key = data.key as string;
-      const value = data.value as string;
-
-      const existing = db
-        .select()
-        .from(settingsTable)
-        .where(and(eq(settingsTable.userId, userId), eq(settingsTable.key, key)))
-        .get();
-
-      if (existing) {
-        db.update(settingsTable)
-          .set({ value })
-          .where(and(eq(settingsTable.userId, userId), eq(settingsTable.key, key)))
-          .run();
-      } else {
-        db.insert(settingsTable).values({ userId, key, value }).run();
-      }
-      results.push({ table: "settings", action: "upserted", id: key, status: "ok" });
-      continue;
-    }
-
-    if (change.table === "transaction_contacts") {
-      const txId = data.transactionId as number;
-      const contactId = data.contactId as number;
-      if (change.action === "delete") {
-        db.delete(transactionContactsTable)
-          .where(
-            and(
-              eq(transactionContactsTable.transactionId, txId),
-              eq(transactionContactsTable.contactId, contactId),
-            ),
-          )
-          .run();
-      } else {
-        db.insert(transactionContactsTable)
-          .values({ transactionId: txId, contactId })
-          .onConflictDoNothing()
-          .run();
-      }
-      results.push({ table: "transaction_contacts", action: change.action, id: `${txId}-${contactId}`, status: "ok" });
-      continue;
-    }
-
-    const id = data.id as number;
-
-    if (change.table === "accounts") {
-      handleTableSync(db, accountsTable, userId, id, change, data, results);
-    } else if (change.table === "categories") {
-      handleTableSync(db, categoriesTable, userId, id, change, data, results);
-    } else if (change.table === "contacts") {
-      handleTableSync(db, contactsTable, userId, id, change, data, results);
-    } else if (change.table === "locations") {
-      handleTableSync(db, locationsTable, userId, id, change, data, results);
-    } else if (change.table === "transactions") {
-      handleTransactionSync(db, userId, id, change, data, results);
+    try {
+      applyChange(db, userId, change, results);
+    } catch (error) {
+      console.error(`Sync push failed for ${change.table}:`, error);
+      results.push({
+        table: change.table,
+        action: change.action,
+        id: (change.data as Record<string, unknown>).id ?? null,
+        status: "error",
+      });
     }
   }
 
   return results;
+}
+
+function applyChange(
+  db: AppDatabase,
+  userId: string,
+  change: SyncPushInput["changes"][number],
+  results: Array<{ table: string; action: string; id: unknown; status: string }>,
+) {
+  const data = change.data as Record<string, any>;
+
+  if (change.table === "settings") {
+    const key = data.key as string;
+    const value = data.value as string;
+
+    const existing = db
+      .select()
+      .from(settingsTable)
+      .where(and(eq(settingsTable.userId, userId), eq(settingsTable.key, key)))
+      .get();
+
+    if (existing) {
+      db.update(settingsTable)
+        .set({ value })
+        .where(and(eq(settingsTable.userId, userId), eq(settingsTable.key, key)))
+        .run();
+    } else {
+      db.insert(settingsTable).values({ userId, key, value }).run();
+    }
+    results.push({ table: "settings", action: "upserted", id: key, status: "ok" });
+    return;
+  }
+
+  if (change.table === "transaction_contacts") {
+    const txId = data.transactionId as number;
+    const contactId = data.contactId as number;
+    if (change.action === "delete") {
+      db.delete(transactionContactsTable)
+        .where(
+          and(
+            eq(transactionContactsTable.transactionId, txId),
+            eq(transactionContactsTable.contactId, contactId),
+          ),
+        )
+        .run();
+    } else {
+      db.insert(transactionContactsTable)
+        .values({ transactionId: txId, contactId })
+        .onConflictDoNothing()
+        .run();
+    }
+    results.push({ table: "transaction_contacts", action: change.action, id: `${txId}-${contactId}`, status: "ok" });
+    return;
+  }
+
+  const id = data.id as number;
+
+  if (change.table === "accounts") {
+    handleTableSync(db, accountsTable, userId, id, change, data, results);
+  } else if (change.table === "categories") {
+    handleTableSync(db, categoriesTable, userId, id, change, data, results);
+  } else if (change.table === "contacts") {
+    handleTableSync(db, contactsTable, userId, id, change, data, results);
+  } else if (change.table === "locations") {
+    handleTableSync(db, locationsTable, userId, id, change, data, results);
+  } else if (change.table === "transactions") {
+    handleTransactionSync(db, userId, id, change, data, results);
+  }
 }
 
 function handleTableSync(

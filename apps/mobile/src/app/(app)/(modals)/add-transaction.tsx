@@ -61,6 +61,17 @@ export default function AddTransactionScreen() {
     [categories, categoryId],
   );
 
+  const categoryDisplay = useMemo(() => {
+    if (!selectedCategory) return " ";
+    if (selectedCategory.parentId) {
+      const parent = categories.find((c) => c.id === selectedCategory.parentId);
+      return parent
+        ? `${parent.name} / ${selectedCategory.name}`
+        : selectedCategory.name;
+    }
+    return selectedCategory.name;
+  }, [selectedCategory, categories]);
+
   const selectedAccount = useMemo(
     () => accounts.find((a) => a.id === accountId),
     [accounts, accountId],
@@ -281,11 +292,7 @@ export default function AddTransactionScreen() {
                 className="flex-1 py-2 border-b border-border"
                 onPress={() => { setShowKeypad(false); setShowCategoryPicker(true); }}
               >
-                <Text className="text-base text-text">
-                  {selectedCategory
-                    ? `${selectedCategory.icon ?? ""} ${selectedCategory.name}`.trim()
-                    : " "}
-                </Text>
+                <Text className="text-base text-text">{categoryDisplay}</Text>
               </Pressable>
             </View>
           )}
@@ -387,6 +394,10 @@ export default function AddTransactionScreen() {
           visible={showCategoryPicker}
           onClose={() => setShowCategoryPicker(false)}
           onSelect={(cat) => { setCategoryId(cat.id); setShowCategoryPicker(false); }}
+          onEdit={() => {
+            setShowCategoryPicker(false);
+            router.push({ pathname: "/category-list", params: { type } });
+          }}
           categories={categories}
           title={type === "income" ? "Income Category" : "Expense Category"}
         />
