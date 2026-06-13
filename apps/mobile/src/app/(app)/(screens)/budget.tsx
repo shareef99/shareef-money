@@ -143,7 +143,6 @@ export default function BudgetScreen() {
                 >
                   <View className="flex-row items-center justify-between mb-2">
                     <Text className="text-base text-text flex-1" numberOfLines={1}>
-                      {cat.icon ? `${cat.icon} ` : ""}
                       {cat.name}
                     </Text>
                     <Text className="text-sm text-text-secondary">

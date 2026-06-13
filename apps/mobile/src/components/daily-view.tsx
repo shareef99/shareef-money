@@ -5,8 +5,10 @@ import {
   useTransactions,
   useTransactionsSummary,
 } from "../queries/use-transactions";
+import { useSettings } from "../queries/use-settings";
 import { SummaryBar } from "./summary-bar";
 import { formatCurrency } from "@shareef-money/shared/utils";
+import { ALL_TIME_FROM } from "@shareef-money/shared/constants";
 import { cn } from "../lib/cn";
 
 type Props = {
@@ -23,6 +25,12 @@ export function DailyView({ monthStart, monthEnd }: Props) {
   });
 
   const { data: summary } = useTransactionsSummary(monthStart, monthEnd);
+  const { data: settings } = useSettings();
+
+  // Brought-forward balance = net of everything before this month.
+  const priorEnd = useMemo(() => new Date(monthStart.getTime() - 1), [monthStart]);
+  const { data: priorSummary } = useTransactionsSummary(ALL_TIME_FROM, priorEnd);
+  const carriedForward = settings.incomeCarryForward ? priorSummary.net : undefined;
 
   const sections = useMemo(() => {
     const grouped = new Map<string, typeof transactions>();
@@ -57,7 +65,11 @@ export function DailyView({ monthStart, monthEnd }: Props) {
 
   return (
     <>
-      <SummaryBar income={summary.income} expense={summary.expense} />
+      <SummaryBar
+        income={summary.income}
+        expense={summary.expense}
+        carriedForward={carriedForward}
+      />
       <SectionList
         sections={sections}
         keyExtractor={(item) => String(item.id)}
@@ -105,7 +117,6 @@ export function DailyView({ monthStart, monthEnd }: Props) {
               })
             }
           >
-            <Text className="text-xl mr-3">{item.category?.icon ?? "💰"}</Text>
             <View className="flex-1">
               <Text className="text-sm text-text">
                 {item.category?.name ??

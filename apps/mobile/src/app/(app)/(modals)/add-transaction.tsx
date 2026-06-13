@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, Text, TextInput, useColorScheme, View } from "react-native";
+import { Alert, Pressable, ScrollView, Text, TextInput, useColorScheme, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -10,6 +10,7 @@ import {
   useUpdateTransaction,
   useDeleteTransaction,
 } from "../../../queries/use-transactions";
+import { useSettings } from "../../../queries/use-settings";
 import { useCategories } from "../../../queries/use-categories";
 import { useAccounts } from "../../../queries/use-accounts";
 import { useLocations, useCreateLocation } from "../../../queries/use-locations";
@@ -61,6 +62,7 @@ export default function AddTransactionScreen() {
   const { data: locations = [] } = useLocations();
   const { data: contacts = [] } = useContacts();
   const { data: allTransactions = [] } = useTransactions({});
+  const { data: settings } = useSettings();
 
   const createTransaction = useCreateTransaction();
   const updateTransaction = useUpdateTransaction();
@@ -160,6 +162,29 @@ export default function AddTransactionScreen() {
       const amount = toSmallestUnit(parseFloat(amountStr) || 0);
       if (amount <= 0 || !accountId) return;
 
+      // Required-field validation (category always; others per settings).
+      if (type !== "transfer") {
+        if (!categoryId) {
+          Alert.alert("Category required", "Please select a category.");
+          return;
+        }
+        if (settings.requireSubcategory && selectedCategory && !selectedCategory.parentId) {
+          const hasSubs = categories.some((c) => c.parentId === selectedCategory.id);
+          if (hasSubs) {
+            Alert.alert("Subcategory required", "Please select a subcategory.");
+            return;
+          }
+        }
+      }
+      if (settings.requireLocation && !locationId) {
+        Alert.alert("Location required", "Please select a location.");
+        return;
+      }
+      if (settings.requireContact && contactIds.length === 0) {
+        Alert.alert("People required", "Please add at least one person.");
+        return;
+      }
+
       const payload = {
         type,
         amount,
@@ -184,6 +209,7 @@ export default function AddTransactionScreen() {
       amountStr, feeStr, type, categoryId, accountId, toAccountId,
       locationId, contactIds, note, description, date, editId,
       createTransaction, updateTransaction,
+      settings, categories, selectedCategory,
     ],
   );
 

@@ -6,11 +6,13 @@ import {
   MoreHorizontal,
 } from "lucide-react-native";
 import { useColorScheme } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getColors } from "../../../lib/colors";
 
 export default function TabLayout() {
   const scheme = useColorScheme();
   const c = getColors(scheme);
+  const insets = useSafeAreaInsets();
 
   return (
     <Tabs
@@ -22,9 +24,10 @@ export default function TabLayout() {
           backgroundColor: c.tabBar,
           borderTopColor: c.tabBarBorder,
           borderTopWidth: 1,
-          height: 56,
-          paddingBottom: 4,
-          paddingTop: 4,
+          // Sit above the Android nav bar / gesture area, dynamic per device.
+          height: 58 + insets.bottom,
+          paddingBottom: insets.bottom + 6,
+          paddingTop: 6,
         },
         tabBarLabelStyle: {
           fontSize: 11,

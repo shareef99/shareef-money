@@ -177,7 +177,6 @@ export default function StatsScreen() {
                     style={{ backgroundColor: row.color }}
                   />
                   <Text className="text-base text-text flex-1" numberOfLines={1}>
-                    {row.icon ? `${row.icon} ` : ""}
                     {row.name}
                   </Text>
                   <Text className="text-sm text-text-secondary mr-3">

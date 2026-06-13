@@ -62,7 +62,6 @@ export async function getTransactionsByDateRange(db: Db, userId: string, from: D
 export type CategoryBreakdownRow = {
   categoryId: number | null;
   name: string;
-  icon: string | null;
   total: number;
   count: number;
 };
@@ -101,7 +100,6 @@ export async function getCategoryBreakdown(
       grouped.set(key, {
         categoryId: key,
         name: cat?.name ?? "Uncategorized",
-        icon: cat?.icon ?? null,
         total: tx.amount,
         count: 1,
       });
