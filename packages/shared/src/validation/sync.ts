@@ -14,7 +14,7 @@ const syncChangeSchema = z
   .object({
     table: z.enum(syncableTableNames),
     action: z.enum(["upsert", "delete"]),
-    data: z.record(z.unknown()),
+    data: z.record(z.string(), z.unknown()),
     updatedAt: z.number().int().positive(),
   })
   .strict();

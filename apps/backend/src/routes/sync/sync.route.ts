@@ -69,7 +69,7 @@ const pullRoute = createRoute({
       content: {
         "application/json": {
           schema: z.object({
-            changes: z.record(z.array(z.unknown())),
+            changes: z.record(z.string(), z.array(z.unknown())),
             syncedAt: z.number(),
           }),
         },
