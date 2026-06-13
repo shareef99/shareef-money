@@ -20,10 +20,7 @@ export default function AppLayout() {
       <SyncProvider>
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" />
-          <Stack.Screen
-            name="(modals)/add-transaction"
-            options={{ presentation: "modal" }}
-          />
+          <Stack.Screen name="(modals)" options={{ presentation: "modal" }} />
         </Stack>
       </SyncProvider>
     </DatabaseProvider>

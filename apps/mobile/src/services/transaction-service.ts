@@ -5,6 +5,7 @@ import {
 } from "@shareef-money/db/schema";
 import type { TransactionType } from "@shareef-money/shared/types";
 import type { Db } from "../db/client";
+import { generateSyncId } from "../lib/sync-id";
 
 type CreateTransactionPayload = {
   type: TransactionType;
@@ -89,6 +90,7 @@ export async function createTransaction(db: Db, userId: string, payload: CreateT
   const [transaction] = await db
     .insert(transactionsTable)
     .values({
+      id: generateSyncId(),
       userId,
       type: data.type,
       amount: data.amount,
