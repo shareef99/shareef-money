@@ -108,7 +108,8 @@ export function DailyView({ monthStart, monthEnd }: Props) {
             <Text className="text-xl mr-3">{item.category?.icon ?? "💰"}</Text>
             <View className="flex-1">
               <Text className="text-sm text-text">
-                {item.category?.name ?? "Transfer"}
+                {item.category?.name ??
+                  (item.type === "transfer" ? "Transfer" : "(No category)")}
               </Text>
               {item.note ? (
                 <Text
