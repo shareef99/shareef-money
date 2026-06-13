@@ -1,7 +1,5 @@
-import { relations } from "drizzle-orm";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { usersTable } from "./users";
-import { transactionsTable } from "./transactions";
 
 export const categoriesTable = sqliteTable("categories", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -28,20 +26,3 @@ export const categoriesTable = sqliteTable("categories", {
     .$defaultFn(() => new Date())
     .$onUpdateFn(() => new Date()),
 });
-
-export const categoriesRelations = relations(
-  categoriesTable,
-  ({ one, many }) => ({
-    user: one(usersTable, {
-      fields: [categoriesTable.userId],
-      references: [usersTable.id],
-    }),
-    parent: one(categoriesTable, {
-      fields: [categoriesTable.parentId],
-      references: [categoriesTable.id],
-      relationName: "parentChild",
-    }),
-    subcategories: many(categoriesTable, { relationName: "parentChild" }),
-    transactions: many(transactionsTable),
-  }),
-);

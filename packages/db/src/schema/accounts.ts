@@ -1,7 +1,5 @@
-import { relations } from "drizzle-orm";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { usersTable } from "./users";
-import { transactionsTable } from "./transactions";
 
 export const accountsTable = sqliteTable("accounts", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -26,11 +24,3 @@ export const accountsTable = sqliteTable("accounts", {
     .$defaultFn(() => new Date())
     .$onUpdateFn(() => new Date()),
 });
-
-export const accountsRelations = relations(accountsTable, ({ one, many }) => ({
-  user: one(usersTable, {
-    fields: [accountsTable.userId],
-    references: [usersTable.id],
-  }),
-  transactions: many(transactionsTable),
-}));

@@ -1,4 +1,3 @@
-import { relations } from "drizzle-orm";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { usersTable } from "./users";
 import { transactionsTable } from "./transactions";
@@ -25,17 +24,3 @@ export const recurringRulesTable = sqliteTable("recurring_rules", {
     .$defaultFn(() => new Date())
     .$onUpdateFn(() => new Date()),
 });
-
-export const recurringRulesRelations = relations(
-  recurringRulesTable,
-  ({ one }) => ({
-    user: one(usersTable, {
-      fields: [recurringRulesTable.userId],
-      references: [usersTable.id],
-    }),
-    transaction: one(transactionsTable, {
-      fields: [recurringRulesTable.transactionId],
-      references: [transactionsTable.id],
-    }),
-  }),
-);

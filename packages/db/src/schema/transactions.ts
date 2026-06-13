@@ -1,4 +1,3 @@
-import { relations } from "drizzle-orm";
 import {
   index,
   integer,
@@ -11,7 +10,6 @@ import { categoriesTable } from "./categories";
 import { accountsTable } from "./accounts";
 import { locationsTable } from "./locations";
 import { contactsTable } from "./contacts";
-import { recurringRulesTable } from "./recurring-rules";
 
 export const transactionsTable = sqliteTable(
   "transactions",
@@ -48,36 +46,6 @@ export const transactionsTable = sqliteTable(
   ],
 );
 
-export const transactionsRelations = relations(
-  transactionsTable,
-  ({ one, many }) => ({
-    user: one(usersTable, {
-      fields: [transactionsTable.userId],
-      references: [usersTable.id],
-    }),
-    category: one(categoriesTable, {
-      fields: [transactionsTable.categoryId],
-      references: [categoriesTable.id],
-    }),
-    account: one(accountsTable, {
-      fields: [transactionsTable.accountId],
-      references: [accountsTable.id],
-      relationName: "sourceAccount",
-    }),
-    toAccount: one(accountsTable, {
-      fields: [transactionsTable.toAccountId],
-      references: [accountsTable.id],
-      relationName: "destinationAccount",
-    }),
-    location: one(locationsTable, {
-      fields: [transactionsTable.locationId],
-      references: [locationsTable.id],
-    }),
-    transactionContacts: many(transactionContactsTable),
-    recurringRules: many(recurringRulesTable),
-  }),
-);
-
 export const transactionContactsTable = sqliteTable(
   "transaction_contacts",
   {
@@ -91,18 +59,4 @@ export const transactionContactsTable = sqliteTable(
   (table) => [
     primaryKey({ columns: [table.transactionId, table.contactId] }),
   ],
-);
-
-export const transactionContactsRelations = relations(
-  transactionContactsTable,
-  ({ one }) => ({
-    transaction: one(transactionsTable, {
-      fields: [transactionContactsTable.transactionId],
-      references: [transactionsTable.id],
-    }),
-    contact: one(contactsTable, {
-      fields: [transactionContactsTable.contactId],
-      references: [contactsTable.id],
-    }),
-  }),
 );
