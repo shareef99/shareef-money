@@ -9,7 +9,6 @@ export const categoriesTable = sqliteTable("categories", {
   parentId: integer("parent_id"),
   name: text("name").notNull(),
   type: text("type").notNull(),
-  icon: text("icon"),
   color: text("color"),
   sortOrder: integer("sort_order").notNull().default(0),
   isDefault: integer("is_default", { mode: "boolean" })

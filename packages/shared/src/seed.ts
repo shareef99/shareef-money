@@ -3,26 +3,30 @@ import type { CategoryType, AppSettings } from "./types";
 export interface SeedCategory {
   name: string;
   type: CategoryType;
-  icon: string;
   color: string;
   subcategories?: Omit<SeedCategory, "type" | "subcategories">[];
 }
 
 export const defaultExpenseCategories: SeedCategory[] = [
-  { name: "Food", type: "expense", icon: "🍔", color: "#FF6B6B" },
-  { name: "Transport", type: "expense", icon: "🚗", color: "#4ECDC4" },
-  { name: "Mobile", type: "expense", icon: "📱", color: "#45B7D1" },
-  { name: "Family", type: "expense", icon: "👨‍👩‍👧", color: "#F7DC6F" },
-  { name: "Entertainment", type: "expense", icon: "🎬", color: "#BB8FCE" },
-  { name: "Charity", type: "expense", icon: "🤲", color: "#82E0AA" },
-  { name: "Games", type: "expense", icon: "🎮", color: "#F0B27A" },
-  { name: "Flowers", type: "expense", icon: "💐", color: "#F1948A" },
-  { name: "My Self", type: "expense", icon: "🧑", color: "#85C1E9" },
-  { name: "Arshiya", type: "expense", icon: "👶", color: "#D7BDE2" },
+  { name: "Food", type: "expense", color: "#FF6B6B" },
+  { name: "Transport", type: "expense", color: "#4ECDC4" },
+  { name: "Mobile", type: "expense", color: "#45B7D1" },
+  { name: "Family", type: "expense", color: "#F7DC6F" },
+  { name: "Entertainment", type: "expense", color: "#BB8FCE" },
+  { name: "Charity", type: "expense", color: "#82E0AA" },
+  { name: "Games", type: "expense", color: "#F0B27A" },
+  { name: "Flowers", type: "expense", color: "#F1948A" },
+  { name: "My Self", type: "expense", color: "#85C1E9" },
+  { name: "Arshiya", type: "expense", color: "#D7BDE2" },
 ];
 
 export const defaultIncomeCategories: SeedCategory[] = [
-  { name: "Salary", type: "income", icon: "💰", color: "#58D68D" },
+  { name: "Salary", type: "income", color: "#58D68D" },
+  { name: "Allowance", type: "income", color: "#5DADE2" },
+  { name: "Bonus", type: "income", color: "#48C9B0" },
+  { name: "Petty Cash", type: "income", color: "#F5B041" },
+  { name: "Investments", type: "income", color: "#AF7AC5" },
+  { name: "Other", type: "income", color: "#99A3A4" },
 ];
 
 export const defaultSettings: AppSettings = {
