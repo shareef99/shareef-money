@@ -9,24 +9,57 @@ import { chartColor } from "../../../../lib/chart-colors";
 import { cn } from "../../../../lib/cn";
 
 type StatsType = "income" | "expense";
+type Period = "weekly" | "monthly" | "annually";
+
+const PERIODS: { key: Period; label: string }[] = [
+  { key: "weekly", label: "Week" },
+  { key: "monthly", label: "Month" },
+  { key: "annually", label: "Year" },
+];
+
+// Monday-based start of the week containing d.
+function startOfWeek(d: Date) {
+  const r = new Date(d);
+  const dow = (r.getDay() + 6) % 7;
+  r.setDate(r.getDate() - dow);
+  r.setHours(0, 0, 0, 0);
+  return r;
+}
 
 export default function StatsScreen() {
   const [type, setType] = useState<StatsType>("expense");
+  const [period, setPeriod] = useState<Period>("monthly");
   const [currentDate, setCurrentDate] = useState(new Date());
 
-  const monthStart = useMemo(() => {
-    const d = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-    d.setHours(0, 0, 0, 0);
-    return d;
-  }, [currentDate]);
+  const { rangeStart, rangeEnd, rangeLabel } = useMemo(() => {
+    if (period === "weekly") {
+      const start = startOfWeek(currentDate);
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      end.setHours(23, 59, 59, 999);
+      const fmt = (x: Date) =>
+        x.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+      return { rangeStart: start, rangeEnd: end, rangeLabel: `${fmt(start)} – ${fmt(end)}` };
+    }
+    if (period === "annually") {
+      const start = new Date(currentDate.getFullYear(), 0, 1);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(currentDate.getFullYear(), 11, 31);
+      end.setHours(23, 59, 59, 999);
+      return { rangeStart: start, rangeEnd: end, rangeLabel: String(currentDate.getFullYear()) };
+    }
+    const start = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+    end.setHours(23, 59, 59, 999);
+    return {
+      rangeStart: start,
+      rangeEnd: end,
+      rangeLabel: currentDate.toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+    };
+  }, [period, currentDate]);
 
-  const monthEnd = useMemo(() => {
-    const d = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-    d.setHours(23, 59, 59, 999);
-    return d;
-  }, [currentDate]);
-
-  const { data } = useCategoryBreakdown(type, monthStart, monthEnd);
+  const { data } = useCategoryBreakdown(type, rangeStart, rangeEnd);
 
   const rows = useMemo(
     () =>
@@ -43,28 +76,47 @@ export default function StatsScreen() {
     [rows],
   );
 
-  const navigateMonth = (dir: -1 | 1) => {
+  const navigate = (dir: -1 | 1) => {
     setCurrentDate((prev) => {
       const d = new Date(prev);
-      d.setMonth(d.getMonth() + dir);
+      if (period === "weekly") d.setDate(d.getDate() + dir * 7);
+      else if (period === "annually") d.setFullYear(d.getFullYear() + dir);
+      else d.setMonth(d.getMonth() + dir);
       return d;
     });
   };
 
-  const monthLabel = currentDate.toLocaleDateString("en-US", {
-    month: "long",
-    year: "numeric",
-  });
-
   return (
     <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
       <View className="flex-1 bg-background">
+        <View className="flex-row justify-center gap-2 px-4 pt-2">
+          {PERIODS.map((p) => (
+            <Pressable
+              key={p.key}
+              className={cn(
+                "px-4 py-1.5 rounded-full border",
+                period === p.key ? "bg-primary border-primary" : "bg-card border-border",
+              )}
+              onPress={() => setPeriod(p.key)}
+            >
+              <Text
+                className={cn(
+                  "text-sm",
+                  period === p.key ? "text-primary-foreground" : "text-text-secondary",
+                )}
+              >
+                {p.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+
         <View className="flex-row items-center justify-between px-4 py-2">
-          <Pressable onPress={() => navigateMonth(-1)} className="p-2">
+          <Pressable onPress={() => navigate(-1)} className="p-2">
             <ChevronLeft size={20} className="text-text" />
           </Pressable>
-          <Text className="text-base font-semibold text-text">{monthLabel}</Text>
-          <Pressable onPress={() => navigateMonth(1)} className="p-2">
+          <Text className="text-base font-semibold text-text">{rangeLabel}</Text>
+          <Pressable onPress={() => navigate(1)} className="p-2">
             <ChevronRight size={20} className="text-text" />
           </Pressable>
         </View>
