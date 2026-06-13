@@ -1,25 +1,28 @@
-export {
-  usersTable,
-  usersRelations,
-  sessionsTable,
-  sessionsRelations,
-} from "./users";
-export { accountsTable, accountsRelations } from "./accounts";
-export { categoriesTable, categoriesRelations } from "./categories";
-export { contactsTable, contactsRelations } from "./contacts";
-export { locationsTable, locationsRelations } from "./locations";
+export { usersTable, sessionsTable } from "./users";
+export { accountsTable } from "./accounts";
+export { categoriesTable } from "./categories";
+export { contactsTable } from "./contacts";
+export { locationsTable } from "./locations";
 export {
   transactionsTable,
-  transactionsRelations,
   transactionContactsTable,
-  transactionContactsRelations,
 } from "./transactions";
+export { recurringRulesTable } from "./recurring-rules";
+export { settingsTable } from "./settings";
+export { syncLogTable } from "./sync-log";
 export {
-  recurringRulesTable,
+  usersRelations,
+  sessionsRelations,
+  accountsRelations,
+  categoriesRelations,
+  contactsRelations,
+  locationsRelations,
+  transactionsRelations,
+  transactionContactsRelations,
   recurringRulesRelations,
-} from "./recurring-rules";
-export { settingsTable, settingsRelations } from "./settings";
-export { syncLogTable, syncLogRelations } from "./sync-log";
+  settingsRelations,
+  syncLogRelations,
+} from "./relations";
 
 import type { usersTable } from "./users";
 import type { sessionsTable } from "./users";

@@ -1,11 +1,4 @@
-import { relations } from "drizzle-orm";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import { accountsTable } from "./accounts";
-import { categoriesTable } from "./categories";
-import { transactionsTable } from "./transactions";
-import { recurringRulesTable } from "./recurring-rules";
-import { settingsTable } from "./settings";
-import { syncLogTable } from "./sync-log";
 
 export const usersTable = sqliteTable("users", {
   id: text("id").primaryKey(),
@@ -24,16 +17,6 @@ export const usersTable = sqliteTable("users", {
     .$onUpdateFn(() => new Date()),
 });
 
-export const usersRelations = relations(usersTable, ({ many }) => ({
-  sessions: many(sessionsTable),
-  accounts: many(accountsTable),
-  categories: many(categoriesTable),
-  transactions: many(transactionsTable),
-  recurringRules: many(recurringRulesTable),
-  settings: many(settingsTable),
-  syncLogs: many(syncLogTable),
-}));
-
 export const sessionsTable = sqliteTable("sessions", {
   id: text("id").primaryKey(),
   userId: text("user_id")
@@ -47,10 +30,3 @@ export const sessionsTable = sqliteTable("sessions", {
     .notNull()
     .$defaultFn(() => new Date()),
 });
-
-export const sessionsRelations = relations(sessionsTable, ({ one }) => ({
-  user: one(usersTable, {
-    fields: [sessionsTable.userId],
-    references: [usersTable.id],
-  }),
-}));
