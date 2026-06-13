@@ -87,7 +87,6 @@ function seedUserDefaults(db: AppDatabase, userId: string): void {
         userId,
         name: cat.name,
         type: cat.type,
-        icon: cat.icon,
         color: cat.color,
         isDefault: true,
       })

@@ -49,7 +49,6 @@ export function list(db: AppDatabase, userId: string, filters: TransactionFilter
       createdAt: transactionsTable.createdAt,
       updatedAt: transactionsTable.updatedAt,
       categoryName: categoriesTable.name,
-      categoryIcon: categoriesTable.icon,
       categoryColor: categoriesTable.color,
       accountName: accountsTable.name,
     })
@@ -81,7 +80,6 @@ export function getById(db: AppDatabase, userId: string, id: number) {
       createdAt: transactionsTable.createdAt,
       updatedAt: transactionsTable.updatedAt,
       categoryName: categoriesTable.name,
-      categoryIcon: categoriesTable.icon,
       categoryColor: categoriesTable.color,
       accountName: accountsTable.name,
     })
