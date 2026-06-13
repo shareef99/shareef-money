@@ -8,6 +8,8 @@ export const transactionKeys = {
   all: ["transactions"] as const,
   list: (filters: Record<string, unknown>) => [...transactionKeys.all, "list", filters] as const,
   summary: (from: string, to: string) => [...transactionKeys.all, "summary", from, to] as const,
+  breakdown: (type: string, from: string, to: string) =>
+    [...transactionKeys.all, "breakdown", type, from, to] as const,
 };
 
 export function useTransactions(filters: {
@@ -27,6 +29,22 @@ export function useTransactions(filters: {
     }),
     queryFn: () => transactionService.getTransactions(db, user!.id, filters),
     enabled: !!user,
+  });
+}
+
+export function useCategoryBreakdown(
+  type: "income" | "expense",
+  from: Date,
+  to: Date,
+) {
+  const { db } = useDatabase();
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: transactionKeys.breakdown(type, from.toISOString(), to.toISOString()),
+    queryFn: () => transactionService.getCategoryBreakdown(db, user!.id, type, from, to),
+    enabled: !!user,
+    initialData: { rows: [], total: 0 },
   });
 }
 
