@@ -1,4 +1,5 @@
-import { Appearance, Pressable, Text, View, useColorScheme } from "react-native";
+import { Pressable, Text, View } from "react-native";
+import { useColorScheme } from "nativewind";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { LogOut, MapPin, Moon, Shapes, Sun, Users } from "lucide-react-native";
@@ -7,10 +8,10 @@ import { useAuth } from "../../../../providers/auth-provider";
 export default function MoreScreen() {
   const { user, logout } = useAuth();
   const router = useRouter();
-  const scheme = useColorScheme();
+  const { colorScheme, toggleColorScheme } = useColorScheme();
 
   const toggleTheme = () => {
-    Appearance.setColorScheme(scheme === "dark" ? "light" : "dark");
+    toggleColorScheme();
   };
 
   return (
@@ -51,7 +52,7 @@ export default function MoreScreen() {
             className="w-1/3 items-center gap-2 py-6 active:opacity-70"
             onPress={toggleTheme}
           >
-            {scheme === "dark" ? (
+            {colorScheme === "dark" ? (
               <Sun size={28} strokeWidth={1.5} className="text-text" />
             ) : (
               <Moon size={28} strokeWidth={1.5} className="text-text" />
