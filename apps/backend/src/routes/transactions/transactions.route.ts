@@ -27,8 +27,8 @@ const listRoute = createRoute({
       dateTo: z.string().transform(Number).optional(),
       categoryIds: z.string().optional(),
       accountIds: z.string().optional(),
-      limit: z.string().transform(Number).default("100"),
-      offset: z.string().transform(Number).default("0"),
+      limit: z.string().default("100").transform(Number),
+      offset: z.string().default("0").transform(Number),
     }),
   },
   responses: {
