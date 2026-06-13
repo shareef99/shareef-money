@@ -2,7 +2,7 @@ import { Pressable, Text, View } from "react-native";
 import { useColorScheme } from "nativewind";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { LogOut, MapPin, Moon, Shapes, Sun, Users } from "lucide-react-native";
+import { LogOut, MapPin, Moon, PiggyBank, Shapes, Sun, Users } from "lucide-react-native";
 import { useAuth } from "../../../../providers/auth-provider";
 
 export default function MoreScreen() {
@@ -47,6 +47,13 @@ export default function MoreScreen() {
           >
             <Users size={28} strokeWidth={1.5} className="text-text" />
             <Text className="text-sm text-text">Contacts</Text>
+          </Pressable>
+          <Pressable
+            className="w-1/3 items-center gap-2 py-6 active:opacity-70"
+            onPress={() => router.push("/budget")}
+          >
+            <PiggyBank size={28} strokeWidth={1.5} className="text-text" />
+            <Text className="text-sm text-text">Budget</Text>
           </Pressable>
           <Pressable
             className="w-1/3 items-center gap-2 py-6 active:opacity-70"
