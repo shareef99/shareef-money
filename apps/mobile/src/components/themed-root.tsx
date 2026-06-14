@@ -1,22 +1,21 @@
 import type { ReactNode } from "react";
 import { View } from "react-native";
-import { useColorScheme, vars } from "nativewind";
+import { useColorScheme } from "nativewind";
 import { StatusBar } from "expo-status-bar";
-import { lightVars, darkVars } from "../lib/theme-vars";
 
 type Props = {
   children: ReactNode;
 };
 
-// Injects the active theme's CSS variables so every `bg-background`,
-// `text-text`, etc. token resolves against them.
+// Theming itself is handled by the @media(prefers-color-scheme) block in
+// global.css (NativeWind applies it globally to every screen). Here we only
+// keep the status bar in sync with the same color scheme: dark theme → light
+// (white) icons, light theme → dark icons.
 export function ThemedRoot({ children }: Props) {
   const { colorScheme } = useColorScheme();
-  const themeVars = colorScheme === "dark" ? darkVars : lightVars;
 
   return (
-    <View style={vars(themeVars)} className="flex-1">
-      {/* Dark theme → light (white) status bar icons; light theme → dark icons. */}
+    <View className="flex-1">
       <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
       {children}
     </View>

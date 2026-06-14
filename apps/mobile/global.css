@@ -37,9 +37,11 @@
   --color-tab-inactive: #9C9686;
 }
 
-/* Dark theme — NativeWind applies this from its color-scheme state (driven by
-   toggleColorScheme), globally, so it reaches every screen regardless of
-   context propagation. Final token names only (no indirection). */
+/* Dark theme. This @media block is the SINGLE theming mechanism — NativeWind
+   drives prefers-color-scheme from its color-scheme state (system + the in-app
+   toggle), applying these globally to every screen. We do NOT also use vars()
+   in ThemedRoot; having both made text and background resolve from different
+   sources and produced low-contrast text. */
 @media (prefers-color-scheme: dark) {
   :root {
     --color-income: #5AA0F0;
