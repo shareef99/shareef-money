@@ -22,6 +22,32 @@ export function useAccounts() {
   });
 }
 
+// One-time-ish: convert any legacy account opening balances into income
+// transactions on launch (no-op once all accounts have been migrated).
+export function useMigrateOpeningBalances() {
+  const { db } = useDatabase();
+  const { user } = useAuth();
+  const { triggerSync } = useSync();
+  const queryClient = useQueryClient();
+
+  return useQuery({
+    queryKey: [...accountKeys.all, "migrate-opening", user?.id],
+    queryFn: async () => {
+      const migrated = await accountService.migrateOpeningBalances(db, user!.id);
+      if (migrated > 0) {
+        queryClient.invalidateQueries({ queryKey: accountKeys.all });
+        queryClient.invalidateQueries({ queryKey: ["transactions"] });
+        queryClient.invalidateQueries({ queryKey: ["categories"] });
+        triggerSync();
+      }
+      return migrated;
+    },
+    enabled: !!user,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+  });
+}
+
 export function useAccountsWithBalances() {
   const { db } = useDatabase();
   const { user } = useAuth();
