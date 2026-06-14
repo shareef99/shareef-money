@@ -5,12 +5,14 @@ type Props = {
   income: number;
   expense: number;
   // When carry-forward is enabled, the leftover balance brought in from prior
-  // months. Folded into the Total and shown as a small note.
+  // months. It is added into the displayed Income figure.
   carriedForward?: number;
 };
 
 export function SummaryBar({ income, expense, carriedForward }: Props) {
-  const net = income - expense + (carriedForward ?? 0);
+  const carry = carriedForward ?? 0;
+  const displayIncome = income + carry;
+  const net = displayIncome - expense;
 
   return (
     <View className="bg-surface border-b border-border">
@@ -18,7 +20,7 @@ export function SummaryBar({ income, expense, carriedForward }: Props) {
         <View className="items-center flex-1">
           <Text className="text-xs text-text-secondary mb-0.5">Income</Text>
           <Text className="text-sm font-medium text-income">
-            {formatCurrency(income)}
+            {formatCurrency(displayIncome)}
           </Text>
         </View>
         <View className="items-center flex-1">
@@ -37,10 +39,10 @@ export function SummaryBar({ income, expense, carriedForward }: Props) {
           </Text>
         </View>
       </View>
-      {carriedForward != null && carriedForward !== 0 && (
+      {carry !== 0 && (
         <Text className="text-[11px] text-text-muted text-center pb-1.5">
-          Brought forward: {carriedForward < 0 ? "-" : ""}
-          {formatCurrency(Math.abs(carriedForward))}
+          Income includes {carry < 0 ? "-" : ""}
+          {formatCurrency(Math.abs(carry))} brought forward
         </Text>
       )}
     </View>
