@@ -1,17 +1,20 @@
 import { Pressable, Text, View } from "react-native";
+import { useColorScheme } from "nativewind";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
+import { getColors } from "../../../lib/colors";
 
 export default function CategorySettingsScreen() {
   const router = useRouter();
+  const c = getColors(useColorScheme().colorScheme);
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <View className="flex-1 bg-background">
         <View className="flex-row items-center px-4 py-2">
           <Pressable onPress={() => router.back()} className="p-2 -ml-2">
-            <ArrowLeft size={24} className="text-text" />
+            <ArrowLeft size={24} color={c.text} />
           </Pressable>
           <Text className="text-lg font-semibold text-text ml-2">Category</Text>
         </View>

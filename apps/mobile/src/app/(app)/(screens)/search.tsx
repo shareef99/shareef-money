@@ -20,7 +20,7 @@ const FILTERS: { key: Filter; label: string }[] = [
 
 export default function SearchScreen() {
   const router = useRouter();
-  const { textMuted } = getColors(useColorScheme());
+  const { text, textMuted } = getColors(useColorScheme());
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
 
@@ -50,7 +50,7 @@ export default function SearchScreen() {
       <View className="flex-1 bg-background">
         <View className="flex-row items-center px-4 py-2 gap-2">
           <Pressable onPress={() => router.back()} className="p-2 -ml-2">
-            <ArrowLeft size={24} className="text-text" />
+            <ArrowLeft size={24} color={text} />
           </Pressable>
           <View className="flex-1 flex-row items-center bg-card rounded-lg px-3">
             <SearchIcon size={18} className="text-text-secondary" />

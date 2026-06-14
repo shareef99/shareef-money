@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
+import { useColorScheme } from "nativewind";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Plus } from "lucide-react-native";
@@ -9,6 +10,7 @@ import {
   useCreateAccount,
 } from "../../../../queries/use-accounts";
 import { AccountFormModal } from "../../../../components/account-form-modal";
+import { getColors } from "../../../../lib/colors";
 import { cn } from "../../../../lib/cn";
 
 export default function AccountsScreen() {
@@ -16,6 +18,7 @@ export default function AccountsScreen() {
   const { data } = useAccountsWithBalances();
   const createAccount = useCreateAccount();
   const [showAdd, setShowAdd] = useState(false);
+  const c = getColors(useColorScheme().colorScheme);
 
   return (
     <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
@@ -23,7 +26,7 @@ export default function AccountsScreen() {
         <View className="flex-row items-center justify-between px-4 py-3">
           <Text className="text-xl font-semibold text-text">Accounts</Text>
           <Pressable onPress={() => setShowAdd(true)} className="p-2 -mr-2">
-            <Plus size={24} className="text-text" />
+            <Plus size={24} color={c.text} />
           </Pressable>
         </View>
 

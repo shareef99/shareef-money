@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
+import { useColorScheme } from "nativewind";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react-native";
@@ -9,6 +10,7 @@ import { useCategories } from "../../../queries/use-categories";
 import { useCategoryBreakdown } from "../../../queries/use-transactions";
 import { useBudgets, useSetBudget } from "../../../queries/use-budgets";
 import { AmountInputModal } from "../../../components/amount-input-modal";
+import { getColors } from "../../../lib/colors";
 import { cn } from "../../../lib/cn";
 
 function ProgressBar({ ratio }: { ratio: number }) {
@@ -26,6 +28,7 @@ function ProgressBar({ ratio }: { ratio: number }) {
 
 export default function BudgetScreen() {
   const router = useRouter();
+  const c = getColors(useColorScheme().colorScheme);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [editTarget, setEditTarget] = useState<Category | null>(null);
 
@@ -83,18 +86,18 @@ export default function BudgetScreen() {
       <View className="flex-1 bg-background">
         <View className="flex-row items-center px-4 py-2">
           <Pressable onPress={() => router.back()} className="p-2 -ml-2">
-            <ArrowLeft size={24} className="text-text" />
+            <ArrowLeft size={24} color={c.text} />
           </Pressable>
           <Text className="text-lg font-semibold text-text ml-2">Budget</Text>
         </View>
 
         <View className="flex-row items-center justify-center px-4 py-1">
           <Pressable onPress={() => navigateMonth(-1)} className="p-2">
-            <ChevronLeft size={18} className="text-text" />
+            <ChevronLeft size={18} color={c.text} />
           </Pressable>
           <Text className="text-sm font-medium text-text mx-3">{monthLabel}</Text>
           <Pressable onPress={() => navigateMonth(1)} className="p-2">
-            <ChevronRight size={18} className="text-text" />
+            <ChevronRight size={18} color={c.text} />
           </Pressable>
         </View>
 
