@@ -45,6 +45,10 @@ export function useCreateAccount() {
       accountService.createAccount(db, user!.id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: accountKeys.all });
+      // Creating an account may also create an Opening Balance income entry
+      // (and its category), so refresh those caches too.
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
       triggerSync();
     },
   });

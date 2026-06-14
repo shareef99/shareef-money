@@ -65,13 +65,16 @@ export function AccountFormModal({
 
           <Text className="text-xs text-text-secondary mb-1">Initial balance</Text>
           <TextInput
-            className="text-base text-text border-b border-border pb-2 mb-4"
+            className="text-base text-text border-b border-border pb-1"
             placeholder="0"
             placeholderTextColor={textMuted}
             value={balance}
             onChangeText={setBalance}
             keyboardType="numeric"
           />
+          <Text className="text-[11px] text-text-muted mb-4">
+            Recorded as an “Opening Balance” income entry.
+          </Text>
 
           <Text className="text-xs text-text-secondary mb-1">Description (optional)</Text>
           <TextInput

@@ -2,6 +2,7 @@ import { eq, and, desc } from "drizzle-orm";
 import { accountsTable, transactionsTable } from "@shareef-money/db/schema";
 import type { Db } from "../db/client";
 import { generateSyncId } from "../lib/sync-id";
+import { getOrCreateOpeningBalanceCategory } from "./category-service";
 
 export async function getAccounts(db: Db, userId: string) {
   return db.query.accountsTable.findMany({
@@ -82,17 +83,40 @@ export async function createAccount(db: Db, userId: string, payload: CreateAccou
   });
   const nextSortOrder = (last[0]?.sortOrder ?? -1) + 1;
 
+  const opening = payload.initialBalance ?? 0;
+
+  // The opening amount is recorded as an income transaction (see below), so the
+  // account's stored initialBalance stays 0 to avoid double-counting it in the
+  // balance.
   const [account] = await db
     .insert(accountsTable)
     .values({
       id: generateSyncId(),
       userId,
       name: payload.name,
-      initialBalance: payload.initialBalance ?? 0,
+      initialBalance: 0,
       description: payload.description ?? null,
       sortOrder: nextSortOrder,
     })
     .returning();
+
+  if (opening > 0 && account) {
+    const category = await getOrCreateOpeningBalanceCategory(db, userId);
+    await db.insert(transactionsTable).values({
+      id: generateSyncId(),
+      userId,
+      type: "income",
+      amount: opening,
+      fee: 0,
+      categoryId: category.id,
+      accountId: account.id,
+      toAccountId: null,
+      locationId: null,
+      note: "Opening balance",
+      description: null,
+      date: new Date(),
+    });
+  }
 
   return account;
 }

@@ -57,6 +57,37 @@ export async function ensureDefaultCategories(db: Db, userId: string): Promise<n
   return all.length;
 }
 
+export const OPENING_BALANCE_CATEGORY = "Opening Balance";
+
+// The income category used when an account's opening balance is recorded as
+// income. Created on demand so it always exists when needed.
+export async function getOrCreateOpeningBalanceCategory(db: Db, userId: string) {
+  const existing = await db.query.categoriesTable.findFirst({
+    where: and(
+      eq(categoriesTable.userId, userId),
+      eq(categoriesTable.type, "income"),
+      eq(categoriesTable.name, OPENING_BALANCE_CATEGORY),
+      eq(categoriesTable.isArchived, false),
+    ),
+  });
+  if (existing) return existing;
+
+  const [category] = await db
+    .insert(categoriesTable)
+    .values({
+      id: generateSyncId(),
+      userId,
+      name: OPENING_BALANCE_CATEGORY,
+      type: "income",
+      color: "#7F8C8D",
+      parentId: null,
+      sortOrder: 999,
+      isDefault: true,
+    })
+    .returning();
+  return category;
+}
+
 export async function getCategoryById(db: Db, userId: string, id: number) {
   return db.query.categoriesTable.findFirst({
     where: and(eq(categoriesTable.id, id), eq(categoriesTable.userId, userId)),
