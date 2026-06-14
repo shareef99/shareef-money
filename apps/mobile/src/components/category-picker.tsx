@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { FlatList, Modal, Pressable, Text, View } from "react-native";
+import { useColorScheme } from "nativewind";
 import { ChevronRight, Pencil, X } from "lucide-react-native";
 import type { Category } from "@shareef-money/db/schema";
+import { getColors } from "../lib/colors";
 import { cn } from "../lib/cn";
 
 type Props = {
@@ -21,6 +23,7 @@ export function CategoryPicker({
   categories,
   title = "Category",
 }: Props) {
+  const c = getColors(useColorScheme().colorScheme);
   const [activeParentId, setActiveParentId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -66,11 +69,11 @@ export function CategoryPicker({
             </Text>
             {onEdit && (
               <Pressable onPress={onEdit} className="p-1 mr-3">
-                <Pencil size={20} className="text-text-secondary" />
+                <Pencil size={20} color={c.textSecondary} />
               </Pressable>
             )}
             <Pressable onPress={onClose} className="p-1">
-              <X size={24} className="text-text-secondary" />
+              <X size={24} color={c.textSecondary} />
             </Pressable>
           </View>
 
@@ -99,7 +102,7 @@ export function CategoryPicker({
                       {item.name}
                     </Text>
                     {hasSubs && (
-                      <ChevronRight size={16} className="text-text-secondary" />
+                      <ChevronRight size={16} color={c.textSecondary} />
                     )}
                   </Pressable>
                 );

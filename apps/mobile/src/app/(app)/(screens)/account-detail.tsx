@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
+import { useColorScheme } from "nativewind";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft, Pencil, Trash2 } from "lucide-react-native";
@@ -12,12 +13,14 @@ import {
 } from "../../../queries/use-accounts";
 import { AccountFormModal } from "../../../components/account-form-modal";
 import { ConfirmModal } from "../../../components/confirm-modal";
+import { getColors } from "../../../lib/colors";
 import { cn } from "../../../lib/cn";
 
 export default function AccountDetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ id?: string }>();
   const accountId = params.id ? Number(params.id) : null;
+  const c = getColors(useColorScheme().colorScheme);
 
   const [showEdit, setShowEdit] = useState(false);
   const [showArchive, setShowArchive] = useState(false);
@@ -55,16 +58,16 @@ export default function AccountDetailScreen() {
       <View className="flex-1 bg-background">
         <View className="flex-row items-center px-4 py-2">
           <Pressable onPress={() => router.back()} className="p-2 -ml-2">
-            <ArrowLeft size={24} className="text-text" />
+            <ArrowLeft size={24} color={c.text} />
           </Pressable>
           <Text className="text-lg font-semibold text-text ml-2 flex-1" numberOfLines={1}>
             {account.name}
           </Text>
           <Pressable onPress={() => setShowEdit(true)} className="p-2">
-            <Pencil size={20} className="text-text-secondary" />
+            <Pencil size={20} color={c.textSecondary} />
           </Pressable>
           <Pressable onPress={() => setShowArchive(true)} className="p-2">
-            <Trash2 size={20} className="text-error" />
+            <Trash2 size={20} color={c.error} />
           </Pressable>
         </View>
 

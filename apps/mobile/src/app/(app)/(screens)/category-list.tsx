@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
+import { useColorScheme } from "nativewind";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import Animated, { useAnimatedRef } from "react-native-reanimated";
@@ -15,9 +16,11 @@ import {
 import { SortableCategoryRow } from "../../../components/sortable-category-row";
 import { CategoryFormModal } from "../../../components/category-form-modal";
 import { ConfirmModal } from "../../../components/confirm-modal";
+import { getColors } from "../../../lib/colors";
 
 export default function CategoryListScreen() {
   const router = useRouter();
+  const c = getColors(useColorScheme().colorScheme);
   const params = useLocalSearchParams<{ type?: string }>();
   const type = params.type === "income" ? "income" : "expense";
 
@@ -56,13 +59,13 @@ export default function CategoryListScreen() {
       <View className="flex-1 bg-background">
         <View className="flex-row items-center px-4 py-2">
           <Pressable onPress={() => router.back()} className="p-2 -ml-2">
-            <ArrowLeft size={24} className="text-text" />
+            <ArrowLeft size={24} color={c.text} />
           </Pressable>
           <Text className="text-lg font-semibold text-text ml-2 flex-1">
             {type === "income" ? "Income Category" : "Expense Category"}
           </Text>
           <Pressable onPress={() => setShowAddModal(true)} className="p-2">
-            <Plus size={24} className="text-text" />
+            <Plus size={24} color={c.text} />
           </Pressable>
         </View>
 

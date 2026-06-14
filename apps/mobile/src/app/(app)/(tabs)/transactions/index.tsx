@@ -3,10 +3,12 @@ import { Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Directions, Gesture, GestureDetector } from "react-native-gesture-handler";
 import { runOnJS } from "react-native-reanimated";
+import { useColorScheme } from "nativewind";
 import { useRouter } from "expo-router";
 import { ChevronLeft, ChevronRight, Plus, Search } from "lucide-react-native";
 import { useTransactions } from "../../../../queries/use-transactions";
 import { useSettings } from "../../../../queries/use-settings";
+import { getColors } from "../../../../lib/colors";
 import { DailyView } from "../../../../components/daily-view";
 import { CalendarView } from "../../../../components/calendar-view";
 import { MonthlyView } from "../../../../components/monthly-view";
@@ -16,6 +18,7 @@ import { cn } from "../../../../lib/cn";
 
 export default function TransactionsScreen() {
   const router = useRouter();
+  const c = getColors(useColorScheme().colorScheme);
   const [activeTab, setActiveTab] = useState<ViewTab>("daily");
   const [currentDate, setCurrentDate] = useState(new Date());
 
@@ -91,16 +94,16 @@ export default function TransactionsScreen() {
       <View className="flex-1 bg-background">
         <View className="flex-row items-center px-4 py-2">
           <Pressable onPress={() => navigateMonth(-1)} className="p-2">
-            <ChevronLeft size={20} className="text-text" />
+            <ChevronLeft size={20} color={c.text} />
           </Pressable>
           <Text className="flex-1 text-center text-base font-semibold text-text">
             {monthLabel}
           </Text>
           <Pressable onPress={() => navigateMonth(1)} className="p-2">
-            <ChevronRight size={20} className="text-text" />
+            <ChevronRight size={20} color={c.text} />
           </Pressable>
           <Pressable onPress={() => router.push("/search")} className="p-2">
-            <Search size={20} className="text-text" />
+            <Search size={20} color={c.text} />
           </Pressable>
         </View>
 

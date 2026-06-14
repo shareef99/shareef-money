@@ -1,7 +1,9 @@
 import { FlatList, Modal, Pressable, Text, View } from "react-native";
+import { useColorScheme } from "nativewind";
 import { X } from "lucide-react-native";
 import { formatCurrency } from "@shareef-money/shared/utils";
 import type { Account } from "@shareef-money/db/schema";
+import { getColors } from "../lib/colors";
 
 type Props = {
   visible: boolean;
@@ -18,6 +20,7 @@ export function AccountPicker({
   accounts,
   title = "Select Account",
 }: Props) {
+  const c = getColors(useColorScheme().colorScheme);
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View className="flex-1 bg-black/50 justify-end">
@@ -25,7 +28,7 @@ export function AccountPicker({
           <View className="flex-row items-center justify-between px-4 py-3 border-b border-border">
             <Text className="text-lg font-semibold text-text">{title}</Text>
             <Pressable onPress={onClose} className="p-1">
-              <X size={24} className="text-text-secondary" />
+              <X size={24} color={c.textSecondary} />
             </Pressable>
           </View>
           <FlatList

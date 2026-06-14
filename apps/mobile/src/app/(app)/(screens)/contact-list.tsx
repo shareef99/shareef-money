@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
+import { useColorScheme } from "nativewind";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { ArrowLeft, Minus, Pencil, Plus } from "lucide-react-native";
@@ -12,9 +13,11 @@ import {
 } from "../../../queries/use-contacts";
 import { CategoryFormModal } from "../../../components/category-form-modal";
 import { ConfirmModal } from "../../../components/confirm-modal";
+import { getColors } from "../../../lib/colors";
 
 export default function ContactListScreen() {
   const router = useRouter();
+  const c = getColors(useColorScheme().colorScheme);
   const { data: contacts = [] } = useContacts();
   const createContact = useCreateContact();
   const updateContact = useUpdateContact();
@@ -40,13 +43,13 @@ export default function ContactListScreen() {
       <View className="flex-1 bg-background">
         <View className="flex-row items-center px-4 py-2">
           <Pressable onPress={() => router.back()} className="p-2 -ml-2">
-            <ArrowLeft size={24} className="text-text" />
+            <ArrowLeft size={24} color={c.text} />
           </Pressable>
           <Text className="text-lg font-semibold text-text ml-2 flex-1">
             Contacts
           </Text>
           <Pressable onPress={() => setFormTarget("add")} className="p-2">
-            <Plus size={24} className="text-text" />
+            <Plus size={24} color={c.text} />
           </Pressable>
         </View>
 
@@ -81,7 +84,7 @@ export default function ContactListScreen() {
                   className="p-2"
                   hitSlop={8}
                 >
-                  <Pencil size={18} className="text-text-secondary" />
+                  <Pencil size={18} color={c.textSecondary} />
                 </Pressable>
               </View>
             ))

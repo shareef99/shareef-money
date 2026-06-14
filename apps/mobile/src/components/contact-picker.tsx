@@ -31,7 +31,7 @@ export function ContactPicker({
   onCreate,
 }: Props) {
   const [newName, setNewName] = useState("");
-  const { textMuted } = getColors(useColorScheme());
+  const c = getColors(useColorScheme());
 
   const handleAdd = () => {
     const trimmed = newName.trim();
@@ -50,7 +50,7 @@ export function ContactPicker({
               <Text className="text-base font-medium text-primary">Done</Text>
             </Pressable>
             <Pressable onPress={onClose} className="p-1 ml-1">
-              <X size={24} className="text-text-secondary" />
+              <X size={24} color={c.textSecondary} />
             </Pressable>
           </View>
 
@@ -58,14 +58,14 @@ export function ContactPicker({
             <TextInput
               className="flex-1 text-base text-text py-1"
               placeholder="Add a person"
-              placeholderTextColor={textMuted}
+              placeholderTextColor={c.textMuted}
               value={newName}
               onChangeText={setNewName}
               onSubmitEditing={handleAdd}
               returnKeyType="done"
             />
             <Pressable onPress={handleAdd} className="p-1">
-              <Plus size={22} className="text-primary" />
+              <Plus size={22} color={c.primary} />
             </Pressable>
           </View>
 
@@ -94,7 +94,7 @@ export function ContactPicker({
                   >
                     {item.name}
                   </Text>
-                  {selected && <Check size={18} className="text-primary" />}
+                  {selected && <Check size={18} color={c.primary} />}
                 </Pressable>
               );
             }}

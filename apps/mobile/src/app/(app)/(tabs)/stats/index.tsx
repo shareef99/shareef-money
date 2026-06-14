@@ -1,11 +1,13 @@
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
+import { useColorScheme } from "nativewind";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 import { formatCurrency } from "@shareef-money/shared/utils";
 import { useCategoryBreakdown } from "../../../../queries/use-transactions";
 import { DonutChart } from "../../../../components/donut-chart";
 import { chartColor } from "../../../../lib/chart-colors";
+import { getColors } from "../../../../lib/colors";
 import { cn } from "../../../../lib/cn";
 
 type StatsType = "income" | "expense";
@@ -27,6 +29,7 @@ function startOfWeek(d: Date) {
 }
 
 export default function StatsScreen() {
+  const c = getColors(useColorScheme().colorScheme);
   const [type, setType] = useState<StatsType>("expense");
   const [period, setPeriod] = useState<Period>("monthly");
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -113,11 +116,11 @@ export default function StatsScreen() {
 
         <View className="flex-row items-center justify-between px-4 py-2">
           <Pressable onPress={() => navigate(-1)} className="p-2">
-            <ChevronLeft size={20} className="text-text" />
+            <ChevronLeft size={20} color={c.text} />
           </Pressable>
           <Text className="text-base font-semibold text-text">{rangeLabel}</Text>
           <Pressable onPress={() => navigate(1)} className="p-2">
-            <ChevronRight size={20} className="text-text" />
+            <ChevronRight size={20} color={c.text} />
           </Pressable>
         </View>
 
