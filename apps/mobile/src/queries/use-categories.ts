@@ -22,6 +22,30 @@ export function useCategories(type?: "income" | "expense") {
   });
 }
 
+// On launch, seed the default categories if the user has none, so there is
+// always something to pick (category is required on every income/expense).
+export function useEnsureDefaultCategories() {
+  const { db } = useDatabase();
+  const { user } = useAuth();
+  const { triggerSync } = useSync();
+  const queryClient = useQueryClient();
+
+  return useQuery({
+    queryKey: [...categoryKeys.all, "ensure-defaults", user?.id],
+    queryFn: async () => {
+      const created = await categoryService.ensureDefaultCategories(db, user!.id);
+      if (created > 0) {
+        queryClient.invalidateQueries({ queryKey: categoryKeys.all });
+        triggerSync();
+      }
+      return created;
+    },
+    enabled: !!user,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+  });
+}
+
 export function useCreateCategory() {
   const { db } = useDatabase();
   const { user } = useAuth();
