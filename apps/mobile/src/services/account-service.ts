@@ -121,6 +121,44 @@ export async function createAccount(db: Db, userId: string, payload: CreateAccou
   return account;
 }
 
+// Bring pre-existing accounts in line with the "opening balance = income"
+// model: for any account that still has a non-zero initialBalance, record that
+// amount as an Opening Balance income transaction and zero the field. Naturally
+// idempotent (after conversion initialBalance is 0, so it won't run again).
+export async function migrateOpeningBalances(db: Db, userId: string): Promise<number> {
+  const accounts = await db.query.accountsTable.findMany({
+    where: eq(accountsTable.userId, userId),
+  });
+
+  let migrated = 0;
+  for (const account of accounts) {
+    if (!account.initialBalance || account.initialBalance === 0) continue;
+
+    const category = await getOrCreateOpeningBalanceCategory(db, userId);
+    await db.insert(transactionsTable).values({
+      id: generateSyncId(),
+      userId,
+      type: "income",
+      amount: account.initialBalance,
+      fee: 0,
+      categoryId: category.id,
+      accountId: account.id,
+      toAccountId: null,
+      locationId: null,
+      note: "Opening balance",
+      description: null,
+      date: account.createdAt instanceof Date ? account.createdAt : new Date(),
+    });
+    await db
+      .update(accountsTable)
+      .set({ initialBalance: 0, updatedAt: new Date() })
+      .where(eq(accountsTable.id, account.id));
+    migrated += 1;
+  }
+
+  return migrated;
+}
+
 export async function updateAccount(db: Db, userId: string, id: number, payload: UpdateAccountPayload) {
   const setData: Record<string, unknown> = { updatedAt: new Date() };
   if (payload.name !== undefined) setData.name = payload.name;
