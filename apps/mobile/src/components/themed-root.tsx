@@ -15,7 +15,7 @@ export function ThemedRoot({ children }: Props) {
   const { colorScheme } = useColorScheme();
 
   return (
-    <View className="flex-1">
+    <View className="flex-1 bg-background">
       <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
       {children}
     </View>
