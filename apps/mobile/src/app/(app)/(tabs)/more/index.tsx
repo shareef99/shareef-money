@@ -8,6 +8,7 @@ import {
   MapPin,
   Moon,
   PiggyBank,
+  Repeat,
   Shapes,
   Sun,
   Users,
@@ -24,10 +25,14 @@ export default function MoreScreen() {
   return (
     <View className="flex-1 bg-background">
       <SafeAreaView edges={["top"]} className="flex-1">
-        <Text className="text-xl font-semibold text-text px-4 py-3">Settings</Text>
+        <Text className="text-xl font-semibold text-text px-4 py-3">
+          Settings
+        </Text>
 
         <View className="mx-4 mb-2 bg-card rounded-xl p-4">
-          <Text className="text-base font-semibold text-text">{user?.name}</Text>
+          <Text className="text-base font-semibold text-text">
+            {user?.name}
+          </Text>
           <Text className="text-sm text-text-secondary">{user?.email}</Text>
         </View>
 
@@ -62,6 +67,13 @@ export default function MoreScreen() {
           </Pressable>
           <Pressable
             className="w-1/3 items-center gap-2 py-6 active:opacity-70"
+            onPress={() => router.push("/recurring")}
+          >
+            <Repeat size={28} strokeWidth={1.5} color={c.text} />
+            <Text className="text-sm text-text">Recurring</Text>
+          </Pressable>
+          <Pressable
+            className="w-1/3 items-center gap-2 py-6 active:opacity-70"
             onPress={() => router.push("/configuration")}
           >
             <Cog size={28} strokeWidth={1.5} color={c.text} />
@@ -82,7 +94,7 @@ export default function MoreScreen() {
             className="w-1/3 items-center gap-2 py-6 active:opacity-70"
             onPress={logout}
           >
-            <LogOut size={28} strokeWidth={1.5} color={c.error} />
+            <LogOut size={28} strokeWidth={1.5} color={c.text} />
             <Text className="text-sm text-error">Logout</Text>
           </Pressable>
         </View>

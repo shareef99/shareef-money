@@ -6,6 +6,7 @@ import {
   locationsTable,
   transactionsTable,
   transactionContactsTable,
+  recurringRulesTable,
   settingsTable,
   syncLogTable,
 } from "@shareef-money/db/schema";
@@ -81,6 +82,11 @@ function applyChange(
         .run();
     }
     results.push({ table: "transaction_contacts", action: change.action, id: `${txId}-${contactId}`, status: "ok" });
+    return;
+  }
+
+  if (change.table === "recurring_rules") {
+    handleRecurringSync(db, userId, data.id as number, change, data, results);
     return;
   }
 
@@ -204,6 +210,64 @@ function handleTransactionSync(
   }
 }
 
+function handleRecurringSync(
+  db: AppDatabase,
+  userId: string,
+  id: number,
+  change: { action: string; updatedAt: number; table: string },
+  data: Record<string, any>,
+  results: Array<{ table: string; action: string; id: unknown; status: string }>,
+) {
+  if (change.action === "delete") {
+    db.delete(recurringRulesTable)
+      .where(and(eq(recurringRulesTable.id, id), eq(recurringRulesTable.userId, userId)))
+      .run();
+    results.push({ table: "recurring_rules", action: "deleted", id, status: "ok" });
+    return;
+  }
+
+  const values = {
+    ...data,
+    userId,
+    startDate: new Date(data.startDate as number),
+    endDate: data.endDate != null ? new Date(data.endDate as number) : null,
+    nextOccurrence: new Date(data.nextOccurrence as number),
+    createdAt: new Date(data.createdAt as number),
+    updatedAt: new Date(change.updatedAt),
+  };
+
+  const existing = db
+    .select()
+    .from(recurringRulesTable)
+    .where(and(eq(recurringRulesTable.id, id), eq(recurringRulesTable.userId, userId)))
+    .get();
+
+  if (existing) {
+    const existingTs =
+      existing.updatedAt instanceof Date
+        ? existing.updatedAt.getTime()
+        : (existing.updatedAt as number);
+
+    if (change.updatedAt > existingTs) {
+      const updateData: any = { ...values };
+      delete updateData.id;
+      delete updateData.createdAt;
+      db.update(recurringRulesTable)
+        .set(updateData)
+        .where(and(eq(recurringRulesTable.id, id), eq(recurringRulesTable.userId, userId)))
+        .run();
+      results.push({ table: "recurring_rules", action: "updated", id, status: "ok" });
+    } else {
+      results.push({ table: "recurring_rules", action: "skipped", id, status: "server_newer" });
+    }
+  } else {
+    db.insert(recurringRulesTable)
+      .values(values as any)
+      .run();
+    results.push({ table: "recurring_rules", action: "created", id, status: "ok" });
+  }
+}
+
 function serializeRow(row: Record<string, any>) {
   return {
     ...row,
@@ -259,6 +323,25 @@ export function pull(
       .all().map(serializeRow);
   }
 
+  if (shouldInclude("recurring_rules")) {
+    result.recurring_rules = db
+      .select().from(recurringRulesTable)
+      .where(and(eq(recurringRulesTable.userId, userId), gt(recurringRulesTable.updatedAt, since)))
+      .all()
+      .map((row) => ({
+        ...row,
+        startDate: row.startDate instanceof Date ? row.startDate.getTime() : row.startDate,
+        endDate:
+          row.endDate instanceof Date ? row.endDate.getTime() : row.endDate,
+        nextOccurrence:
+          row.nextOccurrence instanceof Date
+            ? row.nextOccurrence.getTime()
+            : row.nextOccurrence,
+        createdAt: row.createdAt instanceof Date ? row.createdAt.getTime() : row.createdAt,
+        updatedAt: row.updatedAt instanceof Date ? row.updatedAt.getTime() : row.updatedAt,
+      }));
+  }
+
   if (shouldInclude("settings")) {
     result.settings = db
       .select().from(settingsTable)
@@ -277,7 +360,7 @@ export function pull(
 
 export function ack(db: AppDatabase, userId: string, input: SyncAckInput) {
   const syncedAt = new Date(input.syncedAt);
-  const tableNames = ["accounts", "categories", "contacts", "locations", "transactions", "settings", "transaction_contacts"];
+  const tableNames = ["accounts", "categories", "contacts", "locations", "transactions", "recurring_rules", "settings", "transaction_contacts"];
 
   for (const tableName of tableNames) {
     const existing = db

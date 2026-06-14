@@ -10,6 +10,11 @@ import {
   useUpdateTransaction,
   useDeleteTransaction,
 } from "../../../queries/use-transactions";
+import { useCreateRecurringRule } from "../../../queries/use-recurring";
+import {
+  FREQUENCY_LABELS,
+  type Frequency,
+} from "../../../services/recurring-service";
 import { useSettings } from "../../../queries/use-settings";
 import { useCategories } from "../../../queries/use-categories";
 import { useAccounts } from "../../../queries/use-accounts";
@@ -46,6 +51,7 @@ export default function AddTransactionScreen() {
   const [contactIds, setContactIds] = useState<number[]>([]);
   const [note, setNote] = useState("");
   const [description, setDescription] = useState("");
+  const [repeat, setRepeat] = useState<Frequency | "none">("none");
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showAccountPicker, setShowAccountPicker] = useState(false);
   const [showToAccountPicker, setShowToAccountPicker] = useState(false);
@@ -53,7 +59,7 @@ export default function AddTransactionScreen() {
   const [showContactPicker, setShowContactPicker] = useState(false);
   const [showKeypad, setShowKeypad] = useState(true);
   const [editingFee, setEditingFee] = useState(false);
-  const { textMuted } = getColors(useColorScheme());
+  const c = getColors(useColorScheme());
 
   const { data: categories = [] } = useCategories(
     type === "transfer" ? undefined : type,
@@ -67,6 +73,7 @@ export default function AddTransactionScreen() {
   const createTransaction = useCreateTransaction();
   const updateTransaction = useUpdateTransaction();
   const deleteTransaction = useDeleteTransaction();
+  const createRecurringRule = useCreateRecurringRule();
   const createLocation = useCreateLocation();
   const createContact = useCreateContact();
 
@@ -202,13 +209,25 @@ export default function AddTransactionScreen() {
       if (editId) {
         updateTransaction.mutate({ id: editId, payload }, { onSuccess });
       } else {
-        createTransaction.mutate(payload, { onSuccess });
+        createTransaction.mutate(payload, {
+          onSuccess: (tx) => {
+            // The new transaction becomes the template for its recurring rule.
+            if (repeat !== "none" && tx) {
+              createRecurringRule.mutate({
+                transactionId: tx.id,
+                frequency: repeat,
+                startDate: new Date(payload.date),
+              });
+            }
+            onSuccess();
+          },
+        });
       }
     },
     [
       amountStr, feeStr, type, categoryId, accountId, toAccountId,
-      locationId, contactIds, note, description, date, editId,
-      createTransaction, updateTransaction,
+      locationId, contactIds, note, description, date, editId, repeat,
+      createTransaction, updateTransaction, createRecurringRule,
       settings, categories, selectedCategory,
     ],
   );
@@ -227,6 +246,7 @@ export default function AddTransactionScreen() {
       setContactIds([]);
       setNote("");
       setDescription("");
+      setRepeat("none");
       setEditingFee(false);
       setShowKeypad(true);
     });
@@ -264,14 +284,14 @@ export default function AddTransactionScreen() {
       <View className="flex-1 bg-background">
         <View className="flex-row items-center px-4 py-2">
           <Pressable onPress={() => router.back()} className="p-2 -ml-2">
-            <ArrowLeft size={24} className="text-text" />
+            <ArrowLeft size={24} color={c.text} />
           </Pressable>
           <Text className="text-lg font-semibold text-text ml-2 flex-1">
             {TYPE_LABELS[type]}
           </Text>
           {editId && (
             <Pressable onPress={handleDelete} className="p-2">
-              <Trash2 size={20} className="text-error" />
+              <Trash2 size={20} color={c.error} />
             </Pressable>
           )}
         </View>
@@ -370,7 +390,7 @@ export default function AddTransactionScreen() {
               </Text>
               {type === "transfer" && (
                 <Pressable onPress={swapAccounts} className="p-1">
-                  <ArrowUpDown size={16} className="text-text-secondary" />
+                  <ArrowUpDown size={16} color={c.textSecondary} />
                 </Pressable>
               )}
             </Pressable>
@@ -426,13 +446,52 @@ export default function AddTransactionScreen() {
             </Pressable>
           </View>
 
+          {!editId && (
+            <View className="py-2.5">
+              <Text className="text-sm text-text-secondary mb-2">Repeat</Text>
+              <View className="flex-row flex-wrap gap-2">
+                {(
+                  [
+                    { key: "none", label: "Off" },
+                    { key: "daily", label: FREQUENCY_LABELS.daily },
+                    { key: "weekly", label: FREQUENCY_LABELS.weekly },
+                    { key: "monthly", label: FREQUENCY_LABELS.monthly },
+                    { key: "yearly", label: FREQUENCY_LABELS.yearly },
+                  ] as const
+                ).map((opt) => (
+                  <Pressable
+                    key={opt.key}
+                    className={cn(
+                      "px-3.5 py-1.5 rounded-full border",
+                      repeat === opt.key
+                        ? "bg-primary border-primary"
+                        : "bg-card border-border",
+                    )}
+                    onPress={() => setRepeat(opt.key as Frequency | "none")}
+                  >
+                    <Text
+                      className={cn(
+                        "text-sm",
+                        repeat === opt.key
+                          ? "text-primary-foreground"
+                          : "text-text-secondary",
+                      )}
+                    >
+                      {opt.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          )}
+
           <View className="h-3 bg-divider -mx-4 mt-4" />
 
           <View className="border-b border-border">
             <TextInput
               className="text-base text-text py-4"
               placeholder="Description"
-              placeholderTextColor={textMuted}
+              placeholderTextColor={c.textMuted}
               value={description}
               onChangeText={setDescription}
               multiline
