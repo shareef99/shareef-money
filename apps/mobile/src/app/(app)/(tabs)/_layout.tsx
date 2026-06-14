@@ -8,11 +8,18 @@ import {
 import { useColorScheme } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getColors } from "../../../lib/colors";
+import { useMaterializeRecurring } from "../../../queries/use-recurring";
+import { useEnsureDefaultCategories } from "../../../queries/use-categories";
 
 export default function TabLayout() {
   const scheme = useColorScheme();
   const c = getColors(scheme);
   const insets = useSafeAreaInsets();
+
+  // Generate any recurring transactions that came due while the app was closed.
+  useMaterializeRecurring();
+  // Make sure the user always has default categories to choose from.
+  useEnsureDefaultCategories();
 
   return (
     <Tabs
