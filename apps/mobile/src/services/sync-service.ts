@@ -5,6 +5,7 @@ import {
   contactsTable,
   locationsTable,
   transactionsTable,
+  recurringRulesTable,
   settingsTable,
 } from "@shareef-money/db/schema";
 import * as SecureStore from "expo-secure-store";
@@ -14,6 +15,9 @@ import type { AxiosInstance } from "axios";
 
 const LAST_SYNC_KEY = "last_sync_at";
 const DEVICE_ID_KEY = "device_id";
+
+const toMs = (v: unknown): number =>
+  v instanceof Date ? v.getTime() : (v as number);
 
 export async function getDeviceId(): Promise<string> {
   let deviceId = await SecureStore.getItemAsync(DEVICE_ID_KEY);
@@ -71,6 +75,45 @@ export async function pullChanges(db: Db, api: AxiosInstance, userId: string) {
         } else {
           db.insert(settingsTable)
             .values({ userId, key, value })
+            .run();
+        }
+      }
+      continue;
+    }
+
+    if (tableName === "recurring_rules") {
+      for (const row of rows) {
+        const id = row.id as number;
+        const data = {
+          ...row,
+          userId,
+          startDate: new Date(row.startDate as number),
+          endDate: row.endDate != null ? new Date(row.endDate as number) : null,
+          nextOccurrence: new Date(row.nextOccurrence as number),
+          isActive: !!row.isActive,
+          createdAt: new Date(row.createdAt as number),
+          updatedAt: new Date(row.updatedAt as number),
+        };
+
+        const existing = db
+          .select({ id: recurringRulesTable.id })
+          .from(recurringRulesTable)
+          .where(eq(recurringRulesTable.id, id))
+          .get();
+
+        if (existing) {
+          const updateData = { ...data } as Record<string, unknown>;
+          delete updateData.id;
+          delete updateData.createdAt;
+          db.update(recurringRulesTable)
+            .set(updateData)
+            .where(eq(recurringRulesTable.id, id))
+            .run();
+        } else {
+          // Date/boolean fields are already coerced above; the spread of the
+          // wire row widens the type, so cast like the other sync inserts.
+          db.insert(recurringRulesTable)
+            .values(data as never)
             .run();
         }
       }
@@ -147,6 +190,32 @@ export async function pushChanges(db: Db, api: AxiosInstance, userId: string) {
         updatedAt,
       });
     }
+  }
+
+  // Recurring rules carry several timestamp columns, so they're serialized
+  // separately from the generic syncable tables above.
+  const recurringRows = db
+    .select()
+    .from(recurringRulesTable)
+    .where(gt(recurringRulesTable.updatedAt, since))
+    .all();
+
+  for (const row of recurringRows) {
+    const r = row as Record<string, unknown>;
+    const updatedAt = toMs(r.updatedAt);
+    changes.push({
+      table: "recurring_rules",
+      action: "upsert",
+      data: {
+        ...r,
+        startDate: toMs(r.startDate),
+        endDate: r.endDate != null ? toMs(r.endDate) : null,
+        nextOccurrence: toMs(r.nextOccurrence),
+        createdAt: toMs(r.createdAt),
+        updatedAt,
+      },
+      updatedAt,
+    });
   }
 
   if (changes.length === 0) return;
