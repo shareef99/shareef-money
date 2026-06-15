@@ -21,7 +21,6 @@ export type AppSettings = {
   reminderEnabled: boolean;
   // 24h "HH:MM" for the daily reminder.
   reminderTime: string;
-  biometricEnabled: boolean;
 };
 
 export const SETTING_KEYS = {
@@ -35,7 +34,6 @@ export const SETTING_KEYS = {
   monthStartDay: "month_start_day",
   reminderEnabled: "reminder_enabled",
   reminderTime: "reminder_time",
-  biometricEnabled: "biometric_enabled",
 } as const;
 
 const DEFAULTS: AppSettings = {
@@ -49,7 +47,6 @@ const DEFAULTS: AppSettings = {
   monthStartDay: 1,
   reminderEnabled: false,
   reminderTime: "21:00",
-  biometricEnabled: false,
 };
 
 const START_SCREENS: StartScreen[] = ["transactions", "stats", "accounts", "more"];
@@ -76,7 +73,6 @@ function parse(map: Record<string, string>): AppSettings {
         : 1,
     reminderEnabled: bool(SETTING_KEYS.reminderEnabled, DEFAULTS.reminderEnabled),
     reminderTime: map[SETTING_KEYS.reminderTime] || DEFAULTS.reminderTime,
-    biometricEnabled: bool(SETTING_KEYS.biometricEnabled, DEFAULTS.biometricEnabled),
   };
 }
 
