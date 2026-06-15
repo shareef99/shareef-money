@@ -1,10 +1,14 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
+import { Directions, Gesture, GestureDetector } from "react-native-gesture-handler";
+import { runOnJS } from "react-native-reanimated";
 import { useColorScheme } from "nativewind";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 import { formatCurrency } from "@shareef-money/shared/utils";
 import { useCategoryBreakdown } from "../../../../queries/use-transactions";
+import { useSettings } from "../../../../queries/use-settings";
+import { getMonthRange, monthRangeLabel, startOfWeek } from "../../../../lib/period";
 import { DonutChart } from "../../../../components/donut-chart";
 import { chartColor } from "../../../../lib/chart-colors";
 import { getColors } from "../../../../lib/colors";
@@ -19,24 +23,16 @@ const PERIODS: { key: Period; label: string }[] = [
   { key: "annually", label: "Year" },
 ];
 
-// Monday-based start of the week containing d.
-function startOfWeek(d: Date) {
-  const r = new Date(d);
-  const dow = (r.getDay() + 6) % 7;
-  r.setDate(r.getDate() - dow);
-  r.setHours(0, 0, 0, 0);
-  return r;
-}
-
 export default function StatsScreen() {
   const c = getColors(useColorScheme().colorScheme);
+  const { data: settings } = useSettings();
   const [type, setType] = useState<StatsType>("expense");
   const [period, setPeriod] = useState<Period>("monthly");
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const { rangeStart, rangeEnd, rangeLabel } = useMemo(() => {
     if (period === "weekly") {
-      const start = startOfWeek(currentDate);
+      const start = startOfWeek(currentDate, settings.weekStartDay);
       const end = new Date(start);
       end.setDate(start.getDate() + 6);
       end.setHours(23, 59, 59, 999);
@@ -51,16 +47,13 @@ export default function StatsScreen() {
       end.setHours(23, 59, 59, 999);
       return { rangeStart: start, rangeEnd: end, rangeLabel: String(currentDate.getFullYear()) };
     }
-    const start = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-    end.setHours(23, 59, 59, 999);
+    const { start, end } = getMonthRange(currentDate, settings.monthStartDay);
     return {
       rangeStart: start,
       rangeEnd: end,
-      rangeLabel: currentDate.toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+      rangeLabel: monthRangeLabel(currentDate, settings.monthStartDay),
     };
-  }, [period, currentDate]);
+  }, [period, currentDate, settings.weekStartDay, settings.monthStartDay]);
 
   const { data } = useCategoryBreakdown(type, rangeStart, rangeEnd);
 
@@ -79,15 +72,32 @@ export default function StatsScreen() {
     [rows],
   );
 
-  const navigate = (dir: -1 | 1) => {
-    setCurrentDate((prev) => {
-      const d = new Date(prev);
-      if (period === "weekly") d.setDate(d.getDate() + dir * 7);
-      else if (period === "annually") d.setFullYear(d.getFullYear() + dir);
-      else d.setMonth(d.getMonth() + dir);
-      return d;
-    });
-  };
+  const navigate = useCallback(
+    (dir: -1 | 1) => {
+      setCurrentDate((prev) => {
+        const d = new Date(prev);
+        if (period === "weekly") d.setDate(d.getDate() + dir * 7);
+        else if (period === "annually") d.setFullYear(d.getFullYear() + dir);
+        else d.setMonth(d.getMonth() + dir);
+        return d;
+      });
+    },
+    [period],
+  );
+
+  // Swipe left = next period, right = previous.
+  const swipeGesture = useMemo(
+    () =>
+      Gesture.Race(
+        Gesture.Fling()
+          .direction(Directions.LEFT)
+          .onEnd(() => runOnJS(navigate)(1)),
+        Gesture.Fling()
+          .direction(Directions.RIGHT)
+          .onEnd(() => runOnJS(navigate)(-1)),
+      ),
+    [navigate],
+  );
 
   return (
     <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
@@ -150,6 +160,7 @@ export default function StatsScreen() {
           ))}
         </View>
 
+        <GestureDetector gesture={swipeGesture}>
         <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
           <View className="items-center py-6">
             <DonutChart slices={slices} size={200} strokeWidth={30}>
@@ -199,6 +210,7 @@ export default function StatsScreen() {
             ))
           )}
         </ScrollView>
+        </GestureDetector>
       </View>
     </SafeAreaView>
   );
