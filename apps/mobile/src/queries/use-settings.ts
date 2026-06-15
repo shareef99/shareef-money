@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getCurrencyByCode } from "@shareef-money/shared/utils";
 import { useDatabase } from "../providers/database-provider";
 import { useAuth } from "../providers/auth-provider";
 import { useSync } from "../providers/sync-provider";
@@ -21,6 +22,8 @@ export type AppSettings = {
   reminderEnabled: boolean;
   // 24h "HH:MM" for the daily reminder.
   reminderTime: string;
+  // ISO 4217 currency code, e.g. "INR".
+  currencyCode: string;
 };
 
 export const SETTING_KEYS = {
@@ -34,6 +37,7 @@ export const SETTING_KEYS = {
   monthStartDay: "month_start_day",
   reminderEnabled: "reminder_enabled",
   reminderTime: "reminder_time",
+  currencyCode: "currency_code",
 } as const;
 
 const DEFAULTS: AppSettings = {
@@ -47,6 +51,7 @@ const DEFAULTS: AppSettings = {
   monthStartDay: 1,
   reminderEnabled: false,
   reminderTime: "21:00",
+  currencyCode: "INR",
 };
 
 const START_SCREENS: StartScreen[] = ["transactions", "stats", "accounts", "more"];
@@ -73,6 +78,7 @@ function parse(map: Record<string, string>): AppSettings {
         : 1,
     reminderEnabled: bool(SETTING_KEYS.reminderEnabled, DEFAULTS.reminderEnabled),
     reminderTime: map[SETTING_KEYS.reminderTime] || DEFAULTS.reminderTime,
+    currencyCode: getCurrencyByCode(map[SETTING_KEYS.currencyCode]).code,
   };
 }
 

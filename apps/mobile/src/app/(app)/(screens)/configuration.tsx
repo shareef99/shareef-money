@@ -6,7 +6,9 @@ import { useRouter } from "expo-router";
 import { ArrowLeft, Download } from "lucide-react-native";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
+import { getCurrencyByCode, setActiveCurrency } from "@shareef-money/shared/utils";
 import { useSettings, useSetSetting, SETTING_KEYS } from "../../../queries/use-settings";
+import { CurrencyPickerModal } from "../../../components/currency-picker-modal";
 import { useTransactions } from "../../../queries/use-transactions";
 import { useLock } from "../../../providers/lock-provider";
 import {
@@ -71,6 +73,7 @@ export default function ConfigurationScreen() {
   const { lockEnabled, refresh: refreshLock } = useLock();
   const [showPasscodeSetup, setShowPasscodeSetup] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
   const [biometricOn, setBiometricOn] = useState(false);
   const [canBiometric, setCanBiometric] = useState(false);
   const c = getColors(useColorScheme());
@@ -137,6 +140,15 @@ export default function ConfigurationScreen() {
     d.setHours(h ?? 21, m ?? 0, 0, 0);
     return d;
   })();
+
+  const handleCurrencySelect = (code: string) => {
+    setShowCurrencyPicker(false);
+    // Apply to the global formatter first, then persist. Saving the setting
+    // remounts the app navigator (keyed by currency in the (app) layout), so
+    // every screen re-renders with the new symbol.
+    setActiveCurrency(code);
+    setSetting.mutate({ key: SETTING_KEYS.currencyCode, value: code });
+  };
 
   const handleExport = async () => {
     if (transactions.length === 0) {
@@ -237,6 +249,21 @@ export default function ConfigurationScreen() {
           </View>
 
           <SectionHeader title="Display" />
+          <Pressable
+            className="flex-row items-center justify-between px-4 py-3.5 border-b border-border active:bg-card"
+            onPress={() => setShowCurrencyPicker(true)}
+          >
+            <View className="flex-1 pr-3">
+              <Text className="text-base text-text">Currency</Text>
+              <Text className="text-xs text-text-muted mt-0.5">
+                Symbol shown across the app. Amounts aren&apos;t converted.
+              </Text>
+            </View>
+            <Text className="text-base text-primary">
+              {getCurrencyByCode(settings.currencyCode).symbol}{" "}
+              {settings.currencyCode}
+            </Text>
+          </Pressable>
           <View className="px-4 py-3.5 border-b border-border">
             <Text className="text-base text-text mb-2">Start screen</Text>
             <Segmented
@@ -410,6 +437,13 @@ export default function ConfigurationScreen() {
             </View>
           </Pressable>
         </ScrollView>
+
+        <CurrencyPickerModal
+          visible={showCurrencyPicker}
+          selectedCode={settings.currencyCode}
+          onSelect={handleCurrencySelect}
+          onClose={() => setShowCurrencyPicker(false)}
+        />
 
         <PasscodeSetupModal
           visible={showPasscodeSetup}
