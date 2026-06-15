@@ -8,9 +8,10 @@ type Props = {
 };
 
 // Theming itself is handled by the @media(prefers-color-scheme) block in
-// global.css (NativeWind applies it globally to every screen). Here we only
-// keep the status bar in sync with the same color scheme: dark theme → light
-// (white) icons, light theme → dark icons.
+// global.css (NativeWind applies it globally to every screen). Here we keep the
+// status bar icons in sync with the scheme (dark theme → light icons). The
+// themed background fills behind the status bar; navigator scenes are made
+// transparent (see the Stack/Tabs layouts) so this shows through everywhere.
 export function ThemedRoot({ children }: Props) {
   const { colorScheme } = useColorScheme();
 

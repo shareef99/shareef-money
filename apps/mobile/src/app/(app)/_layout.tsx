@@ -18,7 +18,14 @@ export default function AppLayout() {
   return (
     <DatabaseProvider>
       <SyncProvider>
-        <Stack screenOptions={{ headerShown: false }}>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            // Transparent scenes let ThemedRoot's themed background show behind
+            // the status bar (default scene bg is opaque white).
+            contentStyle: { backgroundColor: "transparent" },
+          }}
+        >
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="(modals)" options={{ presentation: "modal" }} />
         </Stack>
