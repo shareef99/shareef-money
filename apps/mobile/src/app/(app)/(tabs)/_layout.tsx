@@ -1,4 +1,5 @@
-import { Tabs } from "expo-router";
+import { useEffect, useRef } from "react";
+import { Tabs, useRouter } from "expo-router";
 import {
   ArrowLeftRight,
   BarChart3,
@@ -11,11 +12,15 @@ import { getColors } from "../../../lib/colors";
 import { useMaterializeRecurring } from "../../../queries/use-recurring";
 import { useEnsureDefaultCategories } from "../../../queries/use-categories";
 import { useMigrateOpeningBalances } from "../../../queries/use-accounts";
+import { useSettings } from "../../../queries/use-settings";
 
 export default function TabLayout() {
   const scheme = useColorScheme();
   const c = getColors(scheme);
   const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const { data: settings } = useSettings();
+  const didRedirect = useRef(false);
 
   // Generate any recurring transactions that came due while the app was closed.
   useMaterializeRecurring();
@@ -24,10 +29,22 @@ export default function TabLayout() {
   // Convert any legacy account opening balances into income transactions.
   useMigrateOpeningBalances();
 
+  // Honor the configured start screen on first load (default is transactions).
+  // Route groups in parens aren't URL segments, so the tab href is just "/tab".
+  useEffect(() => {
+    if (didRedirect.current) return;
+    if (settings.startScreen && settings.startScreen !== "transactions") {
+      didRedirect.current = true;
+      router.replace(`/${settings.startScreen}`);
+    }
+  }, [settings.startScreen, router]);
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
+        // Let ThemedRoot's themed background show behind the status bar.
+        sceneStyle: { backgroundColor: "transparent" },
         tabBarActiveTintColor: c.tabActive,
         tabBarInactiveTintColor: c.tabInactive,
         tabBarStyle: {

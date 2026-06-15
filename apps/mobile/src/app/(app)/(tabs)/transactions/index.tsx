@@ -9,6 +9,7 @@ import { ChevronLeft, ChevronRight, Plus, Search } from "lucide-react-native";
 import { useTransactions } from "../../../../queries/use-transactions";
 import { useSettings } from "../../../../queries/use-settings";
 import { getColors } from "../../../../lib/colors";
+import { getMonthRange, monthRangeLabel } from "../../../../lib/period";
 import { DailyView } from "../../../../components/daily-view";
 import { CalendarView } from "../../../../components/calendar-view";
 import { MonthlyView } from "../../../../components/monthly-view";
@@ -21,28 +22,17 @@ export default function TransactionsScreen() {
   const c = getColors(useColorScheme().colorScheme);
   const [activeTab, setActiveTab] = useState<ViewTab>("daily");
   const [currentDate, setCurrentDate] = useState(new Date());
+  const { data: settings } = useSettings();
 
-  const monthStart = useMemo(() => {
-    const d = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-    d.setHours(0, 0, 0, 0);
-    return d;
-  }, [currentDate]);
-
-  const monthEnd = useMemo(() => {
-    const d = new Date(
-      currentDate.getFullYear(),
-      currentDate.getMonth() + 1,
-      0,
-    );
-    d.setHours(23, 59, 59, 999);
-    return d;
-  }, [currentDate]);
+  const { monthStart, monthEnd } = useMemo(() => {
+    const { start, end } = getMonthRange(currentDate, settings.monthStartDay);
+    return { monthStart: start, monthEnd: end };
+  }, [currentDate, settings.monthStartDay]);
 
   const { data: transactions = [] } = useTransactions({
     dateFrom: monthStart,
     dateTo: monthEnd,
   });
-  const { data: settings } = useSettings();
 
   const navigateMonth = useCallback((dir: -1 | 1) => {
     setCurrentDate((prev) => {
@@ -84,10 +74,7 @@ export default function TransactionsScreen() {
     [handleSwipe],
   );
 
-  const monthLabel = currentDate.toLocaleDateString("en-US", {
-    month: "long",
-    year: "numeric",
-  });
+  const monthLabel = monthRangeLabel(currentDate, settings.monthStartDay);
 
   return (
     <SafeAreaView style={{ flex: 1 }} edges={["top"]}>

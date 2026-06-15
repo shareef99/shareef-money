@@ -22,6 +22,40 @@ function SectionHeader({ title }: { title: string }) {
   );
 }
 
+function Segmented<T extends string>({
+  options,
+  value,
+  onSelect,
+}: {
+  options: { key: T; label: string }[];
+  value: T;
+  onSelect: (key: T) => void;
+}) {
+  return (
+    <View className="flex-row gap-2">
+      {options.map((opt) => (
+        <Pressable
+          key={opt.key}
+          className={cn(
+            "flex-1 py-2 items-center rounded-lg border",
+            value === opt.key ? "bg-primary border-primary" : "bg-card border-border",
+          )}
+          onPress={() => onSelect(opt.key)}
+        >
+          <Text
+            className={cn(
+              "text-sm",
+              value === opt.key ? "text-primary-foreground" : "text-text-secondary",
+            )}
+          >
+            {opt.label}
+          </Text>
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
 export default function ConfigurationScreen() {
   const router = useRouter();
   const { data: settings } = useSettings();
@@ -137,6 +171,71 @@ export default function ConfigurationScreen() {
                   </Text>
                 </Pressable>
               ))}
+            </View>
+          </View>
+
+          <SectionHeader title="Display" />
+          <View className="px-4 py-3.5 border-b border-border">
+            <Text className="text-base text-text mb-2">Start screen</Text>
+            <Segmented
+              value={settings.startScreen}
+              onSelect={(key) =>
+                setSetting.mutate({ key: SETTING_KEYS.startScreen, value: key })
+              }
+              options={[
+                { key: "transactions", label: "Trans." },
+                { key: "stats", label: "Stats" },
+                { key: "accounts", label: "Accts" },
+                { key: "more", label: "More" },
+              ]}
+            />
+          </View>
+          <View className="px-4 py-3.5 border-b border-border">
+            <Text className="text-base text-text mb-2">Week starts on</Text>
+            <Segmented
+              value={settings.weekStartDay}
+              onSelect={(key) =>
+                setSetting.mutate({ key: SETTING_KEYS.weekStartDay, value: key })
+              }
+              options={[
+                { key: "sunday", label: "Sunday" },
+                { key: "monday", label: "Monday" },
+              ]}
+            />
+          </View>
+          <View className="flex-row items-center px-4 py-3.5 border-b border-border">
+            <View className="flex-1 pr-3">
+              <Text className="text-base text-text">Month starts on day</Text>
+              <Text className="text-xs text-text-muted mt-0.5">
+                For monthly summaries & budgets (e.g. payday).
+              </Text>
+            </View>
+            <View className="flex-row items-center gap-3">
+              <Pressable
+                className="w-9 h-9 rounded-lg bg-card items-center justify-center active:opacity-70"
+                onPress={() =>
+                  setSetting.mutate({
+                    key: SETTING_KEYS.monthStartDay,
+                    value: String(Math.max(1, settings.monthStartDay - 1)),
+                  })
+                }
+              >
+                <Text className="text-xl text-text">−</Text>
+              </Pressable>
+              <Text className="text-base text-text w-7 text-center">
+                {settings.monthStartDay}
+              </Text>
+              <Pressable
+                className="w-9 h-9 rounded-lg bg-card items-center justify-center active:opacity-70"
+                onPress={() =>
+                  setSetting.mutate({
+                    key: SETTING_KEYS.monthStartDay,
+                    value: String(Math.min(28, settings.monthStartDay + 1)),
+                  })
+                }
+              >
+                <Text className="text-xl text-text">+</Text>
+              </Pressable>
             </View>
           </View>
 

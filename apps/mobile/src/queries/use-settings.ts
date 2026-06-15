@@ -5,6 +5,8 @@ import { useSync } from "../providers/sync-provider";
 import * as settingsService from "../services/settings-service";
 
 export type SwipeAction = "change_date" | "change_tab";
+export type StartScreen = "transactions" | "stats" | "accounts" | "more";
+export type WeekStartDay = "sunday" | "monday";
 
 export type AppSettings = {
   swipeAction: SwipeAction;
@@ -12,6 +14,14 @@ export type AppSettings = {
   requireSubcategory: boolean;
   requireLocation: boolean;
   requireContact: boolean;
+  startScreen: StartScreen;
+  weekStartDay: WeekStartDay;
+  // Day of month (1-28) the financial month begins on.
+  monthStartDay: number;
+  reminderEnabled: boolean;
+  // 24h "HH:MM" for the daily reminder.
+  reminderTime: string;
+  biometricEnabled: boolean;
 };
 
 export const SETTING_KEYS = {
@@ -20,6 +30,12 @@ export const SETTING_KEYS = {
   requireSubcategory: "require_subcategory",
   requireLocation: "require_location",
   requireContact: "require_contact",
+  startScreen: "start_screen",
+  weekStartDay: "week_start_day",
+  monthStartDay: "month_start_day",
+  reminderEnabled: "reminder_enabled",
+  reminderTime: "reminder_time",
+  biometricEnabled: "biometric_enabled",
 } as const;
 
 const DEFAULTS: AppSettings = {
@@ -28,11 +44,20 @@ const DEFAULTS: AppSettings = {
   requireSubcategory: false,
   requireLocation: false,
   requireContact: false,
+  startScreen: "transactions",
+  weekStartDay: "monday",
+  monthStartDay: 1,
+  reminderEnabled: false,
+  reminderTime: "21:00",
+  biometricEnabled: false,
 };
+
+const START_SCREENS: StartScreen[] = ["transactions", "stats", "accounts", "more"];
 
 function parse(map: Record<string, string>): AppSettings {
   const bool = (k: string, d: boolean) =>
     map[k] === undefined ? d : map[k] === "true";
+  const monthStartDay = Number(map[SETTING_KEYS.monthStartDay]);
   return {
     swipeAction:
       map[SETTING_KEYS.swipeAction] === "change_tab" ? "change_tab" : "change_date",
@@ -40,6 +65,18 @@ function parse(map: Record<string, string>): AppSettings {
     requireSubcategory: bool(SETTING_KEYS.requireSubcategory, DEFAULTS.requireSubcategory),
     requireLocation: bool(SETTING_KEYS.requireLocation, DEFAULTS.requireLocation),
     requireContact: bool(SETTING_KEYS.requireContact, DEFAULTS.requireContact),
+    startScreen: START_SCREENS.includes(map[SETTING_KEYS.startScreen] as StartScreen)
+      ? (map[SETTING_KEYS.startScreen] as StartScreen)
+      : "transactions",
+    weekStartDay:
+      map[SETTING_KEYS.weekStartDay] === "sunday" ? "sunday" : "monday",
+    monthStartDay:
+      Number.isFinite(monthStartDay) && monthStartDay >= 1 && monthStartDay <= 28
+        ? monthStartDay
+        : 1,
+    reminderEnabled: bool(SETTING_KEYS.reminderEnabled, DEFAULTS.reminderEnabled),
+    reminderTime: map[SETTING_KEYS.reminderTime] || DEFAULTS.reminderTime,
+    biometricEnabled: bool(SETTING_KEYS.biometricEnabled, DEFAULTS.biometricEnabled),
   };
 }
 
