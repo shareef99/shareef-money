@@ -6,4 +6,9 @@ export {
   fromSmallestUnit,
   formatCurrency,
   formatAmount,
+  CURRENCIES,
+  getCurrencyByCode,
+  setActiveCurrency,
+  getActiveCurrency,
+  type Currency,
 } from "./currency";
