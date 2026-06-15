@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, Pressable, ScrollView, Switch, Text, View, useColorScheme } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { useRouter } from "expo-router";
 import { ArrowLeft, Download } from "lucide-react-native";
 import * as FileSystem from "expo-file-system/legacy";
@@ -8,7 +9,13 @@ import * as Sharing from "expo-sharing";
 import { useSettings, useSetSetting, SETTING_KEYS } from "../../../queries/use-settings";
 import { useTransactions } from "../../../queries/use-transactions";
 import { useLock } from "../../../providers/lock-provider";
-import { clearPasscode } from "../../../lib/passcode";
+import {
+  clearPasscode,
+  canUseBiometrics,
+  isBiometricEnabled,
+  setBiometricEnabled,
+} from "../../../lib/passcode";
+import { scheduleDailyReminder, cancelDailyReminder } from "../../../lib/notifications";
 import { PasscodeSetupModal } from "../../../components/passcode-setup-modal";
 import { transactionsToCsv } from "../../../lib/csv";
 import { getColors } from "../../../lib/colors";
@@ -63,7 +70,15 @@ export default function ConfigurationScreen() {
   const { data: transactions = [] } = useTransactions({});
   const { lockEnabled, refresh: refreshLock } = useLock();
   const [showPasscodeSetup, setShowPasscodeSetup] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [biometricOn, setBiometricOn] = useState(false);
+  const [canBiometric, setCanBiometric] = useState(false);
   const c = getColors(useColorScheme());
+
+  useEffect(() => {
+    isBiometricEnabled().then(setBiometricOn);
+    canUseBiometrics().then(setCanBiometric);
+  }, []);
 
   const toggle = (key: string, value: boolean) =>
     setSetting.mutate({ key, value: String(value) });
@@ -72,9 +87,56 @@ export default function ConfigurationScreen() {
     if (value) {
       setShowPasscodeSetup(true);
     } else {
-      clearPasscode().then(refreshLock);
+      clearPasscode().then(() => {
+        setBiometricOn(false);
+        refreshLock();
+      });
     }
   };
+
+  const handleReminderToggle = async (value: boolean) => {
+    toggle(SETTING_KEYS.reminderEnabled, value);
+    if (value) {
+      const ok = await scheduleDailyReminder(settings.reminderTime);
+      if (!ok) {
+        Alert.alert(
+          "Notifications off",
+          "Enable notifications for Shareef Money in your system settings to get reminders.",
+        );
+        toggle(SETTING_KEYS.reminderEnabled, false);
+      }
+    } else {
+      await cancelDailyReminder();
+    }
+  };
+
+  const handleReminderTime = (date: Date) => {
+    setShowTimePicker(false);
+    const hh = String(date.getHours()).padStart(2, "0");
+    const mm = String(date.getMinutes()).padStart(2, "0");
+    const time = `${hh}:${mm}`;
+    setSetting.mutate({ key: SETTING_KEYS.reminderTime, value: time });
+    if (settings.reminderEnabled) scheduleDailyReminder(time);
+  };
+
+  const handleBiometricToggle = async (value: boolean) => {
+    if (value && !canBiometric) {
+      Alert.alert(
+        "No biometrics enrolled",
+        "Add a fingerprint or face unlock in your device settings first.",
+      );
+      return;
+    }
+    await setBiometricEnabled(value);
+    setBiometricOn(value);
+  };
+
+  const reminderDate = (() => {
+    const [h, m] = settings.reminderTime.split(":").map(Number);
+    const d = new Date();
+    d.setHours(h ?? 21, m ?? 0, 0, 0);
+    return d;
+  })();
 
   const handleExport = async () => {
     if (transactions.length === 0) {
@@ -283,11 +345,54 @@ export default function ConfigurationScreen() {
             />
           </View>
           {lockEnabled && (
+            <>
+              <Pressable
+                className="px-4 py-3.5 border-b border-border active:bg-card"
+                onPress={() => setShowPasscodeSetup(true)}
+              >
+                <Text className="text-base text-text">Change passcode</Text>
+              </Pressable>
+              <View className="flex-row items-center px-4 py-3.5 border-b border-border">
+                <View className="flex-1 pr-3">
+                  <Text className="text-base text-text">Unlock with biometrics</Text>
+                  <Text className="text-xs text-text-muted mt-0.5">
+                    {canBiometric
+                      ? "Use your fingerprint or face to unlock."
+                      : "No fingerprint/face enrolled on this device."}
+                  </Text>
+                </View>
+                <Switch
+                  value={biometricOn}
+                  onValueChange={handleBiometricToggle}
+                  trackColor={{ false: c.border, true: c.primary }}
+                  thumbColor="#FFFFFF"
+                />
+              </View>
+            </>
+          )}
+
+          <SectionHeader title="Notifications" />
+          <View className="flex-row items-center px-4 py-3.5 border-b border-border">
+            <View className="flex-1 pr-3">
+              <Text className="text-base text-text">Daily reminder</Text>
+              <Text className="text-xs text-text-muted mt-0.5">
+                A daily nudge to log your transactions.
+              </Text>
+            </View>
+            <Switch
+              value={settings.reminderEnabled}
+              onValueChange={handleReminderToggle}
+              trackColor={{ false: c.border, true: c.primary }}
+              thumbColor="#FFFFFF"
+            />
+          </View>
+          {settings.reminderEnabled && (
             <Pressable
-              className="px-4 py-3.5 border-b border-border active:bg-card"
-              onPress={() => setShowPasscodeSetup(true)}
+              className="flex-row items-center justify-between px-4 py-3.5 border-b border-border active:bg-card"
+              onPress={() => setShowTimePicker(true)}
             >
-              <Text className="text-base text-text">Change passcode</Text>
+              <Text className="text-base text-text">Reminder time</Text>
+              <Text className="text-base text-primary">{settings.reminderTime}</Text>
             </Pressable>
           )}
 
@@ -314,6 +419,20 @@ export default function ConfigurationScreen() {
             refreshLock();
           }}
         />
+
+        {showTimePicker && (
+          <DateTimePicker
+            value={reminderDate}
+            mode="time"
+            onChange={(event, date) => {
+              if (event.type === "dismissed" || !date) {
+                setShowTimePicker(false);
+                return;
+              }
+              handleReminderTime(date);
+            }}
+          />
+        )}
       </View>
     </SafeAreaView>
   );

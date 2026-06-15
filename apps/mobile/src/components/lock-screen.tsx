@@ -1,9 +1,13 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
-import { Delete, Lock } from "lucide-react-native";
+import { Delete, Fingerprint, Lock } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
 import { getColors } from "../lib/colors";
-import { verifyPasscode } from "../lib/passcode";
+import {
+  verifyPasscode,
+  isBiometricEnabled,
+  authenticateBiometric,
+} from "../lib/passcode";
 import { cn } from "../lib/cn";
 
 const PIN_LENGTH = 4;
@@ -17,7 +21,27 @@ type Props = {
 export function LockScreen({ onUnlock }: Props) {
   const [pin, setPin] = useState("");
   const [error, setError] = useState(false);
+  const [biometricOn, setBiometricOn] = useState(false);
   const c = getColors(useColorScheme().colorScheme);
+
+  const tryBiometric = useCallback(async () => {
+    const ok = await authenticateBiometric();
+    if (ok) onUnlock();
+  }, [onUnlock]);
+
+  // On mount, if biometric unlock is enabled, surface the button and prompt
+  // the OS dialog automatically.
+  useEffect(() => {
+    let cancelled = false;
+    isBiometricEnabled().then((enabled) => {
+      if (cancelled || !enabled) return;
+      setBiometricOn(true);
+      tryBiometric();
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [tryBiometric]);
 
   useEffect(() => {
     if (pin.length !== PIN_LENGTH) return;
@@ -96,6 +120,16 @@ export function LockScreen({ onUnlock }: Props) {
           ))}
         </View>
       </View>
+
+      {biometricOn && (
+        <Pressable
+          className="flex-row items-center gap-2 mt-6 py-2 active:opacity-70"
+          onPress={tryBiometric}
+        >
+          <Fingerprint size={22} color={c.primary} />
+          <Text className="text-base text-primary">Use fingerprint</Text>
+        </Pressable>
+      )}
     </View>
   );
 }
