@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Alert, Pressable, ScrollView, Switch, Text, View, useColorScheme } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useQueryClient } from "@tanstack/react-query";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useRouter } from "expo-router";
 import { ArrowLeft, Download, Save, Upload } from "lucide-react-native";
@@ -12,14 +11,10 @@ import { getCurrencyByCode, setActiveCurrency } from "@shareef-money/shared/util
 import { useSettings, useSetSetting, SETTING_KEYS } from "../../../queries/use-settings";
 import { useDatabase } from "../../../providers/database-provider";
 import { useAuth } from "../../../providers/auth-provider";
-import {
-  exportAll,
-  importAll,
-  isValidBackup,
-  type BackupData,
-} from "../../../services/backup-service";
+import { useRestore } from "../../../providers/restore-provider";
+import { isValidBackup } from "../../../services/backup-service";
+import { writeAndShareBackup } from "../../../lib/backup-file";
 import { CurrencyPickerModal } from "../../../components/currency-picker-modal";
-import { RestoreConfirmModal } from "../../../components/restore-confirm-modal";
 import { useTransactions } from "../../../queries/use-transactions";
 import { useLock } from "../../../providers/lock-provider";
 import {
@@ -84,12 +79,10 @@ export default function ConfigurationScreen() {
   const { lockEnabled, refresh: refreshLock } = useLock();
   const { db } = useDatabase();
   const { user } = useAuth();
-  const queryClient = useQueryClient();
+  const { requestRestore } = useRestore();
   const [showPasscodeSetup, setShowPasscodeSetup] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
-  const [pendingRestore, setPendingRestore] = useState<BackupData | null>(null);
-  const [backingUp, setBackingUp] = useState(false);
   const [biometricOn, setBiometricOn] = useState(false);
   const [canBiometric, setCanBiometric] = useState(false);
   const c = getColors(useColorScheme());
@@ -189,33 +182,18 @@ export default function ConfigurationScreen() {
     }
   };
 
-  // Writes the full backup JSON to a cache file and opens the share sheet.
-  const writeAndShareBackup = async () => {
-    if (!user) return;
-    const backup = exportAll(db, user.id);
-    const json = JSON.stringify(backup);
-    const stamp = new Date(backup.exportedAt).toISOString().slice(0, 10);
-    const uri = `${FileSystem.cacheDirectory}shareef-money-backup-${stamp}.json`;
-    await FileSystem.writeAsStringAsync(uri, json);
-    if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(uri, {
-        mimeType: "application/json",
-        dialogTitle: "Save Shareef Money backup",
-        UTI: "public.json",
-      });
-    } else {
-      Alert.alert("Backup saved", `Saved to ${uri}`);
-    }
-  };
-
   const handleBackup = async () => {
+    if (!user) return;
     try {
-      await writeAndShareBackup();
+      await writeAndShareBackup(db, user.id);
     } catch (e) {
       Alert.alert("Backup failed", String(e));
     }
   };
 
+  // Pick + validate a backup file, then hand off to the root RestoreProvider,
+  // which owns the confirm-replace modal and persists it across an activity
+  // restart (low-RAM devices can recreate the app while the picker is front).
   const handleRestorePick = async () => {
     try {
       const res = await DocumentPicker.getDocumentAsync({
@@ -232,38 +210,9 @@ export default function ConfigurationScreen() {
         );
         return;
       }
-      setPendingRestore(parsed);
+      requestRestore(parsed);
     } catch (e) {
       Alert.alert("Couldn't read file", String(e));
-    }
-  };
-
-  const handleBackupFirst = async () => {
-    setBackingUp(true);
-    try {
-      await writeAndShareBackup();
-    } catch (e) {
-      Alert.alert("Backup failed", String(e));
-    } finally {
-      setBackingUp(false);
-    }
-  };
-
-  const handleReplace = () => {
-    if (!user || !pendingRestore) return;
-    try {
-      importAll(db, user.id, pendingRestore);
-      // Apply the restored currency immediately, then refresh every screen.
-      const restoredCurrency = pendingRestore.data.settings.find(
-        (s) => s.key === SETTING_KEYS.currencyCode,
-      );
-      if (restoredCurrency) setActiveCurrency(restoredCurrency.value as string);
-      setPendingRestore(null);
-      queryClient.invalidateQueries();
-      Alert.alert("Restore complete", "Your data has been replaced from the backup.");
-    } catch (e) {
-      setPendingRestore(null);
-      Alert.alert("Restore failed", String(e));
     }
   };
 
@@ -561,15 +510,6 @@ export default function ConfigurationScreen() {
           selectedCode={settings.currencyCode}
           onSelect={handleCurrencySelect}
           onClose={() => setShowCurrencyPicker(false)}
-        />
-
-        <RestoreConfirmModal
-          visible={!!pendingRestore}
-          exportedAt={pendingRestore?.exportedAt}
-          backingUp={backingUp}
-          onBackupFirst={handleBackupFirst}
-          onReplace={handleReplace}
-          onCancel={() => setPendingRestore(null)}
         />
 
         <PasscodeSetupModal

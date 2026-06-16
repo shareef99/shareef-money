@@ -4,6 +4,7 @@ import { setActiveCurrency } from "@shareef-money/shared/utils";
 import { useAuth } from "../../providers/auth-provider";
 import { DatabaseProvider } from "../../providers/database-provider";
 import { SyncProvider } from "../../providers/sync-provider";
+import { RestoreProvider } from "../../providers/restore-provider";
 import { useSettings } from "../../queries/use-settings";
 
 // Inside the providers so it can read settings. Keying the navigator by the
@@ -45,7 +46,9 @@ export default function AppLayout() {
   return (
     <DatabaseProvider>
       <SyncProvider>
-        <AppStack />
+        <RestoreProvider>
+          <AppStack />
+        </RestoreProvider>
       </SyncProvider>
     </DatabaseProvider>
   );
