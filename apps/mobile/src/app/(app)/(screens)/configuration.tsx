@@ -1,14 +1,25 @@
 import { useEffect, useState } from "react";
 import { Alert, Pressable, ScrollView, Switch, Text, View, useColorScheme } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useQueryClient } from "@tanstack/react-query";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useRouter } from "expo-router";
-import { ArrowLeft, Download } from "lucide-react-native";
+import { ArrowLeft, Download, Save, Upload } from "lucide-react-native";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
+import * as DocumentPicker from "expo-document-picker";
 import { getCurrencyByCode, setActiveCurrency } from "@shareef-money/shared/utils";
 import { useSettings, useSetSetting, SETTING_KEYS } from "../../../queries/use-settings";
+import { useDatabase } from "../../../providers/database-provider";
+import { useAuth } from "../../../providers/auth-provider";
+import {
+  exportAll,
+  importAll,
+  isValidBackup,
+  type BackupData,
+} from "../../../services/backup-service";
 import { CurrencyPickerModal } from "../../../components/currency-picker-modal";
+import { RestoreConfirmModal } from "../../../components/restore-confirm-modal";
 import { useTransactions } from "../../../queries/use-transactions";
 import { useLock } from "../../../providers/lock-provider";
 import {
@@ -71,9 +82,14 @@ export default function ConfigurationScreen() {
   const setSetting = useSetSetting();
   const { data: transactions = [] } = useTransactions({});
   const { lockEnabled, refresh: refreshLock } = useLock();
+  const { db } = useDatabase();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [showPasscodeSetup, setShowPasscodeSetup] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
+  const [pendingRestore, setPendingRestore] = useState<BackupData | null>(null);
+  const [backingUp, setBackingUp] = useState(false);
   const [biometricOn, setBiometricOn] = useState(false);
   const [canBiometric, setCanBiometric] = useState(false);
   const c = getColors(useColorScheme());
@@ -170,6 +186,84 @@ export default function ConfigurationScreen() {
       }
     } catch (e) {
       Alert.alert("Export failed", String(e));
+    }
+  };
+
+  // Writes the full backup JSON to a cache file and opens the share sheet.
+  const writeAndShareBackup = async () => {
+    if (!user) return;
+    const backup = exportAll(db, user.id);
+    const json = JSON.stringify(backup);
+    const stamp = new Date(backup.exportedAt).toISOString().slice(0, 10);
+    const uri = `${FileSystem.cacheDirectory}shareef-money-backup-${stamp}.json`;
+    await FileSystem.writeAsStringAsync(uri, json);
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(uri, {
+        mimeType: "application/json",
+        dialogTitle: "Save Shareef Money backup",
+        UTI: "public.json",
+      });
+    } else {
+      Alert.alert("Backup saved", `Saved to ${uri}`);
+    }
+  };
+
+  const handleBackup = async () => {
+    try {
+      await writeAndShareBackup();
+    } catch (e) {
+      Alert.alert("Backup failed", String(e));
+    }
+  };
+
+  const handleRestorePick = async () => {
+    try {
+      const res = await DocumentPicker.getDocumentAsync({
+        type: "application/json",
+        copyToCacheDirectory: true,
+      });
+      if (res.canceled || !res.assets?.[0]) return;
+      const content = await FileSystem.readAsStringAsync(res.assets[0].uri);
+      const parsed = JSON.parse(content);
+      if (!isValidBackup(parsed)) {
+        Alert.alert(
+          "Invalid backup",
+          "That file isn't a Shareef Money backup, or it was made by a newer version.",
+        );
+        return;
+      }
+      setPendingRestore(parsed);
+    } catch (e) {
+      Alert.alert("Couldn't read file", String(e));
+    }
+  };
+
+  const handleBackupFirst = async () => {
+    setBackingUp(true);
+    try {
+      await writeAndShareBackup();
+    } catch (e) {
+      Alert.alert("Backup failed", String(e));
+    } finally {
+      setBackingUp(false);
+    }
+  };
+
+  const handleReplace = () => {
+    if (!user || !pendingRestore) return;
+    try {
+      importAll(db, user.id, pendingRestore);
+      // Apply the restored currency immediately, then refresh every screen.
+      const restoredCurrency = pendingRestore.data.settings.find(
+        (s) => s.key === SETTING_KEYS.currencyCode,
+      );
+      if (restoredCurrency) setActiveCurrency(restoredCurrency.value as string);
+      setPendingRestore(null);
+      queryClient.invalidateQueries();
+      Alert.alert("Restore complete", "Your data has been replaced from the backup.");
+    } catch (e) {
+      setPendingRestore(null);
+      Alert.alert("Restore failed", String(e));
     }
   };
 
@@ -426,6 +520,30 @@ export default function ConfigurationScreen() {
           <SectionHeader title="Data" />
           <Pressable
             className="flex-row items-center px-4 py-3.5 border-b border-border active:bg-card"
+            onPress={handleBackup}
+          >
+            <Save size={20} color={c.text} />
+            <View className="flex-1 ml-3">
+              <Text className="text-base text-text">Back up all data</Text>
+              <Text className="text-xs text-text-muted mt-0.5">
+                Save everything to a backup file you can restore later.
+              </Text>
+            </View>
+          </Pressable>
+          <Pressable
+            className="flex-row items-center px-4 py-3.5 border-b border-border active:bg-card"
+            onPress={handleRestorePick}
+          >
+            <Upload size={20} color={c.text} />
+            <View className="flex-1 ml-3">
+              <Text className="text-base text-text">Restore from backup</Text>
+              <Text className="text-xs text-text-muted mt-0.5">
+                Replace all current data with a backup file.
+              </Text>
+            </View>
+          </Pressable>
+          <Pressable
+            className="flex-row items-center px-4 py-3.5 border-b border-border active:bg-card"
             onPress={handleExport}
           >
             <Download size={20} color={c.text} />
@@ -443,6 +561,15 @@ export default function ConfigurationScreen() {
           selectedCode={settings.currencyCode}
           onSelect={handleCurrencySelect}
           onClose={() => setShowCurrencyPicker(false)}
+        />
+
+        <RestoreConfirmModal
+          visible={!!pendingRestore}
+          exportedAt={pendingRestore?.exportedAt}
+          backingUp={backingUp}
+          onBackupFirst={handleBackupFirst}
+          onReplace={handleReplace}
+          onCancel={() => setPendingRestore(null)}
         />
 
         <PasscodeSetupModal
