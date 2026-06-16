@@ -6,3 +6,4 @@ CLAUDE.md
 
 # SQLite runtime data (db + WAL/SHM) — recreated by the migrate step
 apps/backend/data/
+tmp

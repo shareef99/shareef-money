@@ -50,12 +50,64 @@ export async function getTransactions(db: Db, userId: string, filters: Transacti
     with: {
       category: true,
       account: true,
+      transactionContacts: true,
     },
   });
 }
 
 export async function getTransactionsByDateRange(db: Db, userId: string, from: Date, to: Date) {
   return getTransactions(db, userId, { dateFrom: from, dateTo: to });
+}
+
+export type CategoryBreakdownRow = {
+  categoryId: number | null;
+  name: string;
+  total: number;
+  count: number;
+};
+
+// Sum a single type's transactions grouped by category within a date range,
+// sorted by total descending. Used by the Stats screen.
+export async function getCategoryBreakdown(
+  db: Db,
+  userId: string,
+  type: "income" | "expense",
+  from: Date,
+  to: Date,
+): Promise<{ rows: CategoryBreakdownRow[]; total: number }> {
+  const txns = await db.query.transactionsTable.findMany({
+    where: and(
+      eq(transactionsTable.userId, userId),
+      eq(transactionsTable.type, type),
+      gte(transactionsTable.date, from),
+      lte(transactionsTable.date, to),
+    ),
+    with: { category: true },
+  });
+
+  const grouped = new Map<number | null, CategoryBreakdownRow>();
+  let total = 0;
+
+  for (const tx of txns) {
+    total += tx.amount;
+    const cat = tx.category;
+    const key = cat?.id ?? null;
+    const existing = grouped.get(key);
+    if (existing) {
+      existing.total += tx.amount;
+      existing.count += 1;
+    } else {
+      grouped.set(key, {
+        categoryId: key,
+        name: cat?.name ?? "Uncategorized",
+        total: tx.amount,
+        count: 1,
+      });
+    }
+  }
+
+  const rows = Array.from(grouped.values()).sort((a, b) => b.total - a.total);
+  return { rows, total };
 }
 
 export async function getTransactionsSummary(db: Db, userId: string, from: Date, to: Date) {

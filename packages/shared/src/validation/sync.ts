@@ -7,6 +7,7 @@ const syncableTableNames = [
   "locations",
   "transactions",
   "transaction_contacts",
+  "recurring_rules",
   "settings",
 ] as const;
 

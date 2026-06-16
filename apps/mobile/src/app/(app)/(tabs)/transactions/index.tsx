@@ -1,9 +1,15 @@
 import { useCallback, useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Directions, Gesture, GestureDetector } from "react-native-gesture-handler";
+import { runOnJS } from "react-native-reanimated";
+import { useColorScheme } from "nativewind";
 import { useRouter } from "expo-router";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react-native";
+import { ChevronLeft, ChevronRight, Plus, Search } from "lucide-react-native";
 import { useTransactions } from "../../../../queries/use-transactions";
+import { useSettings } from "../../../../queries/use-settings";
+import { getColors } from "../../../../lib/colors";
+import { getMonthRange, monthRangeLabel } from "../../../../lib/period";
 import { DailyView } from "../../../../components/daily-view";
 import { CalendarView } from "../../../../components/calendar-view";
 import { MonthlyView } from "../../../../components/monthly-view";
@@ -13,24 +19,15 @@ import { cn } from "../../../../lib/cn";
 
 export default function TransactionsScreen() {
   const router = useRouter();
+  const c = getColors(useColorScheme().colorScheme);
   const [activeTab, setActiveTab] = useState<ViewTab>("daily");
   const [currentDate, setCurrentDate] = useState(new Date());
+  const { data: settings } = useSettings();
 
-  const monthStart = useMemo(() => {
-    const d = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-    d.setHours(0, 0, 0, 0);
-    return d;
-  }, [currentDate]);
-
-  const monthEnd = useMemo(() => {
-    const d = new Date(
-      currentDate.getFullYear(),
-      currentDate.getMonth() + 1,
-      0,
-    );
-    d.setHours(23, 59, 59, 999);
-    return d;
-  }, [currentDate]);
+  const { monthStart, monthEnd } = useMemo(() => {
+    const { start, end } = getMonthRange(currentDate, settings.monthStartDay);
+    return { monthStart: start, monthEnd: end };
+  }, [currentDate, settings.monthStartDay]);
 
   const { data: transactions = [] } = useTransactions({
     dateFrom: monthStart,
@@ -45,23 +42,55 @@ export default function TransactionsScreen() {
     });
   }, []);
 
-  const monthLabel = currentDate.toLocaleDateString("en-US", {
-    month: "long",
-    year: "numeric",
-  });
+  // Swipe: left = next, right = previous. Acts on month or tab per setting.
+  const handleSwipe = useCallback(
+    (dir: -1 | 1) => {
+      if (settings.swipeAction === "change_tab") {
+        setActiveTab((prev) => {
+          const idx = viewTabLabels.findIndex((t) => t.key === prev);
+          const next = Math.min(
+            viewTabLabels.length - 1,
+            Math.max(0, idx + dir),
+          );
+          return viewTabLabels[next]!.key;
+        });
+      } else {
+        navigateMonth(dir);
+      }
+    },
+    [settings.swipeAction, navigateMonth],
+  );
+
+  const swipeGesture = useMemo(
+    () =>
+      Gesture.Race(
+        Gesture.Fling()
+          .direction(Directions.LEFT)
+          .onEnd(() => runOnJS(handleSwipe)(1)),
+        Gesture.Fling()
+          .direction(Directions.RIGHT)
+          .onEnd(() => runOnJS(handleSwipe)(-1)),
+      ),
+    [handleSwipe],
+  );
+
+  const monthLabel = monthRangeLabel(currentDate, settings.monthStartDay);
 
   return (
     <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
       <View className="flex-1 bg-background">
-        <View className="flex-row items-center justify-between px-4 py-2">
+        <View className="flex-row items-center px-4 py-2">
           <Pressable onPress={() => navigateMonth(-1)} className="p-2">
-            <ChevronLeft size={20} className="text-text" />
+            <ChevronLeft size={20} color={c.text} />
           </Pressable>
-          <Text className="text-base font-semibold text-text">
+          <Text className="flex-1 text-center text-base font-semibold text-text">
             {monthLabel}
           </Text>
           <Pressable onPress={() => navigateMonth(1)} className="p-2">
-            <ChevronRight size={20} className="text-text" />
+            <ChevronRight size={20} color={c.text} />
+          </Pressable>
+          <Pressable onPress={() => router.push("/search")} className="p-2">
+            <Search size={20} color={c.text} />
           </Pressable>
         </View>
 
@@ -87,21 +116,25 @@ export default function TransactionsScreen() {
           ))}
         </View>
 
-        {activeTab === "daily" && (
-          <DailyView monthStart={monthStart} monthEnd={monthEnd} />
-        )}
-        {activeTab === "calendar" && (
-          <CalendarView
-            currentDate={currentDate}
-            transactions={transactions}
-            onSelectDate={(date) => {
-              setCurrentDate(date);
-              setActiveTab("daily");
-            }}
-          />
-        )}
-        {activeTab === "monthly" && <MonthlyView currentDate={currentDate} />}
-        {activeTab === "total" && <TotalView />}
+        <GestureDetector gesture={swipeGesture}>
+          <View className="flex-1">
+            {activeTab === "daily" && (
+              <DailyView monthStart={monthStart} monthEnd={monthEnd} />
+            )}
+            {activeTab === "calendar" && (
+              <CalendarView
+                currentDate={currentDate}
+                transactions={transactions}
+                onSelectDate={(date) => {
+                  setCurrentDate(date);
+                  setActiveTab("daily");
+                }}
+              />
+            )}
+            {activeTab === "monthly" && <MonthlyView currentDate={currentDate} />}
+            {activeTab === "total" && <TotalView />}
+          </View>
+        </GestureDetector>
 
         <Pressable
           className="absolute bottom-5 right-5 w-14 h-14 rounded-full bg-fab items-center justify-center shadow-lg"

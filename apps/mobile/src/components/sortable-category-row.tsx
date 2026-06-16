@@ -1,7 +1,9 @@
 import { Pressable, Text, View } from "react-native";
+import { useColorScheme } from "nativewind";
 import Sortable from "react-native-sortables";
 import { Menu, Minus, Pencil } from "lucide-react-native";
 import type { Category } from "@shareef-money/db/schema";
+import { getColors } from "../lib/colors";
 
 type Props = {
   category: Category;
@@ -10,6 +12,7 @@ type Props = {
 };
 
 export function SortableCategoryRow({ category, onEditPress, onDeletePress }: Props) {
+  const c = getColors(useColorScheme().colorScheme);
   return (
     <View className="flex-row items-center px-4 py-3 bg-background border-b border-border">
       <Pressable onPress={onDeletePress} className="mr-3" hitSlop={8}>
@@ -19,7 +22,7 @@ export function SortableCategoryRow({ category, onEditPress, onDeletePress }: Pr
       </Pressable>
       <Text className="text-base text-text flex-1">{category.name}</Text>
       <Pressable onPress={onEditPress} className="p-2" hitSlop={8}>
-        <Pencil size={18} className="text-text-secondary" />
+        <Pencil size={18} color={c.textSecondary} />
       </Pressable>
       <Sortable.Handle>
         <View className="p-2 ml-1">

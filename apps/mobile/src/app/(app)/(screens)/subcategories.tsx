@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
+import { useColorScheme } from "nativewind";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import Animated, { useAnimatedRef } from "react-native-reanimated";
@@ -16,9 +17,11 @@ import {
 import { SortableCategoryRow } from "../../../components/sortable-category-row";
 import { CategoryFormModal } from "../../../components/category-form-modal";
 import { ConfirmModal } from "../../../components/confirm-modal";
+import { getColors } from "../../../lib/colors";
 
 export default function SubcategoriesScreen() {
   const router = useRouter();
+  const c = getColors(useColorScheme().colorScheme);
   const params = useLocalSearchParams<{ parentId?: string }>();
   const parentId = params.parentId ? Number(params.parentId) : null;
 
@@ -74,18 +77,18 @@ export default function SubcategoriesScreen() {
       <View className="flex-1 bg-background">
         <View className="flex-row items-center px-4 py-2">
           <Pressable onPress={() => router.back()} className="p-2 -ml-2">
-            <ArrowLeft size={24} className="text-text" />
+            <ArrowLeft size={24} color={c.text} />
           </Pressable>
           <Text className="text-lg font-semibold text-text ml-2 flex-1">
             {parent ? `${parent.name} Subcategory` : "Subcategory"}
           </Text>
           {parent && (
             <Pressable onPress={() => setFormTarget(parent)} className="p-2">
-              <Pencil size={20} className="text-text" />
+              <Pencil size={20} color={c.text} />
             </Pressable>
           )}
           <Pressable onPress={() => setFormTarget("add")} className="p-2">
-            <Plus size={24} className="text-text" />
+            <Plus size={24} color={c.text} />
           </Pressable>
         </View>
 

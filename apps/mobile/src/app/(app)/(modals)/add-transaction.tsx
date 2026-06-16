@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, Text, TextInput, useColorScheme, View } from "react-native";
+import { Alert, Pressable, ScrollView, Text, TextInput, useColorScheme, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -10,12 +10,22 @@ import {
   useUpdateTransaction,
   useDeleteTransaction,
 } from "../../../queries/use-transactions";
+import { useCreateRecurringRule } from "../../../queries/use-recurring";
+import {
+  FREQUENCY_LABELS,
+  type Frequency,
+} from "../../../services/recurring-service";
+import { useSettings } from "../../../queries/use-settings";
 import { useCategories } from "../../../queries/use-categories";
 import { useAccounts } from "../../../queries/use-accounts";
+import { useLocations, useCreateLocation } from "../../../queries/use-locations";
+import { useContacts, useCreateContact } from "../../../queries/use-contacts";
 import { TransactionTypeTabs } from "../../../components/transaction-type-tabs";
 import { NumericKeypad } from "../../../components/numeric-keypad";
 import { CategoryPicker } from "../../../components/category-picker";
 import { AccountPicker } from "../../../components/account-picker";
+import { LocationPicker } from "../../../components/location-picker";
+import { ContactPicker } from "../../../components/contact-picker";
 import { toSmallestUnit } from "@shareef-money/shared/utils";
 import type { TransactionType } from "@shareef-money/shared/types";
 import { cn } from "../../../lib/cn";
@@ -37,24 +47,35 @@ export default function AddTransactionScreen() {
   const [categoryId, setCategoryId] = useState<number | null>(null);
   const [accountId, setAccountId] = useState<number | null>(null);
   const [toAccountId, setToAccountId] = useState<number | null>(null);
+  const [locationId, setLocationId] = useState<number | null>(null);
+  const [contactIds, setContactIds] = useState<number[]>([]);
   const [note, setNote] = useState("");
   const [description, setDescription] = useState("");
+  const [repeat, setRepeat] = useState<Frequency | "none">("none");
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showAccountPicker, setShowAccountPicker] = useState(false);
   const [showToAccountPicker, setShowToAccountPicker] = useState(false);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [showContactPicker, setShowContactPicker] = useState(false);
   const [showKeypad, setShowKeypad] = useState(true);
   const [editingFee, setEditingFee] = useState(false);
-  const { textMuted } = getColors(useColorScheme());
+  const c = getColors(useColorScheme());
 
   const { data: categories = [] } = useCategories(
     type === "transfer" ? undefined : type,
   );
   const { data: accounts = [] } = useAccounts();
+  const { data: locations = [] } = useLocations();
+  const { data: contacts = [] } = useContacts();
   const { data: allTransactions = [] } = useTransactions({});
+  const { data: settings } = useSettings();
 
   const createTransaction = useCreateTransaction();
   const updateTransaction = useUpdateTransaction();
   const deleteTransaction = useDeleteTransaction();
+  const createRecurringRule = useCreateRecurringRule();
+  const createLocation = useCreateLocation();
+  const createContact = useCreateContact();
 
   const selectedCategory = useMemo(
     () => categories.find((c) => c.id === categoryId),
@@ -82,6 +103,19 @@ export default function AddTransactionScreen() {
     [accounts, toAccountId],
   );
 
+  const selectedLocation = useMemo(
+    () => locations.find((l) => l.id === locationId),
+    [locations, locationId],
+  );
+
+  const contactSummary = useMemo(() => {
+    if (contactIds.length === 0) return " ";
+    const names = contactIds
+      .map((id) => contacts.find((c) => c.id === id)?.name)
+      .filter(Boolean);
+    return names.join(", ");
+  }, [contactIds, contacts]);
+
   useEffect(() => {
     if (accounts.length > 0 && !accountId) {
       setAccountId(accounts[0]!.id);
@@ -100,6 +134,10 @@ export default function AddTransactionScreen() {
       setCategoryId(tx.categoryId);
       setAccountId(tx.accountId);
       setToAccountId(tx.toAccountId);
+      setLocationId(tx.locationId ?? null);
+      setContactIds(
+        (tx.transactionContacts ?? []).map((tc) => tc.contactId),
+      );
       setNote(tx.note ?? "");
       setDescription(tx.description ?? "");
     }
@@ -131,6 +169,29 @@ export default function AddTransactionScreen() {
       const amount = toSmallestUnit(parseFloat(amountStr) || 0);
       if (amount <= 0 || !accountId) return;
 
+      // Required-field validation (category always; others per settings).
+      if (type !== "transfer") {
+        if (!categoryId) {
+          Alert.alert("Category required", "Please select a category.");
+          return;
+        }
+        if (settings.requireSubcategory && selectedCategory && !selectedCategory.parentId) {
+          const hasSubs = categories.some((c) => c.parentId === selectedCategory.id);
+          if (hasSubs) {
+            Alert.alert("Subcategory required", "Please select a subcategory.");
+            return;
+          }
+        }
+      }
+      if (settings.requireLocation && !locationId) {
+        Alert.alert("Location required", "Please select a location.");
+        return;
+      }
+      if (settings.requireContact && contactIds.length === 0) {
+        Alert.alert("People required", "Please add at least one person.");
+        return;
+      }
+
       const payload = {
         type,
         amount,
@@ -138,6 +199,8 @@ export default function AddTransactionScreen() {
         categoryId: type === "transfer" ? null : categoryId,
         accountId,
         toAccountId: type === "transfer" ? toAccountId : null,
+        locationId,
+        contactIds,
         note: note || null,
         description: description || null,
         date: date.getTime(),
@@ -146,12 +209,26 @@ export default function AddTransactionScreen() {
       if (editId) {
         updateTransaction.mutate({ id: editId, payload }, { onSuccess });
       } else {
-        createTransaction.mutate(payload, { onSuccess });
+        createTransaction.mutate(payload, {
+          onSuccess: (tx) => {
+            // The new transaction becomes the template for its recurring rule.
+            if (repeat !== "none" && tx) {
+              createRecurringRule.mutate({
+                transactionId: tx.id,
+                frequency: repeat,
+                startDate: new Date(payload.date),
+              });
+            }
+            onSuccess();
+          },
+        });
       }
     },
     [
       amountStr, feeStr, type, categoryId, accountId, toAccountId,
-      note, description, date, editId, createTransaction, updateTransaction,
+      locationId, contactIds, note, description, date, editId, repeat,
+      createTransaction, updateTransaction, createRecurringRule,
+      settings, categories, selectedCategory,
     ],
   );
 
@@ -165,8 +242,11 @@ export default function AddTransactionScreen() {
       setFeeStr("");
       setShowFeeRow(false);
       setCategoryId(null);
+      setLocationId(null);
+      setContactIds([]);
       setNote("");
       setDescription("");
+      setRepeat("none");
       setEditingFee(false);
       setShowKeypad(true);
     });
@@ -204,14 +284,14 @@ export default function AddTransactionScreen() {
       <View className="flex-1 bg-background">
         <View className="flex-row items-center px-4 py-2">
           <Pressable onPress={() => router.back()} className="p-2 -ml-2">
-            <ArrowLeft size={24} className="text-text" />
+            <ArrowLeft size={24} color={c.text} />
           </Pressable>
           <Text className="text-lg font-semibold text-text ml-2 flex-1">
             {TYPE_LABELS[type]}
           </Text>
           {editId && (
             <Pressable onPress={handleDelete} className="p-2">
-              <Trash2 size={20} className="text-error" />
+              <Trash2 size={20} color={c.error} />
             </Pressable>
           )}
         </View>
@@ -310,7 +390,7 @@ export default function AddTransactionScreen() {
               </Text>
               {type === "transfer" && (
                 <Pressable onPress={swapAccounts} className="p-1">
-                  <ArrowUpDown size={16} className="text-text-secondary" />
+                  <ArrowUpDown size={16} color={c.textSecondary} />
                 </Pressable>
               )}
             </Pressable>
@@ -342,13 +422,76 @@ export default function AddTransactionScreen() {
             </View>
           </View>
 
+          <View className="flex-row items-center py-1.5">
+            <Text className="w-20 text-sm text-text-secondary">Location</Text>
+            <Pressable
+              className="flex-1 py-2 border-b border-border"
+              onPress={() => { setShowKeypad(false); setShowLocationPicker(true); }}
+            >
+              <Text className="text-base text-text">
+                {selectedLocation?.name ?? " "}
+              </Text>
+            </Pressable>
+          </View>
+
+          <View className="flex-row items-center py-1.5">
+            <Text className="w-20 text-sm text-text-secondary">People</Text>
+            <Pressable
+              className="flex-1 py-2 border-b border-border"
+              onPress={() => { setShowKeypad(false); setShowContactPicker(true); }}
+            >
+              <Text className="text-base text-text" numberOfLines={1}>
+                {contactSummary}
+              </Text>
+            </Pressable>
+          </View>
+
+          {!editId && (
+            <View className="py-2.5">
+              <Text className="text-sm text-text-secondary mb-2">Repeat</Text>
+              <View className="flex-row flex-wrap gap-2">
+                {(
+                  [
+                    { key: "none", label: "Off" },
+                    { key: "daily", label: FREQUENCY_LABELS.daily },
+                    { key: "weekly", label: FREQUENCY_LABELS.weekly },
+                    { key: "monthly", label: FREQUENCY_LABELS.monthly },
+                    { key: "yearly", label: FREQUENCY_LABELS.yearly },
+                  ] as const
+                ).map((opt) => (
+                  <Pressable
+                    key={opt.key}
+                    className={cn(
+                      "px-3.5 py-1.5 rounded-full border",
+                      repeat === opt.key
+                        ? "bg-primary border-primary"
+                        : "bg-card border-border",
+                    )}
+                    onPress={() => setRepeat(opt.key as Frequency | "none")}
+                  >
+                    <Text
+                      className={cn(
+                        "text-sm",
+                        repeat === opt.key
+                          ? "text-primary-foreground"
+                          : "text-text-secondary",
+                      )}
+                    >
+                      {opt.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          )}
+
           <View className="h-3 bg-divider -mx-4 mt-4" />
 
           <View className="border-b border-border">
             <TextInput
               className="text-base text-text py-4"
               placeholder="Description"
-              placeholderTextColor={textMuted}
+              placeholderTextColor={c.textMuted}
               value={description}
               onChangeText={setDescription}
               multiline
@@ -416,6 +559,37 @@ export default function AddTransactionScreen() {
           onSelect={(acc) => { setToAccountId(acc.id); setShowToAccountPicker(false); }}
           accounts={accounts.filter((a) => a.id !== accountId)}
           title="To Account"
+        />
+
+        <LocationPicker
+          visible={showLocationPicker}
+          locations={locations}
+          selectedId={locationId}
+          onClose={() => setShowLocationPicker(false)}
+          onSelect={(loc) => { setLocationId(loc?.id ?? null); setShowLocationPicker(false); }}
+          onCreate={(name) =>
+            createLocation.mutate(name, {
+              onSuccess: (loc) => loc && setLocationId(loc.id),
+            })
+          }
+        />
+
+        <ContactPicker
+          visible={showContactPicker}
+          contacts={contacts}
+          selectedIds={contactIds}
+          onClose={() => setShowContactPicker(false)}
+          onToggle={(id) =>
+            setContactIds((prev) =>
+              prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id],
+            )
+          }
+          onCreate={(name) =>
+            createContact.mutate(name, {
+              onSuccess: (contact) =>
+                contact && setContactIds((prev) => [...prev, contact.id]),
+            })
+          }
         />
       </View>
     </SafeAreaView>

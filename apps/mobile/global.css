@@ -4,73 +4,66 @@
 
 @import "nativewind/theme";
 
+/* Token defaults (light). These register the utility classes (bg-background,
+   text-text, …). Runtime theme switching overrides these SAME variable names
+   via NativeWind's vars() in ThemedRoot — no intermediate indirection, which
+   NativeWind would otherwise flatten at build time and break dark mode. */
 @theme {
-  --color-income: #16A34A;
-  --color-expense: #DC2626;
-  --color-transfer: #2563EB;
-
-  --color-primary: #2563EB;
   --color-primary-foreground: #FFFFFF;
-
-  --color-fab: #F97316;
+  --color-fab: #F2663B;
   --color-fab-foreground: #FFFFFF;
-
-  --color-success: #16A34A;
   --color-warning: #D97706;
-  --color-error: #DC2626;
-  --color-info: #2563EB;
 
-  --color-background: var(--color-bg);
-  --color-card: var(--color-card-bg);
-  --color-card-alt: var(--color-card-alt-bg);
-  --color-surface: var(--color-surface-bg);
-  --color-text: var(--color-text-primary);
-  --color-text-secondary: var(--color-text-sec);
-  --color-text-muted: var(--color-text-mut);
-  --color-border: var(--color-border-color);
-  --color-divider: var(--color-divider-color);
-  --color-tab-bar: var(--color-tab-bar-bg);
-  --color-tab-bar-border: var(--color-tab-bar-b);
-  --color-tab-active: var(--color-tab-act);
-  --color-tab-inactive: var(--color-tab-inact);
+  --color-income: #2F80D8;
+  --color-expense: #E0534C;
+  --color-transfer: #6B7280;
+  --color-primary: #2F80D8;
+  --color-success: #2F80D8;
+  --color-error: #E0534C;
+  --color-info: #2F80D8;
+
+  --color-background: #FAF6EC;
+  --color-card: #F2EBDB;
+  --color-card-alt: #E9E0CD;
+  --color-surface: #FFFFFF;
+  --color-text: #26262A;
+  --color-text-secondary: #79736A;
+  --color-text-muted: #ABA493;
+  --color-border: #E8DFCD;
+  --color-divider: #EFE8D8;
+  --color-tab-bar: #FFFFFF;
+  --color-tab-bar-border: #E8DFCD;
+  --color-tab-active: #2F80D8;
+  --color-tab-inactive: #9C9686;
 }
 
-:root {
-  --color-bg: #FFFFFF;
-  --color-card-bg: #F4F4F5;
-  --color-card-alt-bg: #E4E4E7;
-  --color-surface-bg: #FAFAFA;
-  --color-text-primary: #09090B;
-  --color-text-sec: #71717A;
-  --color-text-mut: #A1A1AA;
-  --color-border-color: #E4E4E7;
-  --color-divider-color: #F4F4F5;
-  --color-tab-bar-bg: #FFFFFF;
-  --color-tab-bar-b: #E4E4E7;
-  --color-tab-act: #2563EB;
-  --color-tab-inact: #71717A;
+/* Dark theme. This @media block is the SINGLE theming mechanism — NativeWind
+   drives prefers-color-scheme from its color-scheme state (system + the in-app
+   toggle), applying these globally to every screen. We do NOT also use vars()
+   in ThemedRoot; having both made text and background resolve from different
+   sources and produced low-contrast text. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-income: #5AA0F0;
+    --color-expense: #F2706A;
+    --color-transfer: #9CA3AF;
+    --color-primary: #5AA0F0;
+    --color-success: #5AA0F0;
+    --color-error: #F2706A;
+    --color-info: #5AA0F0;
 
-  --color-income: #16A34A;
-  --color-expense: #DC2626;
-  --color-transfer: #2563EB;
-}
-
-.dark {
-  --color-bg: #0A0A0A;
-  --color-card-bg: #18181B;
-  --color-card-alt-bg: #27272A;
-  --color-surface-bg: #111111;
-  --color-text-primary: #FAFAFA;
-  --color-text-sec: #A1A1AA;
-  --color-text-mut: #52525B;
-  --color-border-color: #27272A;
-  --color-divider-color: #1C1C1E;
-  --color-tab-bar-bg: #0A0A0A;
-  --color-tab-bar-b: #27272A;
-  --color-tab-act: #3B82F6;
-  --color-tab-inact: #52525B;
-
-  --color-income: #4ADE80;
-  --color-expense: #F87171;
-  --color-transfer: #60A5FA;
+    --color-background: #121212;
+    --color-card: #1E1E1E;
+    --color-card-alt: #2A2A2A;
+    --color-surface: #181818;
+    --color-text: #ECECEC;
+    --color-text-secondary: #A0A0A0;
+    --color-text-muted: #6B6B6B;
+    --color-border: #2E2E2E;
+    --color-divider: #242424;
+    --color-tab-bar: #121212;
+    --color-tab-bar-border: #2E2E2E;
+    --color-tab-active: #5AA0F0;
+    --color-tab-inactive: #6B6B6B;
+  }
 }
