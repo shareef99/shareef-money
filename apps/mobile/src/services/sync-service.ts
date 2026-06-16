@@ -125,7 +125,7 @@ export async function pullChanges(db: Db, api: AxiosInstance, userId: string) {
 
     for (const row of rows) {
       const id = row.id as number;
-      const rowData = {
+      const rowData: Record<string, unknown> = {
         ...row,
         userId,
         date: row.date ? new Date(row.date as number) : undefined,
@@ -141,17 +141,17 @@ export async function pullChanges(db: Db, api: AxiosInstance, userId: string) {
         .get();
 
       if (existing) {
-        const updateData = { ...rowData };
+        const updateData: Record<string, unknown> = { ...rowData };
         delete updateData.id;
         delete updateData.createdAt;
 
         db.update(table as typeof accountsTable)
-          .set(updateData as Record<string, unknown>)
+          .set(updateData as never)
           .where(eq((table as typeof accountsTable).id, id))
           .run();
       } else {
         db.insert(table as typeof accountsTable)
-          .values(rowData as Record<string, unknown>)
+          .values(rowData as never)
           .run();
       }
     }
