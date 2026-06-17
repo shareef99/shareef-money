@@ -570,6 +570,98 @@ export function netWorthSeries(
   });
 }
 
+export type DebtTrendPoint = {
+  key: string;
+  label: string;
+  receivable: number; // total others owe you at the end of this bucket
+  payable: number; // total you owe others
+  net: number; // receivable − payable
+};
+
+// Receivable/payable position at the end of each bucket across [from,to].
+// Debts are running per-person balances, so a snapshot at any point is the sum
+// of every person's net (lend − borrow) up to that moment, split into the
+// positive side (owed to you) and negative side (you owe). All debt history
+// before `from` is folded into the opening snapshot.
+export function debtTrend(
+  db: Db,
+  userId: string,
+  from: Date,
+  to: Date,
+  bucket: TimeBucket,
+  weekStartMonday: boolean,
+): DebtTrendPoint[] {
+  const txns = db
+    .select({
+      type: transactionsTable.type,
+      amount: transactionsTable.amount,
+      contactId: transactionsTable.contactId,
+      date: transactionsTable.date,
+    })
+    .from(transactionsTable)
+    .where(
+      and(
+        eq(transactionsTable.userId, userId),
+        inArray(transactionsTable.type, ["debt_lend", "debt_borrow"]),
+        lte(transactionsTable.date, to),
+      ),
+    )
+    .orderBy(transactionsTable.date)
+    .all();
+
+  // Ordered bucket starts across the range (same scheme as the other series).
+  const starts: Date[] = [];
+  const keys: string[] = [];
+  const cursor = new Date(from);
+  cursor.setHours(0, 0, 0, 0);
+  let guard = 0;
+  while (cursor <= to && guard < 1000) {
+    starts.push(new Date(cursor));
+    keys.push(bucketKey(cursor, bucket, weekStartMonday));
+    if (bucket === "month") cursor.setMonth(cursor.getMonth() + 1);
+    else if (bucket === "week") cursor.setDate(cursor.getDate() + 7);
+    else cursor.setDate(cursor.getDate() + 1);
+    guard += 1;
+  }
+
+  const perContact = new Map<number, number>();
+  const points: DebtTrendPoint[] = [];
+  let ti = 0;
+
+  for (let i = 0; i < starts.length; i += 1) {
+    // Apply every txn dated before this bucket's end (= next bucket's start, or
+    // just past `to` for the final bucket). Txns before `from` land here too,
+    // so the first snapshot already reflects all prior history.
+    const end = i + 1 < starts.length ? starts[i + 1]! : new Date(to.getTime() + 1);
+    while (ti < txns.length) {
+      const raw = txns[ti]!;
+      const d = raw.date instanceof Date ? raw.date : new Date(raw.date as number);
+      if (d >= end) break;
+      if (raw.contactId != null) {
+        const v = raw.type === "debt_lend" ? raw.amount : -raw.amount;
+        perContact.set(raw.contactId, (perContact.get(raw.contactId) ?? 0) + v);
+      }
+      ti += 1;
+    }
+
+    let receivable = 0;
+    let payable = 0;
+    for (const net of perContact.values()) {
+      if (net > 0) receivable += net;
+      else if (net < 0) payable += -net;
+    }
+    points.push({
+      key: keys[i]!,
+      label: bucketLabel(keys[i]!, bucket),
+      receivable,
+      payable,
+      net: receivable - payable,
+    });
+  }
+
+  return points;
+}
+
 export type SankeyNode = {
   id: string;
   name: string;

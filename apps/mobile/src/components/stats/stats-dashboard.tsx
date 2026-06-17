@@ -7,6 +7,7 @@ import {
   useStatsTransactions,
   useCashFlow,
   useNetWorthSeries,
+  useDebtTrend,
 } from "../../queries/use-stats";
 import { useContacts } from "../../queries/use-contacts";
 import { useCategories } from "../../queries/use-categories";
@@ -32,6 +33,7 @@ import { StackedBarCard } from "./stacked-bar-card";
 import { SankeyCard } from "./sankey-card";
 import { TransferFlowCard } from "./transfer-flow-card";
 import { DebtSummaryCard } from "./debt-summary-card";
+import { DebtTrendCard } from "./debt-trend-card";
 import { CashFlowWaterfallCard } from "./cash-flow-waterfall-card";
 import { NetWorthLineCard } from "./net-worth-line-card";
 import { TreemapCard } from "./treemap-card";
@@ -59,6 +61,7 @@ export function StatsDashboard() {
   );
   const { data: cashflow } = useCashFlow(filter);
   const { data: netWorth = [] } = useNetWorthSeries(filter, bucket, weekStartMonday);
+  const { data: debtTrend = [] } = useDebtTrend(filter, bucket, weekStartMonday);
 
   // Previous period (for the comparison card). Prefetched, so cached.
   const prevFilter = useMemo(
@@ -157,6 +160,7 @@ export function StatsDashboard() {
           <NetWorthLineCard points={netWorth} subtitle={bucketLabel} />
           <TransferFlowCard edges={transfers} />
           <DebtSummaryCard />
+          <DebtTrendCard points={debtTrend} subtitle={bucketLabel} />
           <RankedBarCard
             title="Top locations"
             subtitle="expenses by place"

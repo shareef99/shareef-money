@@ -53,6 +53,7 @@ export async function getTransactions(db: Db, userId: string, filters: Transacti
       account: true,
       toAccount: true,
       contact: true,
+      location: true,
       transactionContacts: true,
     },
   });

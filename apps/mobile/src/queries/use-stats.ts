@@ -19,6 +19,8 @@ export const statsKeys = {
     [...statsKeys.all, "cashflow", userId, from, to] as const,
   netWorth: (userId: string | undefined, from: number, to: number, bucket: string) =>
     [...statsKeys.all, "networth", userId, from, to, bucket] as const,
+  debtTrend: (userId: string | undefined, from: number, to: number, bucket: string) =>
+    [...statsKeys.all, "debttrend", userId, from, to, bucket] as const,
 };
 
 // One synchronous filtered read per filter. keepPreviousData keeps the current
@@ -69,6 +71,24 @@ export function useNetWorthSeries(
   });
 }
 
+// Receivable/payable position per bucket across the range (debt trend line).
+export function useDebtTrend(
+  filter: StatsFilter,
+  bucket: TimeBucket,
+  weekStartMonday: boolean,
+) {
+  const { db } = useDatabase();
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: statsKeys.debtTrend(user?.id, filter.from.getTime(), filter.to.getTime(), bucket),
+    queryFn: () =>
+      statsService.debtTrend(db, user!.id, filter.from, filter.to, bucket, weekStartMonday),
+    enabled: !!user,
+    placeholderData: keepPreviousData,
+    staleTime: 60_000,
+  });
+}
+
 // Warm the previous and next period so swiping onto either is instant.
 export function usePrefetchStatsPeriod() {
   const { db } = useDatabase();
@@ -99,6 +119,12 @@ export function usePrefetchStatsPeriod() {
           queryKey: statsKeys.netWorth(user.id, f.from.getTime(), f.to.getTime(), b),
           queryFn: () =>
             statsService.netWorthSeries(db, user.id, f.from, f.to, b, weekStartMonday),
+          staleTime: 60_000,
+        });
+        queryClient.prefetchQuery({
+          queryKey: statsKeys.debtTrend(user.id, f.from.getTime(), f.to.getTime(), b),
+          queryFn: () =>
+            statsService.debtTrend(db, user.id, f.from, f.to, b, weekStartMonday),
           staleTime: 60_000,
         });
       }
