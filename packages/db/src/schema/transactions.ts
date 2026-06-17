@@ -26,6 +26,8 @@ export const transactionsTable = sqliteTable(
       .notNull()
       .references(() => accountsTable.id),
     toAccountId: integer("to_account_id").references(() => accountsTable.id),
+    // Debt counterparty (the person) for debt_lend / debt_borrow. Null otherwise.
+    contactId: integer("contact_id").references(() => contactsTable.id),
     locationId: integer("location_id").references(() => locationsTable.id),
     note: text("note"),
     description: text("description"),
@@ -43,6 +45,7 @@ export const transactionsTable = sqliteTable(
     index("idx_transactions_type").on(table.type),
     index("idx_transactions_account").on(table.accountId),
     index("idx_transactions_category").on(table.categoryId),
+    index("idx_transactions_contact").on(table.contactId),
   ],
 );
 

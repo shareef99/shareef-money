@@ -31,6 +31,7 @@ import { NetLineCard } from "./net-line-card";
 import { StackedBarCard } from "./stacked-bar-card";
 import { SankeyCard } from "./sankey-card";
 import { TransferFlowCard } from "./transfer-flow-card";
+import { DebtSummaryCard } from "./debt-summary-card";
 import { CashFlowWaterfallCard } from "./cash-flow-waterfall-card";
 import { NetWorthLineCard } from "./net-worth-line-card";
 import { TreemapCard } from "./treemap-card";
@@ -155,6 +156,7 @@ export function StatsDashboard() {
           {cashflow ? <CashFlowWaterfallCard flow={cashflow} /> : null}
           <NetWorthLineCard points={netWorth} subtitle={bucketLabel} />
           <TransferFlowCard edges={transfers} />
+          <DebtSummaryCard />
           <RankedBarCard
             title="Top locations"
             subtitle="expenses by place"

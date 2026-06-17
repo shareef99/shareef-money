@@ -44,10 +44,29 @@ const transferSchema = z
   })
   .strict();
 
+// Debt events: money moves between one account and a person (contactId). No
+// category, no toAccount, no fee. "debt_lend" = you gave; "debt_borrow" = you
+// got. Per-person running balance is derived from these.
+const debtFields = {
+  ...baseFields,
+  accountId: z.number().int().positive(),
+  contactId: z.number().int().positive(),
+};
+
+const debtLendSchema = z
+  .object({ type: z.literal("debt_lend"), ...debtFields })
+  .strict();
+
+const debtBorrowSchema = z
+  .object({ type: z.literal("debt_borrow"), ...debtFields })
+  .strict();
+
 export const transactionCreateSchema = z.discriminatedUnion("type", [
   incomeSchema,
   expenseSchema,
   transferSchema,
+  debtLendSchema,
+  debtBorrowSchema,
 ]);
 export type TransactionCreateInput = z.infer<typeof transactionCreateSchema>;
 
@@ -59,6 +78,7 @@ export const transactionUpdateSchema = z
     categoryId: z.number().int().positive().nullable().optional(),
     accountId: z.number().int().positive().optional(),
     toAccountId: z.number().int().positive().nullable().optional(),
+    contactId: z.number().int().positive().nullable().optional(),
     locationId: z.number().int().positive().nullable().optional(),
     contactIds: z.array(z.number().int().positive()).optional(),
     note: z.string().max(200).nullable().optional(),

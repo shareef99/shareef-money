@@ -139,14 +139,20 @@ export function DailyView({ monthStart, monthEnd }: Props) {
           const cat = item.category;
           const parentName =
             cat?.parentId != null ? categoryName.get(cat.parentId) : undefined;
+          const isDebt =
+            item.type === "debt_lend" || item.type === "debt_borrow";
           const label =
             item.type === "transfer"
               ? `${item.account?.name ?? "?"} → ${item.toAccount?.name ?? "?"}`
-              : cat
-                ? parentName
-                  ? `${parentName} › ${cat.name}`
-                  : cat.name
-                : "(No category)";
+              : item.type === "debt_lend"
+                ? `→ ${item.contact?.name ?? "Someone"}`
+                : item.type === "debt_borrow"
+                  ? `← ${item.contact?.name ?? "Someone"}`
+                  : cat
+                    ? parentName
+                      ? `${parentName} › ${cat.name}`
+                      : cat.name
+                    : "(No category)";
           return (
             <Pressable
               className={cn(
@@ -154,10 +160,11 @@ export function DailyView({ monthStart, monthEnd }: Props) {
                 index > 0 && "border-t border-border",
               )}
               onPress={() =>
-                router.push({
-                  pathname: "/add-transaction",
-                  params: { id: item.id },
-                })
+                router.push(
+                  isDebt
+                    ? { pathname: "/add-debt", params: { id: String(item.id) } }
+                    : { pathname: "/add-transaction", params: { id: item.id } },
+                )
               }
             >
               <View className="flex-1 pr-3">
@@ -179,14 +186,22 @@ export function DailyView({ monthStart, monthEnd }: Props) {
                     "text-sm font-medium",
                     item.type === "income" && "text-income",
                     item.type === "expense" && "text-expense",
-                    item.type === "transfer" && "text-transfer",
+                    (item.type === "transfer" || isDebt) && "text-transfer",
                   )}
                 >
-                  {item.type === "expense" ? "-" : ""}
+                  {item.type === "expense" || item.type === "debt_lend"
+                    ? "-"
+                    : item.type === "debt_borrow"
+                      ? "+"
+                      : ""}
                   {formatCurrency(item.amount)}
                 </Text>
                 <Text className="text-xs text-text-muted">
-                  {item.type === "transfer" ? "Transfer" : item.account?.name}
+                  {item.type === "transfer"
+                    ? "Transfer"
+                    : isDebt
+                      ? "Debt"
+                      : item.account?.name}
                 </Text>
               </View>
             </Pressable>

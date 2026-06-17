@@ -14,6 +14,7 @@ type CreateTransactionPayload = {
   categoryId?: number | null;
   accountId: number;
   toAccountId?: number | null;
+  contactId?: number | null; // debt counterparty (debt_lend / debt_borrow)
   locationId?: number | null;
   contactIds?: number[];
   note?: string | null;
@@ -51,6 +52,7 @@ export async function getTransactions(db: Db, userId: string, filters: Transacti
       category: true,
       account: true,
       toAccount: true,
+      contact: true,
       transactionContacts: true,
     },
   });
@@ -151,6 +153,7 @@ export async function createTransaction(db: Db, userId: string, payload: CreateT
       categoryId: data.categoryId ?? null,
       accountId: data.accountId,
       toAccountId: data.toAccountId ?? null,
+      contactId: data.contactId ?? null,
       locationId: data.locationId ?? null,
       note: data.note ?? null,
       description: data.description ?? null,
@@ -179,6 +182,7 @@ export async function updateTransaction(db: Db, userId: string, id: number, payl
   if (data.categoryId !== undefined) setData.categoryId = data.categoryId;
   if (data.accountId !== undefined) setData.accountId = data.accountId;
   if (data.toAccountId !== undefined) setData.toAccountId = data.toAccountId;
+  if (data.contactId !== undefined) setData.contactId = data.contactId;
   if (data.locationId !== undefined) setData.locationId = data.locationId;
   if (data.note !== undefined) setData.note = data.note;
   if (data.description !== undefined) setData.description = data.description;

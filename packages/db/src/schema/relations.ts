@@ -98,6 +98,11 @@ export const transactionsRelations = relations(
       fields: [transactionsTable.locationId],
       references: [locationsTable.id],
     }),
+    // Debt counterparty (single person) for debt_lend / debt_borrow.
+    contact: one(contactsTable, {
+      fields: [transactionsTable.contactId],
+      references: [contactsTable.id],
+    }),
     transactionContacts: many(transactionContactsTable),
     recurringRules: many(recurringRulesTable),
   }),

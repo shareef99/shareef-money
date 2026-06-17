@@ -13,3 +13,10 @@ export const TRANSACTION_TYPE_TABS = [
   { type: "expense", label: "Expense" },
   { type: "transfer", label: "Transfer" },
 ] as const;
+
+// Debt entry directions (Khatabook-style). Added from the Debts tab, not the
+// main add screen, so the income/expense/transfer tabs stay uncluttered.
+export const DEBT_TYPE_TABS = [
+  { type: "debt_lend", label: "You gave" },
+  { type: "debt_borrow", label: "You got" },
+] as const;

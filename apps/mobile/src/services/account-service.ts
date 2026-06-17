@@ -61,6 +61,9 @@ export async function getAccountsWithBalances(
       add(t.accountId, -(t.amount + t.fee));
       add(t.toAccountId, t.amount);
     }
+    // Debts move real cash: "you gave" leaves the account, "you got" enters it.
+    else if (t.type === "debt_lend") add(t.accountId, -t.amount);
+    else if (t.type === "debt_borrow") add(t.accountId, t.amount);
   }
 
   const withBalances = accounts.map((a) => ({

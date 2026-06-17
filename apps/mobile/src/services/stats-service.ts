@@ -113,6 +113,12 @@ export function queryStatsTransactions(
   ];
   if (filter.types.length) {
     conditions.push(inArray(transactionsTable.type, filter.types));
+  } else {
+    // "All" means income/expense/transfer — debts are balance-sheet moves and
+    // live in their own Debts card/tab, never in the income/expense charts.
+    conditions.push(
+      inArray(transactionsTable.type, ["income", "expense", "transfer"]),
+    );
   }
   if (filter.accountIds.length) {
     const a = or(
@@ -236,7 +242,7 @@ export function summarize(txns: StatsTxn[]): StatsSummary {
     fees += t.fee;
     if (t.type === "income") income += t.amount;
     else if (t.type === "expense") expense += t.amount;
-    else transfer += t.amount;
+    else if (t.type === "transfer") transfer += t.amount;
   }
   const net = income - expense;
   return {

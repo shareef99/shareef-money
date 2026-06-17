@@ -4,6 +4,7 @@ import {
   ArrowLeftRight,
   BarChart3,
   Wallet,
+  HandCoins,
   MoreHorizontal,
 } from "lucide-react-native";
 import { useColorScheme } from "react-native";
@@ -83,6 +84,15 @@ export default function TabLayout() {
           title: "Accounts",
           tabBarIcon: ({ color, size }) => (
             <Wallet size={size} color={color} strokeWidth={1.5} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="debts"
+        options={{
+          title: "Debts",
+          tabBarIcon: ({ color, size }) => (
+            <HandCoins size={size} color={color} strokeWidth={1.5} />
           ),
         }}
       />

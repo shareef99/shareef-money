@@ -61,7 +61,7 @@ export default function AddTransactionScreen() {
   const c = getColors(useColorScheme());
 
   const { data: categories = [] } = useCategories(
-    type === "transfer" ? undefined : type,
+    type === "income" || type === "expense" ? type : undefined,
   );
   const { data: accounts = [] } = useAccounts();
   const { data: locations = [] } = useLocations();
