@@ -55,7 +55,10 @@ export default function AccountsScreen() {
             data.accounts.map((account) => (
               <Pressable
                 key={account.id}
-                className="flex-row items-center justify-between px-4 py-4 border-b border-border active:bg-card"
+                className={cn(
+                  "flex-row items-center justify-between px-4 py-4 border-b border-border active:bg-card",
+                  account.isHidden && "opacity-50",
+                )}
                 onPress={() =>
                   router.push({
                     pathname: "/account-detail",
@@ -63,13 +66,26 @@ export default function AccountsScreen() {
                   })
                 }
               >
-                <View className="flex-1">
-                  <Text className="text-base text-text">{account.name}</Text>
-                  {account.description ? (
-                    <Text className="text-xs text-text-muted mt-0.5">
-                      {account.description}
-                    </Text>
-                  ) : null}
+                <View className="flex-row items-center flex-1">
+                  <View
+                    className="w-3 h-3 rounded-full mr-3"
+                    style={{ backgroundColor: account.color ?? c.textMuted }}
+                  />
+                  <View className="flex-1">
+                    <View className="flex-row items-center">
+                      <Text className="text-base text-text">{account.name}</Text>
+                      {account.isHidden ? (
+                        <Text className="text-[10px] text-text-muted ml-2 px-1.5 py-0.5 rounded bg-card">
+                          Hidden
+                        </Text>
+                      ) : null}
+                    </View>
+                    {account.description ? (
+                      <Text className="text-xs text-text-muted mt-0.5">
+                        {account.description}
+                      </Text>
+                    ) : null}
+                  </View>
                 </View>
                 <Text
                   className={cn(
@@ -90,7 +106,12 @@ export default function AccountsScreen() {
           title="Add Account"
           onClose={() => setShowAdd(false)}
           onSubmit={(values) => {
-            createAccount.mutate(values);
+            createAccount.mutate({
+              name: values.name,
+              initialBalance: values.initialBalance,
+              description: values.description,
+              color: values.color,
+            });
             setShowAdd(false);
           }}
         />

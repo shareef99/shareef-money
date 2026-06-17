@@ -147,9 +147,21 @@ export default function AccountDetailScreen() {
           initialName={account.name}
           initialBalance={account.initialBalance}
           initialDescription={account.description}
+          initialColor={account.color}
+          initialHidden={account.isHidden}
+          showHideToggle
           onClose={() => setShowEdit(false)}
           onSubmit={(values) => {
-            updateAccount.mutate({ id: account.id, payload: values });
+            updateAccount.mutate({
+              id: account.id,
+              payload: {
+                name: values.name,
+                initialBalance: values.initialBalance,
+                description: values.description,
+                color: values.color,
+                isHidden: values.isHidden,
+              },
+            });
             setShowEdit(false);
           }}
         />

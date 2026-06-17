@@ -4,21 +4,30 @@ import type { Db } from "../db/client";
 import { generateSyncId } from "../lib/sync-id";
 import { getOrCreateOpeningBalanceCategory } from "./category-service";
 
+// Visible, selectable accounts (used by the entry pickers). Hidden accounts are
+// excluded here so you can't file new transactions against them.
 export async function getAccounts(db: Db, userId: string) {
+  return db.query.accountsTable.findMany({
+    where: and(
+      eq(accountsTable.userId, userId),
+      eq(accountsTable.isArchived, false),
+      eq(accountsTable.isHidden, false),
+    ),
+    orderBy: accountsTable.sortOrder,
+  });
+}
+
+// All non-archived accounts, including hidden ones (used by the Accounts list,
+// which still shows hidden accounts — just flagged and out of the total).
+async function getAllAccounts(db: Db, userId: string) {
   return db.query.accountsTable.findMany({
     where: and(eq(accountsTable.userId, userId), eq(accountsTable.isArchived, false)),
     orderBy: accountsTable.sortOrder,
   });
 }
 
-export async function getAccountById(db: Db, userId: string, id: number) {
-  return db.query.accountsTable.findFirst({
-    where: and(eq(accountsTable.id, id), eq(accountsTable.userId, userId)),
-  });
-}
-
 export type AccountWithBalance = Awaited<
-  ReturnType<typeof getAccounts>
+  ReturnType<typeof getAllAccounts>
 >[number] & { balance: number };
 
 // Balance = initialBalance + incomes − expenses + transfers in − (transfers out + fees)
@@ -26,7 +35,7 @@ export async function getAccountsWithBalances(
   db: Db,
   userId: string,
 ): Promise<{ accounts: AccountWithBalance[]; total: number }> {
-  const accounts = await getAccounts(db, userId);
+  const accounts = await getAllAccounts(db, userId);
 
   const txns = await db.query.transactionsTable.findMany({
     where: eq(transactionsTable.userId, userId),
@@ -59,7 +68,10 @@ export async function getAccountsWithBalances(
     balance: a.initialBalance + (delta.get(a.id) ?? 0),
   }));
 
-  const total = withBalances.reduce((s, a) => s + a.balance, 0);
+  // Hidden accounts still show in the list but don't count toward Total Assets.
+  const total = withBalances
+    .filter((a) => !a.isHidden)
+    .reduce((s, a) => s + a.balance, 0);
   return { accounts: withBalances, total };
 }
 
@@ -67,12 +79,15 @@ type CreateAccountPayload = {
   name: string;
   initialBalance?: number;
   description?: string | null;
+  color?: string | null;
 };
 
 type UpdateAccountPayload = {
   name?: string;
   initialBalance?: number;
   description?: string | null;
+  color?: string | null;
+  isHidden?: boolean;
 };
 
 export async function createAccount(db: Db, userId: string, payload: CreateAccountPayload) {
@@ -96,6 +111,7 @@ export async function createAccount(db: Db, userId: string, payload: CreateAccou
       name: payload.name,
       initialBalance: 0,
       description: payload.description ?? null,
+      color: payload.color ?? null,
       sortOrder: nextSortOrder,
     })
     .returning();
@@ -164,6 +180,8 @@ export async function updateAccount(db: Db, userId: string, id: number, payload:
   if (payload.name !== undefined) setData.name = payload.name;
   if (payload.initialBalance !== undefined) setData.initialBalance = payload.initialBalance;
   if (payload.description !== undefined) setData.description = payload.description;
+  if (payload.color !== undefined) setData.color = payload.color;
+  if (payload.isHidden !== undefined) setData.isHidden = payload.isHidden;
 
   const [account] = await db
     .update(accountsTable)

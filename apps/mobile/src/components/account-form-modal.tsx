@@ -1,6 +1,15 @@
 import { useEffect, useState } from "react";
-import { Modal, Pressable, Text, TextInput, View, useColorScheme } from "react-native";
+import { Modal, Pressable, Switch, Text, TextInput, View, useColorScheme } from "react-native";
 import { getColors } from "../lib/colors";
+import { ColorPicker, DEFAULT_PICKER_COLOR } from "./color-picker";
+
+type Values = {
+  name: string;
+  initialBalance: number;
+  description: string | null;
+  color: string;
+  isHidden: boolean;
+};
 
 type Props = {
   visible: boolean;
@@ -8,8 +17,12 @@ type Props = {
   initialName?: string;
   initialBalance?: number;
   initialDescription?: string | null;
+  initialColor?: string | null;
+  initialHidden?: boolean;
+  // Hide the balance + hidden toggle when adding (only relevant on edit).
+  showHideToggle?: boolean;
   onClose: () => void;
-  onSubmit: (values: { name: string; initialBalance: number; description: string | null }) => void;
+  onSubmit: (values: Values) => void;
 };
 
 export function AccountFormModal({
@@ -18,23 +31,28 @@ export function AccountFormModal({
   initialName,
   initialBalance,
   initialDescription,
+  initialColor,
+  initialHidden,
+  showHideToggle,
   onClose,
   onSubmit,
 }: Props) {
   const [name, setName] = useState("");
   const [balance, setBalance] = useState("");
   const [description, setDescription] = useState("");
-  const { textMuted } = getColors(useColorScheme());
+  const [color, setColor] = useState(DEFAULT_PICKER_COLOR);
+  const [hidden, setHidden] = useState(false);
+  const colors = getColors(useColorScheme());
 
   useEffect(() => {
     if (visible) {
       setName(initialName ?? "");
-      setBalance(
-        initialBalance != null ? String(initialBalance / 100) : "",
-      );
+      setBalance(initialBalance != null ? String(initialBalance / 100) : "");
       setDescription(initialDescription ?? "");
+      setColor(initialColor ?? DEFAULT_PICKER_COLOR);
+      setHidden(initialHidden ?? false);
     }
-  }, [visible, initialName, initialBalance, initialDescription]);
+  }, [visible, initialName, initialBalance, initialDescription, initialColor, initialHidden]);
 
   const handleSubmit = () => {
     const trimmed = name.trim();
@@ -44,6 +62,8 @@ export function AccountFormModal({
       name: trimmed,
       initialBalance: parsed,
       description: description.trim() || null,
+      color,
+      isHidden: hidden,
     });
   };
 
@@ -57,7 +77,7 @@ export function AccountFormModal({
           <TextInput
             className="text-base text-text border-b border-border pb-2 mb-4"
             placeholder="e.g. Cash, Bank, Card"
-            placeholderTextColor={textMuted}
+            placeholderTextColor={colors.textMuted}
             value={name}
             onChangeText={setName}
             autoFocus
@@ -67,7 +87,7 @@ export function AccountFormModal({
           <TextInput
             className="text-base text-text border-b border-border pb-1"
             placeholder="0"
-            placeholderTextColor={textMuted}
+            placeholderTextColor={colors.textMuted}
             value={balance}
             onChangeText={setBalance}
             keyboardType="numeric"
@@ -78,12 +98,35 @@ export function AccountFormModal({
 
           <Text className="text-xs text-text-secondary mb-1">Description (optional)</Text>
           <TextInput
-            className="text-base text-text border-b border-border pb-2 mb-6"
+            className="text-base text-text border-b border-border pb-2 mb-4"
             placeholder=""
-            placeholderTextColor={textMuted}
+            placeholderTextColor={colors.textMuted}
             value={description}
             onChangeText={setDescription}
           />
+
+          <Text className="text-xs text-text-secondary mb-2">Color</Text>
+          <View className="mb-4">
+            <ColorPicker value={color} onChange={setColor} />
+          </View>
+
+          {showHideToggle && (
+            <View className="flex-row items-center justify-between mb-6">
+              <View className="flex-1 pr-3">
+                <Text className="text-base text-text">Hide account</Text>
+                <Text className="text-[11px] text-text-muted mt-0.5">
+                  Excluded from Total Assets and the account picker. Its
+                  transactions are kept.
+                </Text>
+              </View>
+              <Switch
+                value={hidden}
+                onValueChange={setHidden}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor="#FFFFFF"
+              />
+            </View>
+          )}
 
           <View className="flex-row gap-3">
             <Pressable
