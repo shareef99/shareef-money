@@ -50,7 +50,6 @@ export default function AddTransactionScreen() {
   const [locationId, setLocationId] = useState<number | null>(null);
   const [contactIds, setContactIds] = useState<number[]>([]);
   const [note, setNote] = useState("");
-  const [description, setDescription] = useState("");
   const [repeat, setRepeat] = useState<Frequency | "none">("none");
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showAccountPicker, setShowAccountPicker] = useState(false);
@@ -139,7 +138,6 @@ export default function AddTransactionScreen() {
         (tx.transactionContacts ?? []).map((tc) => tc.contactId),
       );
       setNote(tx.note ?? "");
-      setDescription(tx.description ?? "");
     }
   }, [editId, allTransactions]);
 
@@ -202,7 +200,6 @@ export default function AddTransactionScreen() {
         locationId,
         contactIds,
         note: note || null,
-        description: description || null,
         date: date.getTime(),
       };
 
@@ -226,7 +223,7 @@ export default function AddTransactionScreen() {
     },
     [
       amountStr, feeStr, type, categoryId, accountId, toAccountId,
-      locationId, contactIds, note, description, date, editId, repeat,
+      locationId, contactIds, note, date, editId, repeat,
       createTransaction, updateTransaction, createRecurringRule,
       settings, categories, selectedCategory,
     ],
@@ -245,7 +242,6 @@ export default function AddTransactionScreen() {
       setLocationId(null);
       setContactIds([]);
       setNote("");
-      setDescription("");
       setRepeat("none");
       setEditingFee(false);
       setShowKeypad(true);
@@ -484,20 +480,6 @@ export default function AddTransactionScreen() {
               </View>
             </View>
           )}
-
-          <View className="h-3 bg-divider -mx-4 mt-4" />
-
-          <View className="border-b border-border">
-            <TextInput
-              className="text-base text-text py-4"
-              placeholder="Description"
-              placeholderTextColor={c.textMuted}
-              value={description}
-              onChangeText={setDescription}
-              multiline
-              onFocus={() => setShowKeypad(false)}
-            />
-          </View>
 
           <View className="flex-row gap-3 mt-6 mb-8">
             <Pressable
