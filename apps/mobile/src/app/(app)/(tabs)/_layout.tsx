@@ -9,7 +9,6 @@ import {
 import { useColorScheme } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getColors } from "../../../lib/colors";
-import { useMaterializeRecurring } from "../../../queries/use-recurring";
 import { useEnsureDefaultCategories } from "../../../queries/use-categories";
 import { useMigrateOpeningBalances } from "../../../queries/use-accounts";
 import { useSettings } from "../../../queries/use-settings";
@@ -22,8 +21,6 @@ export default function TabLayout() {
   const { data: settings } = useSettings();
   const didRedirect = useRef(false);
 
-  // Generate any recurring transactions that came due while the app was closed.
-  useMaterializeRecurring();
   // Make sure the user always has default categories to choose from.
   useEnsureDefaultCategories();
   // Convert any legacy account opening balances into income transactions.

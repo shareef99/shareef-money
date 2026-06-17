@@ -8,10 +8,12 @@ import {
   type ReactNode,
 } from "react";
 import { AppState } from "react-native";
+import { useQueryClient } from "@tanstack/react-query";
 import { useDatabase } from "./database-provider";
 import { useAuth } from "./auth-provider";
 import { api } from "../lib/api";
 import * as syncService from "../services/sync-service";
+import * as recurringService from "../services/recurring-service";
 
 type SyncContextValue = {
   sync: () => Promise<void>;
@@ -36,6 +38,7 @@ const FOREGROUND_SYNC_INTERVAL_MS = 5 * 60 * 1000;
 export function SyncProvider({ children }: { children: ReactNode }) {
   const { db } = useDatabase();
   const { user, isAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncAt, setLastSyncAt] = useState(0);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -46,6 +49,14 @@ export function SyncProvider({ children }: { children: ReactNode }) {
 
     setIsSyncing(true);
     try {
+      // Generate any recurring transactions that are now due BEFORE pushing, so
+      // they're included in this same sync cycle. (Doing it separately races the
+      // sync cursor, which could advance past them and never push them.)
+      const created = await recurringService.materializeDueRecurring(db, user.id);
+      if (created > 0) {
+        queryClient.invalidateQueries({ queryKey: ["transactions"] });
+        queryClient.invalidateQueries({ queryKey: ["recurring"] });
+      }
       await syncService.fullSync(db, api, user.id);
       const ts = await syncService.getLastSyncAt();
       setLastSyncAt(ts);
@@ -54,7 +65,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsSyncing(false);
     }
-  }, [db, isAuthenticated, user, isSyncing]);
+  }, [db, isAuthenticated, user, isSyncing, queryClient]);
 
   const triggerSync = useCallback(() => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
