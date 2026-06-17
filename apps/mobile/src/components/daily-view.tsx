@@ -139,13 +139,14 @@ export function DailyView({ monthStart, monthEnd }: Props) {
           const cat = item.category;
           const parentName =
             cat?.parentId != null ? categoryName.get(cat.parentId) : undefined;
-          const label = cat
-            ? parentName
-              ? `${parentName} › ${cat.name}`
-              : cat.name
-            : item.type === "transfer"
-              ? "Transfer"
-              : "(No category)";
+          const label =
+            item.type === "transfer"
+              ? `${item.account?.name ?? "?"} → ${item.toAccount?.name ?? "?"}`
+              : cat
+                ? parentName
+                  ? `${parentName} › ${cat.name}`
+                  : cat.name
+                : "(No category)";
           return (
             <Pressable
               className={cn(
@@ -185,7 +186,7 @@ export function DailyView({ monthStart, monthEnd }: Props) {
                   {formatCurrency(item.amount)}
                 </Text>
                 <Text className="text-xs text-text-muted">
-                  {item.account?.name}
+                  {item.type === "transfer" ? "Transfer" : item.account?.name}
                 </Text>
               </View>
             </Pressable>
