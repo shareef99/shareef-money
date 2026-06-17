@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { ScrollView, View } from "react-native";
 import { Directions, Gesture, GestureDetector } from "react-native-gesture-handler";
 import { runOnJS } from "react-native-reanimated";
@@ -109,17 +109,25 @@ export function StatsDashboard() {
     return items.sort((a, b) => b.actual - a.actual);
   }, [filter.period, treeRows, categories, budgets, monthKey]);
 
+  // Stable JS-thread callbacks. We must NOT pass an updater function as an
+  // argument through runOnJS — reanimated can't transfer a function across the
+  // worklet boundary, which left `filter` undefined and crashed on the next
+  // render. Instead call a no-arg callback that does the setState itself.
+  const goNext = useCallback(
+    () => setFilter((f) => navigatePeriod(f, 1, rangeOpts)),
+    [setFilter, rangeOpts],
+  );
+  const goPrev = useCallback(
+    () => setFilter((f) => navigatePeriod(f, -1, rangeOpts)),
+    [setFilter, rangeOpts],
+  );
   const swipe = useMemo(
     () =>
       Gesture.Race(
-        Gesture.Fling()
-          .direction(Directions.LEFT)
-          .onEnd(() => runOnJS(setFilter)((f) => navigatePeriod(f, 1, rangeOpts))),
-        Gesture.Fling()
-          .direction(Directions.RIGHT)
-          .onEnd(() => runOnJS(setFilter)((f) => navigatePeriod(f, -1, rangeOpts))),
+        Gesture.Fling().direction(Directions.LEFT).onEnd(() => runOnJS(goNext)()),
+        Gesture.Fling().direction(Directions.RIGHT).onEnd(() => runOnJS(goPrev)()),
       ),
-    [setFilter, rangeOpts],
+    [goNext, goPrev],
   );
 
   return (
