@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useDatabase } from "../providers/database-provider";
 import { useAuth } from "../providers/auth-provider";
@@ -71,18 +71,39 @@ export function useWriteOffDebt() {
 }
 
 // Keep local notifications in sync with open debts that have a due date.
-// Runs on mount and whenever the ledger changes (mutations invalidate it).
+// Every query refetch returns a fresh `people` array, so keying the effect on
+// the array identity would reschedule notifications on every transaction
+// mutation. Instead we derive a stable signature of the fields that actually
+// affect a reminder (person, balance, due date) and only resync when it changes.
 export function useDebtReminders() {
   const { data } = useDebtLedger();
 
-  useEffect(() => {
-    syncDebtReminders(
+  const reminders = useMemo(
+    () =>
       data.people.map((p) => ({
         contactId: p.contactId,
         name: p.name,
         net: p.net,
         dueDate: p.dueDate,
       })),
-    ).catch(() => {});
-  }, [data.people]);
+    [data.people],
+  );
+
+  const signature = useMemo(
+    () =>
+      reminders
+        .map(
+          (p) =>
+            `${p.contactId}:${p.net}:${p.dueDate ? new Date(p.dueDate).getTime() : 0}:${p.name}`,
+        )
+        .join("|"),
+    [reminders],
+  );
+
+  useEffect(() => {
+    syncDebtReminders(reminders).catch(() => {});
+    // `reminders` is recomputed every refetch but its content is captured by
+    // `signature`; depending on the signature avoids redundant reschedules.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signature]);
 }

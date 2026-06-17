@@ -75,7 +75,8 @@ export function RestoreProvider({ children }: { children: ReactNode }) {
     try {
       await writeAndShareBackup(db, user.id);
     } catch (e) {
-      Alert.alert("Backup failed", String(e));
+      console.warn("Backup failed", e);
+      Alert.alert("Backup failed", "Couldn't create the backup file. Please try again.");
     } finally {
       setBackingUp(false);
     }
@@ -95,9 +96,13 @@ export function RestoreProvider({ children }: { children: ReactNode }) {
       queryClient.invalidateQueries();
       Alert.alert("Restore complete", "Your data has been replaced from the backup.");
     } catch (e) {
+      console.warn("Restore failed", e);
       setPending(null);
       clearMarker();
-      Alert.alert("Restore failed", String(e));
+      Alert.alert(
+        "Restore failed",
+        "Something went wrong while restoring. Your existing data was left unchanged.",
+      );
     }
   };
 

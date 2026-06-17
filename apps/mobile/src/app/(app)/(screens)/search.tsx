@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Pressable, ScrollView, Text, TextInput, View, useColorScheme } from "react-native";
+import { FlatList, Pressable, ScrollView, Text, TextInput, View, useColorScheme } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { ArrowLeft, Search as SearchIcon } from "lucide-react-native";
@@ -26,7 +26,9 @@ export default function SearchScreen() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
 
-  const { data: transactions = [] } = useTransactions({});
+  // Uncapped: search must see the full history, not just the most recent rows.
+  // The result list is virtualized (FlatList) so rendering many matches is cheap.
+  const { data: transactions = [] } = useTransactions({ limit: 100_000 });
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -101,72 +103,74 @@ export default function SearchScreen() {
           ))}
         </ScrollView>
 
-        <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
-          {results.length === 0 ? (
+        <FlatList
+          data={results}
+          keyExtractor={(item) => String(item.id)}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingBottom: 24 }}
+          ListEmptyComponent={
             <View className="items-center py-20">
               <Text className="text-text-secondary text-base">No results</Text>
             </View>
-          ) : (
-            results.map((item) => {
-              const isDebt =
-                item.type === "debt_lend" || item.type === "debt_borrow";
-              const title =
-                item.type === "debt_lend"
-                  ? `→ ${item.contact?.name ?? "Someone"}`
-                  : item.type === "debt_borrow"
-                    ? `← ${item.contact?.name ?? "Someone"}`
-                    : (item.category?.name ??
-                      (item.type === "transfer" ? "Transfer" : "(No category)"));
-              const subtitle = isDebt
-                ? "Debt"
-                : `${item.account?.name ?? ""}${item.note ? ` · ${item.note}` : ""}`;
-              return (
-                <Pressable
-                  key={item.id}
-                  className="flex-row items-center px-4 py-3 border-b border-border active:bg-card"
-                  onPress={() =>
-                    router.push(
-                      isDebt
-                        ? { pathname: "/add-debt", params: { id: String(item.id) } }
-                        : { pathname: "/add-transaction", params: { id: item.id } },
-                    )
-                  }
-                >
-                  <View className="flex-1">
-                    <Text className="text-sm text-text">{title}</Text>
-                    <Text className="text-xs text-text-muted mt-0.5">{subtitle}</Text>
-                  </View>
-                  <View className="items-end">
-                    <Text
-                      className={cn(
-                        "text-sm font-medium",
-                        item.type === "income" && "text-income",
-                        item.type === "expense" && "text-expense",
-                        (item.type === "transfer" || isDebt) && "text-transfer",
-                      )}
-                    >
-                      {item.type === "expense" || item.type === "debt_lend"
-                        ? "-"
-                        : item.type === "debt_borrow"
-                          ? "+"
-                          : ""}
-                      {formatCurrency(item.amount)}
-                    </Text>
-                    <Text className="text-xs text-text-muted">
-                      {(item.date instanceof Date
-                        ? item.date
-                        : new Date(item.date as number)
-                      ).toLocaleDateString("en-GB", {
-                        day: "2-digit",
-                        month: "short",
-                      })}
-                    </Text>
-                  </View>
-                </Pressable>
-              );
-            })
-          )}
-        </ScrollView>
+          }
+          renderItem={({ item }) => {
+            const isDebt =
+              item.type === "debt_lend" || item.type === "debt_borrow";
+            const title =
+              item.type === "debt_lend"
+                ? `→ ${item.contact?.name ?? "Someone"}`
+                : item.type === "debt_borrow"
+                  ? `← ${item.contact?.name ?? "Someone"}`
+                  : (item.category?.name ??
+                    (item.type === "transfer" ? "Transfer" : "(No category)"));
+            const subtitle = isDebt
+              ? "Debt"
+              : `${item.account?.name ?? ""}${item.note ? ` · ${item.note}` : ""}`;
+            return (
+              <Pressable
+                className="flex-row items-center px-4 py-3 border-b border-border active:bg-card"
+                onPress={() =>
+                  router.push(
+                    isDebt
+                      ? { pathname: "/add-debt", params: { id: String(item.id) } }
+                      : { pathname: "/add-transaction", params: { id: item.id } },
+                  )
+                }
+              >
+                <View className="flex-1">
+                  <Text className="text-sm text-text">{title}</Text>
+                  <Text className="text-xs text-text-muted mt-0.5">{subtitle}</Text>
+                </View>
+                <View className="items-end">
+                  <Text
+                    className={cn(
+                      "text-sm font-medium",
+                      item.type === "income" && "text-income",
+                      item.type === "expense" && "text-expense",
+                      (item.type === "transfer" || isDebt) && "text-transfer",
+                    )}
+                  >
+                    {item.type === "expense" || item.type === "debt_lend"
+                      ? "-"
+                      : item.type === "debt_borrow"
+                        ? "+"
+                        : ""}
+                    {formatCurrency(item.amount)}
+                  </Text>
+                  <Text className="text-xs text-text-muted">
+                    {(item.date instanceof Date
+                      ? item.date
+                      : new Date(item.date as number)
+                    ).toLocaleDateString("en-GB", {
+                      day: "2-digit",
+                      month: "short",
+                    })}
+                  </Text>
+                </View>
+              </Pressable>
+            );
+          }}
+        />
       </View>
     </SafeAreaView>
   );

@@ -119,12 +119,6 @@ export async function getOrCreateWriteOffCategory(db: Db, userId: string) {
   return category;
 }
 
-export async function getCategoryById(db: Db, userId: string, id: number) {
-  return db.query.categoriesTable.findFirst({
-    where: and(eq(categoriesTable.id, id), eq(categoriesTable.userId, userId)),
-  });
-}
-
 type CreateCategoryPayload = {
   name: string;
   type: "income" | "expense";

@@ -25,6 +25,7 @@ import {
 } from "../../../lib/passcode";
 import { scheduleDailyReminder, cancelDailyReminder } from "../../../lib/notifications";
 import { PasscodeSetupModal } from "../../../components/passcode-setup-modal";
+import { SwitchRow } from "../../../components/switch-row";
 import { transactionsToCsv } from "../../../lib/csv";
 import { getColors } from "../../../lib/colors";
 import { cn } from "../../../lib/cn";
@@ -178,7 +179,8 @@ export default function ConfigurationScreen() {
         Alert.alert("Sharing unavailable", `Saved to ${uri}`);
       }
     } catch (e) {
-      Alert.alert("Export failed", String(e));
+      console.warn("CSV export failed", e);
+      Alert.alert("Export failed", "Something went wrong while creating the CSV. Please try again.");
     }
   };
 
@@ -187,7 +189,8 @@ export default function ConfigurationScreen() {
     try {
       await writeAndShareBackup(db, user.id);
     } catch (e) {
-      Alert.alert("Backup failed", String(e));
+      console.warn("Backup failed", e);
+      Alert.alert("Backup failed", "Couldn't create the backup file. Please try again.");
     }
   };
 
@@ -212,36 +215,13 @@ export default function ConfigurationScreen() {
       }
       requestRestore(parsed);
     } catch (e) {
-      Alert.alert("Couldn't read file", String(e));
+      console.warn("Restore file read failed", e);
+      Alert.alert(
+        "Couldn't read file",
+        "We couldn't read that file. Make sure it's a valid Shareef Money backup.",
+      );
     }
   };
-
-  const SwitchRow = ({
-    label,
-    description,
-    value,
-    settingKey,
-  }: {
-    label: string;
-    description?: string;
-    value: boolean;
-    settingKey: string;
-  }) => (
-    <View className="flex-row items-center px-4 py-3.5 border-b border-border">
-      <View className="flex-1 pr-3">
-        <Text className="text-base text-text">{label}</Text>
-        {description ? (
-          <Text className="text-xs text-text-muted mt-0.5">{description}</Text>
-        ) : null}
-      </View>
-      <Switch
-        value={value}
-        onValueChange={(v) => toggle(settingKey, v)}
-        trackColor={{ false: c.border, true: c.primary }}
-        thumbColor="#FFFFFF"
-      />
-    </View>
-  );
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -378,17 +358,17 @@ export default function ConfigurationScreen() {
           <SwitchRow
             label="Require subcategory"
             value={settings.requireSubcategory}
-            settingKey={SETTING_KEYS.requireSubcategory}
+            onValueChange={(v) => toggle(SETTING_KEYS.requireSubcategory, v)}
           />
           <SwitchRow
             label="Require location"
             value={settings.requireLocation}
-            settingKey={SETTING_KEYS.requireLocation}
+            onValueChange={(v) => toggle(SETTING_KEYS.requireLocation, v)}
           />
           <SwitchRow
             label="Require people"
             value={settings.requireContact}
-            settingKey={SETTING_KEYS.requireContact}
+            onValueChange={(v) => toggle(SETTING_KEYS.requireContact, v)}
           />
 
           <SectionHeader title="Carry-over" />
@@ -396,7 +376,7 @@ export default function ConfigurationScreen() {
             label="Carry forward income"
             description="Add each month's leftover income to the next month's total."
             value={settings.incomeCarryForward}
-            settingKey={SETTING_KEYS.incomeCarryForward}
+            onValueChange={(v) => toggle(SETTING_KEYS.incomeCarryForward, v)}
           />
 
           <SectionHeader title="Security" />

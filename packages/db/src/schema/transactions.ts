@@ -11,6 +11,17 @@ import { accountsTable } from "./accounts";
 import { locationsTable } from "./locations";
 import { contactsTable } from "./contacts";
 
+// Mirrors `transactionTypes` in @shareef-money/shared (kept inline so the db
+// package stays dependency-free). Typing the column narrows the inferred row
+// type to this union, so consumers get exhaustiveness checks instead of `string`.
+const TRANSACTION_TYPES = [
+  "income",
+  "expense",
+  "transfer",
+  "debt_lend",
+  "debt_borrow",
+] as const;
+
 export const transactionsTable = sqliteTable(
   "transactions",
   {
@@ -18,7 +29,7 @@ export const transactionsTable = sqliteTable(
     userId: text("user_id")
       .notNull()
       .references(() => usersTable.id, { onDelete: "cascade" }),
-    type: text("type").notNull(),
+    type: text("type", { enum: TRANSACTION_TYPES }).notNull(),
     amount: integer("amount").notNull(),
     fee: integer("fee").notNull().default(0),
     categoryId: integer("category_id").references(() => categoriesTable.id),

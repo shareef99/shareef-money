@@ -47,40 +47,6 @@ export function parseError(
   return defaultError;
 }
 
-/**
- * Parses an API error response (e.g., from `fetch`) and returns a readable message.
- *
- * Attempts to read the response body as JSON and extract error details.
- * Falls back to the HTTP status text if the body can't be parsed.
- *
- * @param response - A fetch `Response` object.
- * @param defaultError - Fallback message.
- * @returns A human-readable error string.
- */
-export async function parseResponseError(
-  response: Response,
-  defaultError = "unknown-error",
-): Promise<string> {
-  try {
-    const data: unknown = await response.json();
-
-    if (typeof data === "string") return data;
-
-    if (typeof data === "object" && data !== null) {
-      const extracted = extractFromResponseData(
-        data as Record<string, unknown>,
-      );
-      if (extracted) return extracted;
-    }
-  } catch {
-    // body isn't JSON
-  }
-
-  if (response.statusText) return response.statusText;
-
-  return defaultError;
-}
-
 function extractFromResponseData(
   data: Record<string, unknown>,
 ): string | null {

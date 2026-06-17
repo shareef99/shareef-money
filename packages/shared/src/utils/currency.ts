@@ -44,10 +44,6 @@ export function setActiveCurrency(code: string | undefined): void {
   activeCurrency = getCurrencyByCode(code);
 }
 
-export function getActiveCurrency(): Currency {
-  return activeCurrency;
-}
-
 /**
  * Converts a display amount (e.g., 27104.00) to the smallest currency unit (e.g., 2710400 paise).
  * Use this when saving user input to the database.
@@ -89,23 +85,4 @@ export function formatCurrency(
     maximumFractionDigits: 2,
   });
   return `${symbol} ${formatted}`;
-}
-
-/**
- * Formats an amount in smallest unit without the currency symbol.
- * Useful for numeric displays in charts or tables.
- *
- * @param amount - The amount in smallest unit
- * @param locale - The locale for number formatting
- * @returns Formatted number string like "27,104.00"
- */
-export function formatAmount(
-  amount: number,
-  locale: Intl.LocalesArgument = activeCurrency.locale,
-): string {
-  const display = fromSmallestUnit(amount);
-  return display.toLocaleString(locale, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
 }

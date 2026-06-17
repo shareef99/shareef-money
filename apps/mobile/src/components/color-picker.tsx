@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, View } from "react-native";
+import { Pressable, ScrollView } from "react-native";
 import { Check } from "lucide-react-native";
 
 // Palette offered for category/account colors. First entry is the default.

@@ -15,6 +15,8 @@ export const transactionKeys = {
   all: ["transactions"] as const,
   list: (filters: Record<string, unknown>) => [...transactionKeys.all, "list", filters] as const,
   summary: (from: string, to: string) => [...transactionKeys.all, "summary", from, to] as const,
+  monthlySummary: (year: number) => [...transactionKeys.all, "monthly-summary", year] as const,
+  account: (accountId?: number) => [...transactionKeys.all, "account", accountId] as const,
   breakdown: (type: string, from: string, to: string) =>
     [...transactionKeys.all, "breakdown", type, from, to] as const,
 };
@@ -28,6 +30,7 @@ export function useTransactions(filters: {
   dateFrom?: Date;
   dateTo?: Date;
   type?: "income" | "expense" | "transfer";
+  limit?: number;
 }) {
   const { db } = useDatabase();
   const { user } = useAuth();
@@ -38,6 +41,7 @@ export function useTransactions(filters: {
       dateFrom: filters.dateFrom?.toISOString(),
       dateTo: filters.dateTo?.toISOString(),
       type: filters.type,
+      limit: filters.limit,
     }),
     queryFn: () => transactionService.getTransactions(db, user!.id, filters),
     enabled: !!user,
@@ -122,6 +126,37 @@ export function useTransactionsSummary(from: Date, to: Date) {
     enabled: !!user,
     // No initialData here: it would re-seed every new month key with zeros and
     // defeat keepPreviousData. Call sites default the (briefly) undefined value.
+    placeholderData: keepPreviousData,
+    staleTime: READ_STALE_TIME,
+  });
+}
+
+// All transactions for one account (source or transfer target), uncapped.
+export function useAccountTransactions(accountId: number | null) {
+  const { db } = useDatabase();
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: transactionKeys.account(accountId ?? undefined),
+    queryFn: () => transactionService.getAccountTransactions(db, user!.id, accountId!),
+    enabled: !!user && accountId != null,
+    // No initialData: paired with staleTime it would be treated as fresh and
+    // the query would never run. The call site defaults the value to [].
+    placeholderData: keepPreviousData,
+    staleTime: READ_STALE_TIME,
+  });
+}
+
+// One query for the whole year's per-month income/expense totals (drives the
+// Monthly tab). Replaces 12 separate summary queries.
+export function useMonthlySummary(year: number) {
+  const { db } = useDatabase();
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: transactionKeys.monthlySummary(year),
+    queryFn: () => transactionService.getMonthlySummary(db, user!.id, year),
+    enabled: !!user,
     placeholderData: keepPreviousData,
     staleTime: READ_STALE_TIME,
   });

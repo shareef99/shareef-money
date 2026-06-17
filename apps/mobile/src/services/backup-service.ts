@@ -93,14 +93,62 @@ export function exportAll(db: Db, userId: string): BackupData {
   };
 }
 
-/** Validates a parsed object is a Shareef Money backup we can restore. */
+function isRow(v: unknown): v is Row {
+  return !!v && typeof v === "object" && !Array.isArray(v);
+}
+
+// Every element of `arr` is an object carrying each required field with the
+// expected primitive type. A missing array is treated as empty (valid).
+function validRows(
+  arr: unknown,
+  required: { key: string; type: "number" | "string" }[],
+): boolean {
+  if (arr === undefined) return true;
+  if (!Array.isArray(arr)) return false;
+  return arr.every(
+    (r) => isRow(r) && required.every(({ key, type }) => typeof r[key] === type),
+  );
+}
+
+/**
+ * Validates a parsed object is a Shareef Money backup we can restore. This runs
+ * BEFORE the destructive restore, and now checks the shape of the rows we
+ * actually insert (not just that the arrays exist) — a malformed file must be
+ * rejected up front so it can't wipe the user's data and then half-load garbage.
+ */
 export function isValidBackup(obj: unknown): obj is BackupData {
   if (!obj || typeof obj !== "object") return false;
   const b = obj as Partial<BackupData>;
   if (b.app !== "shareef-money") return false;
   if (typeof b.version !== "number" || b.version > BACKUP_VERSION) return false;
-  if (!b.data || typeof b.data !== "object") return false;
-  return Array.isArray(b.data.transactions) && Array.isArray(b.data.accounts);
+  const d = b.data;
+  if (!d || typeof d !== "object") return false;
+
+  // The two anchor tables must be present arrays.
+  if (!Array.isArray(d.transactions) || !Array.isArray(d.accounts)) return false;
+
+  // Required, correctly-typed fields for each table we insert.
+  return (
+    validRows(d.accounts, [
+      { key: "id", type: "number" },
+      { key: "name", type: "string" },
+    ]) &&
+    validRows(d.transactions, [
+      { key: "id", type: "number" },
+      { key: "type", type: "string" },
+      { key: "amount", type: "number" },
+      { key: "accountId", type: "number" },
+      { key: "date", type: "number" },
+    ]) &&
+    validRows(d.transactionContacts, [
+      { key: "transactionId", type: "number" },
+      { key: "contactId", type: "number" },
+    ]) &&
+    validRows(d.settings, [
+      { key: "key", type: "string" },
+      { key: "value", type: "string" },
+    ])
+  );
 }
 
 // `tx` is drizzle's transaction handle; typed loosely so the per-table casts
@@ -132,6 +180,11 @@ function insertRows(
  * loads. Caller is responsible for warning the user first.
  */
 export function importAll(db: Db, userId: string, backup: BackupData) {
+  // Defence in depth: never run the wipe on data that wouldn't pass validation,
+  // even if a caller skipped isValidBackup.
+  if (!isValidBackup(backup)) {
+    throw new Error("Invalid backup file");
+  }
   const d = backup.data;
 
   db.transaction((tx) => {

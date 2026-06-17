@@ -7,6 +7,9 @@ import {
   verifyPasscode,
   isBiometricEnabled,
   authenticateBiometric,
+  getLockoutState,
+  recordFailedAttempt,
+  resetLockout,
 } from "../lib/passcode";
 import { cn } from "../lib/cn";
 
@@ -22,7 +25,24 @@ export function LockScreen({ onUnlock }: Props) {
   const [pin, setPin] = useState("");
   const [error, setError] = useState(false);
   const [biometricOn, setBiometricOn] = useState(false);
+  const [lockedUntil, setLockedUntil] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
   const c = getColors(useColorScheme().colorScheme);
+
+  const remainingMs = Math.max(0, lockedUntil - now);
+  const lockedOut = remainingMs > 0;
+
+  // Load any persisted lockout from a previous session.
+  useEffect(() => {
+    getLockoutState().then((s) => setLockedUntil(s.lockedUntilMs));
+  }, []);
+
+  // Tick the countdown while locked out.
+  useEffect(() => {
+    if (lockedUntil <= 0) return;
+    const id = setInterval(() => setNow(Date.now()), 500);
+    return () => clearInterval(id);
+  }, [lockedUntil]);
 
   const tryBiometric = useCallback(async () => {
     const ok = await authenticateBiometric();
@@ -46,11 +66,16 @@ export function LockScreen({ onUnlock }: Props) {
   useEffect(() => {
     if (pin.length !== PIN_LENGTH) return;
     let cancelled = false;
-    verifyPasscode(pin).then((ok) => {
+    verifyPasscode(pin).then(async (ok) => {
       if (cancelled) return;
       if (ok) {
-        onUnlock();
+        await resetLockout();
+        if (!cancelled) onUnlock();
       } else {
+        const state = await recordFailedAttempt();
+        if (cancelled) return;
+        setLockedUntil(state.lockedUntilMs);
+        setNow(Date.now());
         setError(true);
         setPin("");
       }
@@ -61,6 +86,7 @@ export function LockScreen({ onUnlock }: Props) {
   }, [pin, onUnlock]);
 
   const press = (key: string) => {
+    if (lockedOut) return;
     setError(false);
     if (key === "backspace") {
       setPin((p) => p.slice(0, -1));
@@ -78,10 +104,14 @@ export function LockScreen({ onUnlock }: Props) {
       <Text
         className={cn(
           "text-sm mt-1",
-          error ? "text-error" : "text-text-secondary",
+          error || lockedOut ? "text-error" : "text-text-secondary",
         )}
       >
-        {error ? "Wrong passcode, try again" : "Unlock Shareef Money"}
+        {lockedOut
+          ? `Too many attempts. Try again in ${Math.ceil(remainingMs / 1000)}s`
+          : error
+            ? "Wrong passcode, try again"
+            : "Unlock Shareef Money"}
       </Text>
 
       <View className="flex-row gap-4 mt-8">
@@ -98,7 +128,7 @@ export function LockScreen({ onUnlock }: Props) {
         ))}
       </View>
 
-      <View className="w-full max-w-xs mt-12">
+      <View className={cn("w-full max-w-xs mt-12", lockedOut && "opacity-40")}>
         <View className="flex-row flex-wrap">
           {KEYS.map((key, i) => (
             <View key={i} className="w-1/3 items-center justify-center py-2">
