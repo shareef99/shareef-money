@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Directions, Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -6,7 +6,10 @@ import { runOnJS } from "react-native-reanimated";
 import { useColorScheme } from "nativewind";
 import { useRouter } from "expo-router";
 import { ChevronLeft, ChevronRight, Plus, Search } from "lucide-react-native";
-import { useTransactions } from "../../../../queries/use-transactions";
+import {
+  useTransactions,
+  usePrefetchTransactionsMonth,
+} from "../../../../queries/use-transactions";
 import { useSettings } from "../../../../queries/use-settings";
 import { getColors } from "../../../../lib/colors";
 import { getMonthRange, monthRangeLabel } from "../../../../lib/period";
@@ -33,6 +36,20 @@ export default function TransactionsScreen() {
     dateFrom: monthStart,
     dateTo: monthEnd,
   });
+
+  // Warm the cache for the previous and next month so swiping onto either is
+  // instant (data already cached, no fetch flash).
+  const prefetchMonth = usePrefetchTransactionsMonth();
+  useEffect(() => {
+    const prev = new Date(currentDate);
+    prev.setMonth(prev.getMonth() - 1);
+    const next = new Date(currentDate);
+    next.setMonth(next.getMonth() + 1);
+    const prevRange = getMonthRange(prev, settings.monthStartDay);
+    const nextRange = getMonthRange(next, settings.monthStartDay);
+    prefetchMonth(prevRange.start, prevRange.end);
+    prefetchMonth(nextRange.start, nextRange.end);
+  }, [currentDate, settings.monthStartDay, prefetchMonth]);
 
   const navigateMonth = useCallback((dir: -1 | 1) => {
     setCurrentDate((prev) => {

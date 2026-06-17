@@ -1,4 +1,10 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useCallback } from "react";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  keepPreviousData,
+} from "@tanstack/react-query";
 import { useDatabase } from "../providers/database-provider";
 import { useAuth } from "../providers/auth-provider";
 import { useSync } from "../providers/sync-provider";
@@ -11,6 +17,11 @@ export const transactionKeys = {
   breakdown: (type: string, from: string, to: string) =>
     [...transactionKeys.all, "breakdown", type, from, to] as const,
 };
+
+// Reads hit local SQLite (synchronous under expo-sqlite), so a recently-read
+// range stays fresh briefly to make back-and-forth month swiping instant. Any
+// mutation still invalidates transactionKeys.all, so edits show up immediately.
+const READ_STALE_TIME = 60_000;
 
 export function useTransactions(filters: {
   dateFrom?: Date;
@@ -29,7 +40,46 @@ export function useTransactions(filters: {
     }),
     queryFn: () => transactionService.getTransactions(db, user!.id, filters),
     enabled: !!user,
+    // Keep the previous month's rows on screen while the next month loads, so
+    // swiping never flashes an empty list.
+    placeholderData: keepPreviousData,
+    staleTime: READ_STALE_TIME,
   });
+}
+
+// Warm the cache for a month's transactions + summary so swiping onto it is
+// instant. Call for the adjacent months whenever the visible month changes.
+export function usePrefetchTransactionsMonth() {
+  const { db } = useDatabase();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useCallback(
+    (from: Date, to: Date) => {
+      if (!user) return;
+      queryClient.prefetchQuery({
+        queryKey: transactionKeys.list({
+          userId: user.id,
+          dateFrom: from.toISOString(),
+          dateTo: to.toISOString(),
+          type: undefined,
+        }),
+        queryFn: () =>
+          transactionService.getTransactions(db, user.id, {
+            dateFrom: from,
+            dateTo: to,
+          }),
+        staleTime: READ_STALE_TIME,
+      });
+      queryClient.prefetchQuery({
+        queryKey: transactionKeys.summary(from.toISOString(), to.toISOString()),
+        queryFn: () =>
+          transactionService.getTransactionsSummary(db, user.id, from, to),
+        staleTime: READ_STALE_TIME,
+      });
+    },
+    [db, user, queryClient],
+  );
 }
 
 export function useCategoryBreakdown(
@@ -45,6 +95,7 @@ export function useCategoryBreakdown(
     queryFn: () => transactionService.getCategoryBreakdown(db, user!.id, type, from, to),
     enabled: !!user,
     initialData: { rows: [], total: 0 },
+    staleTime: READ_STALE_TIME,
   });
 }
 
@@ -56,7 +107,10 @@ export function useTransactionsSummary(from: Date, to: Date) {
     queryKey: transactionKeys.summary(from.toISOString(), to.toISOString()),
     queryFn: () => transactionService.getTransactionsSummary(db, user!.id, from, to),
     enabled: !!user,
-    initialData: { income: 0, expense: 0, net: 0 },
+    // No initialData here: it would re-seed every new month key with zeros and
+    // defeat keepPreviousData. Call sites default the (briefly) undefined value.
+    placeholderData: keepPreviousData,
+    staleTime: READ_STALE_TIME,
   });
 }
 
@@ -71,6 +125,7 @@ export function useCreateTransaction() {
       transactionService.createTransaction(db, user!.id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: transactionKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["stats"] });
       triggerSync();
     },
   });
@@ -89,6 +144,7 @@ export function useUpdateTransaction() {
     }) => transactionService.updateTransaction(db, user!.id, id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: transactionKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["stats"] });
       triggerSync();
     },
   });
@@ -104,6 +160,7 @@ export function useDeleteTransaction() {
     mutationFn: (id: number) => transactionService.deleteTransaction(db, user!.id, id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: transactionKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["stats"] });
       triggerSync();
     },
   });

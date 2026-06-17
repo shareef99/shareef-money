@@ -22,7 +22,8 @@ function MonthRow({
     () => new Date(year, index + 1, 0, 23, 59, 59, 999),
     [year, index],
   );
-  const { data: summary } = useTransactionsSummary(from, to);
+  const { data: summary = { income: 0, expense: 0, net: 0 } } =
+    useTransactionsSummary(from, to);
 
   return (
     <View className="flex-row items-center py-3 border-b border-border">

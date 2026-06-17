@@ -24,12 +24,14 @@ export function DailyView({ monthStart, monthEnd }: Props) {
     dateTo: monthEnd,
   });
 
-  const { data: summary } = useTransactionsSummary(monthStart, monthEnd);
+  const { data: summary = { income: 0, expense: 0, net: 0 } } =
+    useTransactionsSummary(monthStart, monthEnd);
   const { data: settings } = useSettings();
 
   // Brought-forward balance = net of everything before this month.
   const priorEnd = useMemo(() => new Date(monthStart.getTime() - 1), [monthStart]);
-  const { data: priorSummary } = useTransactionsSummary(ALL_TIME_FROM, priorEnd);
+  const { data: priorSummary = { income: 0, expense: 0, net: 0 } } =
+    useTransactionsSummary(ALL_TIME_FROM, priorEnd);
   const carriedForward = settings.incomeCarryForward ? priorSummary.net : undefined;
 
   const sections = useMemo(() => {
