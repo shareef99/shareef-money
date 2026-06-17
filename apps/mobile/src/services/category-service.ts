@@ -98,10 +98,12 @@ type CreateCategoryPayload = {
   name: string;
   type: "income" | "expense";
   parentId?: number | null;
+  color?: string | null;
 };
 
 type UpdateCategoryPayload = {
   name?: string;
+  color?: string | null;
 };
 
 export async function createCategory(db: Db, userId: string, payload: CreateCategoryPayload) {
@@ -126,6 +128,7 @@ export async function createCategory(db: Db, userId: string, payload: CreateCate
       userId,
       name: payload.name,
       type: payload.type,
+      color: payload.color ?? null,
       parentId: payload.parentId ?? null,
       sortOrder: nextSortOrder,
     })
@@ -137,6 +140,7 @@ export async function createCategory(db: Db, userId: string, payload: CreateCate
 export async function updateCategory(db: Db, userId: string, id: number, payload: UpdateCategoryPayload) {
   const setData: Record<string, unknown> = { updatedAt: new Date() };
   if (payload.name !== undefined) setData.name = payload.name;
+  if (payload.color !== undefined) setData.color = payload.color;
 
   const [category] = await db
     .update(categoriesTable)

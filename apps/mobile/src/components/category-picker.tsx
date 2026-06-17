@@ -93,6 +93,10 @@ export function CategoryPicker({
                     )}
                     onPress={() => handleParentPress(item)}
                   >
+                    <View
+                      className="w-2.5 h-2.5 rounded-full mr-3"
+                      style={{ backgroundColor: item.color ?? c.textMuted }}
+                    />
                     <Text
                       className={cn(
                         "text-base flex-1",
@@ -119,6 +123,10 @@ export function CategoryPicker({
                     className="flex-row items-center px-4 py-3 border-b border-border active:bg-card"
                     onPress={() => onSelect(item)}
                   >
+                    <View
+                      className="w-2.5 h-2.5 rounded-full mr-3"
+                      style={{ backgroundColor: item.color ?? c.textMuted }}
+                    />
                     <Text className="text-base text-text">{item.name}</Text>
                   </Pressable>
                 )}

@@ -20,6 +20,10 @@ export function SortableCategoryRow({ category, onEditPress, onDeletePress }: Pr
           <Minus size={14} color="#FFFFFF" strokeWidth={3} />
         </View>
       </Pressable>
+      <View
+        className="w-3 h-3 rounded-full mr-3"
+        style={{ backgroundColor: category.color ?? c.textMuted }}
+      />
       <Text className="text-base text-text flex-1">{category.name}</Text>
       <Pressable onPress={onEditPress} className="p-2" hitSlop={8}>
         <Pencil size={18} color={c.textSecondary} />
