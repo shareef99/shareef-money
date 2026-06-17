@@ -52,6 +52,8 @@ export default function AddDebtScreen() {
     params.contactId ? Number(params.contactId) : null,
   );
   const [note, setNote] = useState("");
+  const [dueDate, setDueDate] = useState<Date | null>(null);
+  const [showDuePicker, setShowDuePicker] = useState(false);
   const [showAccountPicker, setShowAccountPicker] = useState(false);
   const [showContactPicker, setShowContactPicker] = useState(false);
   const [showKeypad, setShowKeypad] = useState(true);
@@ -88,6 +90,13 @@ export default function AddDebtScreen() {
       setAccountId(tx.accountId);
       setContactId(tx.contactId ?? null);
       setNote(tx.note ?? "");
+      setDueDate(
+        tx.dueDate
+          ? tx.dueDate instanceof Date
+            ? tx.dueDate
+            : new Date(tx.dueDate as number)
+          : null,
+      );
     }
   }, [editId, allTransactions]);
 
@@ -123,6 +132,7 @@ export default function AddDebtScreen() {
         contactIds: [],
         note: note || null,
         date: date.getTime(),
+        dueDate: dueDate ? dueDate.getTime() : null,
       };
       if (editId) {
         updateTransaction.mutate({ id: editId, payload }, { onSuccess });
@@ -137,6 +147,7 @@ export default function AddDebtScreen() {
       type,
       note,
       date,
+      dueDate,
       editId,
       createTransaction,
       updateTransaction,
@@ -296,6 +307,52 @@ export default function AddDebtScreen() {
               />
             </View>
           </View>
+
+          <View className="flex-row items-center py-1.5">
+            <Text className="w-24 text-sm text-text-secondary">Due date</Text>
+            <Pressable
+              className="flex-1 flex-row items-center justify-between py-2 border-b border-border"
+              onPress={() => {
+                setShowKeypad(false);
+                setShowDuePicker(true);
+              }}
+            >
+              <Text
+                className={cn(
+                  "text-base",
+                  dueDate ? "text-text" : "text-text-muted",
+                )}
+              >
+                {dueDate
+                  ? dueDate.toLocaleDateString("en-GB", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })
+                  : "Optional"}
+              </Text>
+              {dueDate ? (
+                <Pressable onPress={() => setDueDate(null)} className="px-2">
+                  <Text className="text-sm text-text-secondary">Clear</Text>
+                </Pressable>
+              ) : null}
+            </Pressable>
+          </View>
+
+          {showDuePicker && (
+            <DateTimePicker
+              value={dueDate ?? new Date()}
+              mode="date"
+              onChange={(_, d) => {
+                setShowDuePicker(false);
+                if (d) {
+                  const end = new Date(d);
+                  end.setHours(23, 59, 59, 999); // due at end of that day
+                  setDueDate(end);
+                }
+              }}
+            />
+          )}
 
           <View className="mt-6 mb-8">
             <Pressable

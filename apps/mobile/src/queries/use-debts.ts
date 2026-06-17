@@ -1,7 +1,10 @@
-import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useDatabase } from "../providers/database-provider";
 import { useAuth } from "../providers/auth-provider";
+import { useSync } from "../providers/sync-provider";
 import * as debtService from "../services/debt-service";
+import { syncDebtReminders } from "../lib/notifications";
 
 export const debtKeys = {
   all: ["debts"] as const,
@@ -45,4 +48,41 @@ export function useNetWorth() {
     enabled: !!user,
     initialData: { accountsTotal: 0, receivable: 0, payable: 0, netWorth: 0 },
   });
+}
+
+export function useWriteOffDebt() {
+  const { db } = useDatabase();
+  const { user } = useAuth();
+  const { triggerSync } = useSync();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ contactId, name }: { contactId: number; name: string }) =>
+      debtService.writeOffDebt(db, user!.id, contactId, name),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: debtKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      queryClient.invalidateQueries({ queryKey: ["stats"] });
+      triggerSync();
+    },
+  });
+}
+
+// Keep local notifications in sync with open debts that have a due date.
+// Runs on mount and whenever the ledger changes (mutations invalidate it).
+export function useDebtReminders() {
+  const { data } = useDebtLedger();
+
+  useEffect(() => {
+    syncDebtReminders(
+      data.people.map((p) => ({
+        contactId: p.contactId,
+        name: p.name,
+        net: p.net,
+        dueDate: p.dueDate,
+      })),
+    ).catch(() => {});
+  }, [data.people]);
 }

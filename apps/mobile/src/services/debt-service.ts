@@ -1,7 +1,9 @@
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { transactionsTable } from "@shareef-money/db/schema";
 import type { Db } from "../db/client";
-import { getAccountsWithBalances } from "./account-service";
+import { getAccounts, getAccountsWithBalances } from "./account-service";
+import { createTransaction } from "./transaction-service";
+import { getOrCreateWriteOffCategory } from "./category-service";
 
 const DEBT_TYPES = ["debt_lend", "debt_borrow"] as const;
 
@@ -11,6 +13,8 @@ export type DebtPerson = {
   gave: number; // Σ debt_lend (you gave)
   got: number; // Σ debt_borrow (you got)
   net: number; // gave − got: >0 they owe you, <0 you owe them
+  dueDate: Date | null; // earliest due date among this person's debt entries
+  overdue: boolean; // still owed (net !== 0) and dueDate is in the past
 };
 
 export type DebtLedger = {
@@ -27,10 +31,11 @@ export async function getDebtLedger(db: Db, userId: string): Promise<DebtLedger>
       eq(transactionsTable.userId, userId),
       inArray(transactionsTable.type, [...DEBT_TYPES]),
     ),
-    columns: { type: true, amount: true, contactId: true },
+    columns: { type: true, amount: true, contactId: true, dueDate: true },
     with: { contact: { columns: { id: true, name: true } } },
   });
 
+  const now = Date.now();
   const map = new Map<number, DebtPerson>();
   for (const r of rows) {
     if (r.contactId == null) continue;
@@ -42,11 +47,17 @@ export async function getDebtLedger(db: Db, userId: string): Promise<DebtLedger>
         gave: 0,
         got: 0,
         net: 0,
+        dueDate: null,
+        overdue: false,
       };
       map.set(r.contactId, p);
     }
     if (r.type === "debt_lend") p.gave += r.amount;
     else p.got += r.amount;
+    if (r.dueDate) {
+      const d = r.dueDate instanceof Date ? r.dueDate : new Date(r.dueDate);
+      if (!p.dueDate || d < p.dueDate) p.dueDate = d; // earliest due date
+    }
   }
 
   let receivable = 0;
@@ -54,6 +65,7 @@ export async function getDebtLedger(db: Db, userId: string): Promise<DebtLedger>
   const people: DebtPerson[] = [];
   for (const p of map.values()) {
     p.net = p.gave - p.got;
+    p.overdue = p.net !== 0 && p.dueDate != null && p.dueDate.getTime() < now;
     if (p.net > 0) receivable += p.net;
     else if (p.net < 0) payable += -p.net;
     if (p.net !== 0) people.push(p);
@@ -71,6 +83,7 @@ export type DebtEntry = {
   note: string | null;
   accountId: number;
   accountName: string | null;
+  dueDate: Date | null;
   runningBalance: number; // net (gave−got) up to and including this entry
 };
 
@@ -99,6 +112,11 @@ export async function getContactDebtEntries(
     const type = r.type as "debt_lend" | "debt_borrow";
     running += type === "debt_lend" ? r.amount : -r.amount;
     const date = r.date instanceof Date ? r.date : new Date(r.date as number);
+    const dueDate = r.dueDate
+      ? r.dueDate instanceof Date
+        ? r.dueDate
+        : new Date(r.dueDate as number)
+      : null;
     return {
       id: r.id,
       type,
@@ -107,12 +125,57 @@ export async function getContactDebtEntries(
       note: r.note,
       accountId: r.accountId,
       accountName: r.account?.name ?? null,
+      dueDate,
       runningBalance: running,
     };
   });
   entries.reverse(); // newest first
 
   return { entries, net: running, name: rows[0]?.contact?.name ?? "" };
+}
+
+// Write off a receivable you don't expect back: settle the balance to zero AND
+// record the loss as an expense, so net worth correctly drops by the amount.
+// Implemented as a settling "got" (zeroes the receivable, +cash) plus an
+// offsetting expense (−cash) — net cash change is zero, net worth falls by the
+// written-off amount, and the loss shows in spending stats under "Bad debt".
+export async function writeOffDebt(
+  db: Db,
+  userId: string,
+  contactId: number,
+  name: string,
+): Promise<number> {
+  const { entries, net } = await getContactDebtEntries(db, userId, contactId);
+  if (net <= 0) return 0; // only receivables can be written off
+
+  const lend = entries.find((e) => e.type === "debt_lend");
+  let accountId = lend?.accountId ?? null;
+  if (accountId == null) {
+    const accounts = await getAccounts(db, userId);
+    accountId = accounts[0]?.id ?? null;
+  }
+  if (accountId == null) return 0;
+
+  const category = await getOrCreateWriteOffCategory(db, userId);
+  const now = Date.now();
+
+  await createTransaction(db, userId, {
+    type: "debt_borrow",
+    amount: net,
+    accountId,
+    contactId,
+    date: now,
+    note: `Write-off settle — ${name}`,
+  });
+  await createTransaction(db, userId, {
+    type: "expense",
+    amount: net,
+    accountId,
+    categoryId: category.id,
+    date: now,
+    note: `Written off — ${name}`,
+  });
+  return net;
 }
 
 export type NetWorth = {

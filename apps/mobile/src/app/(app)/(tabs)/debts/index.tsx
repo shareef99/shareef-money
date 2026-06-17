@@ -85,6 +85,14 @@ export default function DebtsScreen() {
           ) : (
             data.people.map((p) => {
               const owesYou = p.net > 0;
+              const dueLabel = p.dueDate
+                ? p.overdue
+                  ? "Overdue"
+                  : `Due ${p.dueDate.toLocaleDateString("en-GB", {
+                      day: "2-digit",
+                      month: "short",
+                    })}`
+                : null;
               return (
                 <Pressable
                   key={p.contactId}
@@ -98,9 +106,21 @@ export default function DebtsScreen() {
                 >
                   <View className="flex-1">
                     <Text className="text-base text-text">{p.name}</Text>
-                    <Text className="text-xs text-text-muted mt-0.5">
-                      {owesYou ? "owes you" : "you owe"}
-                    </Text>
+                    <View className="flex-row items-center mt-0.5">
+                      <Text className="text-xs text-text-muted">
+                        {owesYou ? "owes you" : "you owe"}
+                      </Text>
+                      {dueLabel ? (
+                        <Text
+                          className={cn(
+                            "text-xs ml-2",
+                            p.overdue ? "text-expense font-medium" : "text-text-muted",
+                          )}
+                        >
+                          · {dueLabel}
+                        </Text>
+                      ) : null}
+                    </View>
                   </View>
                   <Text
                     className={cn(

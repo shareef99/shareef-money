@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   FlatList,
+  Keyboard,
   Modal,
   Pressable,
   Text,
@@ -31,7 +32,21 @@ export function ContactPicker({
   onCreate,
 }: Props) {
   const [newName, setNewName] = useState("");
+  const [kbHeight, setKbHeight] = useState(0);
   const c = getColors(useColorScheme());
+
+  // Lift the bottom sheet above the keyboard so the "Add a person" input stays
+  // visible (KeyboardAvoidingView is unreliable inside a transparent Modal).
+  useEffect(() => {
+    const show = Keyboard.addListener("keyboardDidShow", (e) =>
+      setKbHeight(e.endCoordinates.height),
+    );
+    const hide = Keyboard.addListener("keyboardDidHide", () => setKbHeight(0));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   const handleAdd = () => {
     const trimmed = newName.trim();
@@ -43,7 +58,10 @@ export function ContactPicker({
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View className="flex-1 bg-black/50 justify-end">
-        <View className="h-1/2 bg-background rounded-t-2xl">
+        <View
+          className="h-1/2 bg-background rounded-t-2xl"
+          style={{ marginBottom: kbHeight }}
+        >
           <View className="flex-row items-center px-4 py-3 border-b border-border">
             <Text className="text-lg font-semibold text-text flex-1">People</Text>
             <Pressable onPress={onClose} className="px-2 py-1">

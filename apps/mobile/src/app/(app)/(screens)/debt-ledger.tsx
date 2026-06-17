@@ -1,10 +1,12 @@
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { useState } from "react";
+import { Pressable, ScrollView, Share, Text, View } from "react-native";
 import { useColorScheme } from "nativewind";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ArrowLeft } from "lucide-react-native";
+import { ArrowLeft, Share2 } from "lucide-react-native";
 import { formatCurrency } from "@shareef-money/shared/utils";
-import { useContactDebtEntries } from "../../../queries/use-debts";
+import { useContactDebtEntries, useWriteOffDebt } from "../../../queries/use-debts";
+import { ConfirmModal } from "../../../components/confirm-modal";
 import { getColors } from "../../../lib/colors";
 import { cn } from "../../../lib/cn";
 
@@ -15,12 +17,13 @@ export default function DebtLedgerScreen() {
   const c = getColors(useColorScheme().colorScheme);
 
   const { data } = useContactDebtEntries(contactId);
+  const writeOff = useWriteOffDebt();
+  const [showWriteOff, setShowWriteOff] = useState(false);
+
   const name = data.name || params.name || "Person";
   const owesYou = data.net > 0;
   const settled = data.net === 0;
 
-  // Settling clears the balance: if they owe you, you record "You got"; if you
-  // owe them, you record "You gave". Prefill the outstanding amount.
   const settleUp = () => {
     if (settled || contactId == null) return;
     router.push({
@@ -31,6 +34,27 @@ export default function DebtLedgerScreen() {
         amount: String(Math.abs(data.net) / 100),
       },
     });
+  };
+
+  const share = () => {
+    const fmtD = (d: Date) =>
+      d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    const lines = [`Debt summary — ${name}`, ""];
+    for (const e of [...data.entries].reverse()) {
+      lines.push(
+        `${fmtD(e.date)}  ${e.type === "debt_lend" ? "You gave" : "You got"}  ${formatCurrency(e.amount)}`,
+      );
+    }
+    lines.push("");
+    lines.push(
+      settled
+        ? "Settled up"
+        : owesYou
+          ? `Owes you ${formatCurrency(Math.abs(data.net))}`
+          : `You owe ${formatCurrency(Math.abs(data.net))}`,
+    );
+    lines.push("", "— via Shareef Money");
+    Share.share({ message: lines.join("\n") }).catch(() => {});
   };
 
   return (
@@ -46,6 +70,11 @@ export default function DebtLedgerScreen() {
           >
             {name}
           </Text>
+          {data.entries.length > 0 ? (
+            <Pressable onPress={share} className="p-2">
+              <Share2 size={20} color={c.textSecondary} />
+            </Pressable>
+          ) : null}
         </View>
 
         <View className="mx-4 my-2 bg-card rounded-xl p-4">
@@ -61,14 +90,27 @@ export default function DebtLedgerScreen() {
             {formatCurrency(Math.abs(data.net))}
           </Text>
           {!settled && (
-            <Pressable
-              className="mt-3 h-10 rounded-lg bg-primary items-center justify-center active:opacity-80"
-              onPress={settleUp}
-            >
-              <Text className="text-sm font-semibold text-primary-foreground">
-                Settle up
-              </Text>
-            </Pressable>
+            <View className="flex-row gap-3 mt-3">
+              <Pressable
+                className="flex-1 h-10 rounded-lg bg-primary items-center justify-center active:opacity-80"
+                onPress={settleUp}
+              >
+                <Text className="text-sm font-semibold text-primary-foreground">
+                  Settle up
+                </Text>
+              </Pressable>
+              {owesYou ? (
+                <Pressable
+                  className="flex-1 h-10 rounded-lg border border-border items-center justify-center active:opacity-70"
+                  onPress={() => setShowWriteOff(true)}
+                  disabled={writeOff.isPending}
+                >
+                  <Text className="text-sm font-medium text-expense">
+                    Write off
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
           )}
         </View>
 
@@ -80,6 +122,10 @@ export default function DebtLedgerScreen() {
           ) : (
             data.entries.map((e) => {
               const gave = e.type === "debt_lend";
+              const overdue =
+                e.dueDate != null &&
+                data.net !== 0 &&
+                e.dueDate.getTime() < Date.now();
               return (
                 <Pressable
                   key={e.id}
@@ -91,7 +137,7 @@ export default function DebtLedgerScreen() {
                     })
                   }
                 >
-                  <View className="flex-1">
+                  <View className="flex-1 pr-3">
                     <Text className="text-sm text-text">
                       {gave ? "You gave" : "You got"}
                     </Text>
@@ -104,6 +150,20 @@ export default function DebtLedgerScreen() {
                       {e.accountName ? ` · ${e.accountName}` : ""}
                       {e.note ? ` · ${e.note}` : ""}
                     </Text>
+                    {e.dueDate ? (
+                      <Text
+                        className={cn(
+                          "text-xs mt-0.5",
+                          overdue ? "text-expense font-medium" : "text-text-muted",
+                        )}
+                      >
+                        {overdue ? "Overdue · " : "Due "}
+                        {e.dueDate.toLocaleDateString("en-GB", {
+                          day: "2-digit",
+                          month: "short",
+                        })}
+                      </Text>
+                    ) : null}
                   </View>
                   <View className="items-end">
                     <Text
@@ -125,6 +185,20 @@ export default function DebtLedgerScreen() {
             })
           )}
         </ScrollView>
+
+        <ConfirmModal
+          visible={showWriteOff}
+          title={`Write off ${formatCurrency(Math.abs(data.net))}?`}
+          message={`Records the outstanding amount as a "Bad debt" expense and settles ${name} to zero. Your net worth drops by this amount.`}
+          confirmLabel="Write off"
+          onCancel={() => setShowWriteOff(false)}
+          onConfirm={() => {
+            if (contactId != null) {
+              writeOff.mutate({ contactId, name });
+            }
+            setShowWriteOff(false);
+          }}
+        />
       </View>
     </SafeAreaView>
   );

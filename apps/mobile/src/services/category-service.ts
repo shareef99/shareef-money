@@ -88,6 +88,37 @@ export async function getOrCreateOpeningBalanceCategory(db: Db, userId: string) 
   return category;
 }
 
+export const WRITE_OFF_CATEGORY = "Bad debt";
+
+// The expense category used when a receivable is written off (money you lent
+// that you accept you won't get back). Created on demand.
+export async function getOrCreateWriteOffCategory(db: Db, userId: string) {
+  const existing = await db.query.categoriesTable.findFirst({
+    where: and(
+      eq(categoriesTable.userId, userId),
+      eq(categoriesTable.type, "expense"),
+      eq(categoriesTable.name, WRITE_OFF_CATEGORY),
+      eq(categoriesTable.isArchived, false),
+    ),
+  });
+  if (existing) return existing;
+
+  const [category] = await db
+    .insert(categoriesTable)
+    .values({
+      id: generateSyncId(),
+      userId,
+      name: WRITE_OFF_CATEGORY,
+      type: "expense",
+      color: "#C0392B",
+      parentId: null,
+      sortOrder: 999,
+      isDefault: true,
+    })
+    .returning();
+  return category;
+}
+
 export async function getCategoryById(db: Db, userId: string, id: number) {
   return db.query.categoriesTable.findFirst({
     where: and(eq(categoriesTable.id, id), eq(categoriesTable.userId, userId)),

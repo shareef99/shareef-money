@@ -51,6 +51,7 @@ const debtFields = {
   ...baseFields,
   accountId: z.number().int().positive(),
   contactId: z.number().int().positive(),
+  dueDate: z.number().int().positive().nullable().optional(),
 };
 
 const debtLendSchema = z
@@ -79,6 +80,7 @@ export const transactionUpdateSchema = z
     accountId: z.number().int().positive().optional(),
     toAccountId: z.number().int().positive().nullable().optional(),
     contactId: z.number().int().positive().nullable().optional(),
+    dueDate: z.number().int().positive().nullable().optional(),
     locationId: z.number().int().positive().nullable().optional(),
     contactIds: z.array(z.number().int().positive()).optional(),
     note: z.string().max(200).nullable().optional(),

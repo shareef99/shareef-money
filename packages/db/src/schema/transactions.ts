@@ -28,6 +28,8 @@ export const transactionsTable = sqliteTable(
     toAccountId: integer("to_account_id").references(() => accountsTable.id),
     // Debt counterparty (the person) for debt_lend / debt_borrow. Null otherwise.
     contactId: integer("contact_id").references(() => contactsTable.id),
+    // Optional repayment due date for debts (drives overdue badges + reminders).
+    dueDate: integer("due_date", { mode: "timestamp" }),
     locationId: integer("location_id").references(() => locationsTable.id),
     note: text("note"),
     description: text("description"),

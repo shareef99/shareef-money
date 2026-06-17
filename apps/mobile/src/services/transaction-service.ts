@@ -15,6 +15,7 @@ type CreateTransactionPayload = {
   accountId: number;
   toAccountId?: number | null;
   contactId?: number | null; // debt counterparty (debt_lend / debt_borrow)
+  dueDate?: number | null; // optional repayment due date (debts)
   locationId?: number | null;
   contactIds?: number[];
   note?: string | null;
@@ -154,6 +155,7 @@ export async function createTransaction(db: Db, userId: string, payload: CreateT
       accountId: data.accountId,
       toAccountId: data.toAccountId ?? null,
       contactId: data.contactId ?? null,
+      dueDate: data.dueDate != null ? new Date(data.dueDate) : null,
       locationId: data.locationId ?? null,
       note: data.note ?? null,
       description: data.description ?? null,
@@ -183,6 +185,8 @@ export async function updateTransaction(db: Db, userId: string, id: number, payl
   if (data.accountId !== undefined) setData.accountId = data.accountId;
   if (data.toAccountId !== undefined) setData.toAccountId = data.toAccountId;
   if (data.contactId !== undefined) setData.contactId = data.contactId;
+  if (data.dueDate !== undefined)
+    setData.dueDate = data.dueDate != null ? new Date(data.dueDate) : null;
   if (data.locationId !== undefined) setData.locationId = data.locationId;
   if (data.note !== undefined) setData.note = data.note;
   if (data.description !== undefined) setData.description = data.description;

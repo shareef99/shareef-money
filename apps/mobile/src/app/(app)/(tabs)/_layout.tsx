@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getColors } from "../../../lib/colors";
 import { useEnsureDefaultCategories } from "../../../queries/use-categories";
 import { useMigrateOpeningBalances } from "../../../queries/use-accounts";
+import { useDebtReminders } from "../../../queries/use-debts";
 import { useSettings } from "../../../queries/use-settings";
 
 export default function TabLayout() {
@@ -26,6 +27,8 @@ export default function TabLayout() {
   useEnsureDefaultCategories();
   // Convert any legacy account opening balances into income transactions.
   useMigrateOpeningBalances();
+  // Keep debt due-date reminders scheduled as debts change.
+  useDebtReminders();
 
   // Honor the configured start screen on first load (default is transactions).
   // Route groups in parens aren't URL segments, so the tab href is just "/tab".
