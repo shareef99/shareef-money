@@ -5,6 +5,7 @@ import {
   useQueryClient,
   keepPreviousData,
 } from "@tanstack/react-query";
+import { ALL_TIME_FROM } from "@shareef-money/shared/constants";
 import { useDatabase } from "../providers/database-provider";
 import { useAuth } from "../providers/auth-provider";
 import { useSync } from "../providers/sync-provider";
@@ -75,6 +76,18 @@ export function usePrefetchTransactionsMonth() {
         queryKey: transactionKeys.summary(from.toISOString(), to.toISOString()),
         queryFn: () =>
           transactionService.getTransactionsSummary(db, user.id, from, to),
+        staleTime: READ_STALE_TIME,
+      });
+      // Carry-forward (everything before this month) — also a per-month key,
+      // so warm it too or the brought-forward line lags on each navigation.
+      const priorEnd = new Date(from.getTime() - 1);
+      queryClient.prefetchQuery({
+        queryKey: transactionKeys.summary(
+          ALL_TIME_FROM.toISOString(),
+          priorEnd.toISOString(),
+        ),
+        queryFn: () =>
+          transactionService.getTransactionsSummary(db, user.id, ALL_TIME_FROM, priorEnd),
         staleTime: READ_STALE_TIME,
       });
     },

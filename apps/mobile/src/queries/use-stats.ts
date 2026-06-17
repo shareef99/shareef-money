@@ -78,11 +78,27 @@ export function usePrefetchStatsPeriod() {
   return useCallback(
     (filter: StatsFilter, opts: RangeOpts) => {
       if (!user || filter.period === "custom") return;
+      const weekStartMonday = opts.weekStart === "monday";
       for (const dir of [-1, 1] as const) {
         const f = navigatePeriod(filter, dir, opts);
+        // Warm all three reads a navigation triggers, so swiping/arrowing onto
+        // an adjacent period is a pure cache hit (no synchronous query on the
+        // critical path).
         queryClient.prefetchQuery({
           queryKey: statsKeys.txns(user.id, serializeFilter(f)),
           queryFn: () => statsService.queryStatsTransactions(db, user.id, f),
+          staleTime: 60_000,
+        });
+        queryClient.prefetchQuery({
+          queryKey: statsKeys.cashflow(user.id, f.from.getTime(), f.to.getTime()),
+          queryFn: () => statsService.cashFlow(db, user.id, f.from, f.to),
+          staleTime: 60_000,
+        });
+        const b = statsService.autoBucket(f.from, f.to);
+        queryClient.prefetchQuery({
+          queryKey: statsKeys.netWorth(user.id, f.from.getTime(), f.to.getTime(), b),
+          queryFn: () =>
+            statsService.netWorthSeries(db, user.id, f.from, f.to, b, weekStartMonday),
           staleTime: 60_000,
         });
       }
