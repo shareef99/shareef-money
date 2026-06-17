@@ -49,7 +49,11 @@ export default function BudgetScreen() {
   );
 
   const { data: categories = [] } = useCategories(type);
-  const { data: breakdown } = useCategoryBreakdown(type, monthStart, monthEnd);
+  const { data: breakdown = { rows: [], total: 0 } } = useCategoryBreakdown(
+    type,
+    monthStart,
+    monthEnd,
+  );
   const { data: budgets } = useBudgets();
   const setBudget = useSetBudget();
 

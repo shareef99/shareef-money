@@ -125,7 +125,7 @@ export default function AddTransactionScreen() {
     if (!editId) return;
     const tx = allTransactions.find((t) => t.id === editId);
     if (tx) {
-      setType(tx.type as TransactionType);
+      setType(tx.type);
       setAmountStr(String(tx.amount / 100));
       setFeeStr(String(tx.fee / 100));
       setShowFeeRow(tx.fee > 0);

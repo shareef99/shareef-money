@@ -147,25 +147,40 @@ export async function migrateOpeningBalances(db: Db, userId: string): Promise<nu
   const accounts = await db.query.accountsTable.findMany({
     where: eq(accountsTable.userId, userId),
   });
+  const toMigrate = accounts.filter((a) => a.initialBalance && a.initialBalance !== 0);
+  if (toMigrate.length === 0) return 0;
+
+  const category = await getOrCreateOpeningBalanceCategory(db, userId);
+
+  // Accounts that already carry an Opening Balance income must not get a second
+  // one. Without this, a non-zero initialBalance synced back from another device
+  // (which still has the legacy value) would mint a duplicate on a fresh launch.
+  const existing = await db.query.transactionsTable.findMany({
+    where: and(
+      eq(transactionsTable.userId, userId),
+      eq(transactionsTable.categoryId, category.id),
+    ),
+    columns: { accountId: true },
+  });
+  const alreadyHasOpening = new Set(existing.map((t) => t.accountId));
 
   let migrated = 0;
-  for (const account of accounts) {
-    if (!account.initialBalance || account.initialBalance === 0) continue;
-
-    const category = await getOrCreateOpeningBalanceCategory(db, userId);
-    await db.insert(transactionsTable).values({
-      id: generateSyncId(),
-      userId,
-      type: "income",
-      amount: account.initialBalance,
-      fee: 0,
-      categoryId: category.id,
-      accountId: account.id,
-      toAccountId: null,
-      locationId: null,
-      note: "Opening balance",
-      date: account.createdAt instanceof Date ? account.createdAt : new Date(),
-    });
+  for (const account of toMigrate) {
+    if (!alreadyHasOpening.has(account.id)) {
+      await db.insert(transactionsTable).values({
+        id: generateSyncId(),
+        userId,
+        type: "income",
+        amount: account.initialBalance,
+        fee: 0,
+        categoryId: category.id,
+        accountId: account.id,
+        toAccountId: null,
+        locationId: null,
+        note: "Opening balance",
+        date: account.createdAt instanceof Date ? account.createdAt : new Date(),
+      });
+    }
     await db
       .update(accountsTable)
       .set({ initialBalance: 0, updatedAt: new Date() })

@@ -46,7 +46,11 @@ export function LockScreen({ onUnlock }: Props) {
 
   const tryBiometric = useCallback(async () => {
     const ok = await authenticateBiometric();
-    if (ok) onUnlock();
+    if (ok) {
+      // Clear any PIN-attempt lockout so it doesn't carry into the next session.
+      await resetLockout();
+      onUnlock();
+    }
   }, [onUnlock]);
 
   // On mount, if biometric unlock is enabled, surface the button and prompt

@@ -42,11 +42,15 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncAt, setLastSyncAt] = useState(0);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Synchronous in-flight guard: state updates are async, so two syncs fired in
+  // the same tick could both pass an `isSyncing` state check and double-push.
+  const syncingRef = useRef(false);
 
   const sync = useCallback(async () => {
     if (!isAuthenticated || !user) return;
-    if (isSyncing) return;
+    if (syncingRef.current) return;
 
+    syncingRef.current = true;
     setIsSyncing(true);
     try {
       // Generate any recurring transactions that are now due BEFORE pushing, so
@@ -63,9 +67,10 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     } catch (e) {
       console.warn("Sync failed:", e);
     } finally {
+      syncingRef.current = false;
       setIsSyncing(false);
     }
-  }, [db, isAuthenticated, user, isSyncing, queryClient]);
+  }, [db, isAuthenticated, user, queryClient]);
 
   const triggerSync = useCallback(() => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);

@@ -111,7 +111,10 @@ export function useCategoryBreakdown(
     queryKey: transactionKeys.breakdown(type, from.toISOString(), to.toISOString()),
     queryFn: () => transactionService.getCategoryBreakdown(db, user!.id, type, from, to),
     enabled: !!user,
-    initialData: { rows: [], total: 0 },
+    // No initialData: with a non-zero staleTime it would be treated as fresh and
+    // the query would never fetch (Budget screen would read all zeros). The call
+    // site defaults the value.
+    placeholderData: keepPreviousData,
     staleTime: READ_STALE_TIME,
   });
 }

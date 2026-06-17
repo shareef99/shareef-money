@@ -106,7 +106,15 @@ function validRows(
   if (arr === undefined) return true;
   if (!Array.isArray(arr)) return false;
   return arr.every(
-    (r) => isRow(r) && required.every(({ key, type }) => typeof r[key] === type),
+    (r) =>
+      isRow(r) &&
+      required.every(({ key, type }) => {
+        const val = r[key];
+        // Numbers must be finite — NaN is `typeof "number"` and would otherwise
+        // pass, then become an Invalid Date on import (poisoning timestamps).
+        if (type === "number") return typeof val === "number" && Number.isFinite(val);
+        return typeof val === type;
+      }),
   );
 }
 
@@ -167,7 +175,15 @@ function insertRows(
   for (const row of rows ?? []) {
     const v: Row = { ...row, userId };
     for (const f of dateFields) {
-      if (v[f] != null) v[f] = new Date(v[f] as number);
+      if (v[f] != null) {
+        const ms = v[f];
+        // Reject non-finite dates so a malformed backup can't insert Invalid
+        // Date values; throwing rolls back the whole restore (fail-safe).
+        if (typeof ms !== "number" || !Number.isFinite(ms)) {
+          throw new Error(`Invalid date in backup field "${f}"`);
+        }
+        v[f] = new Date(ms);
+      }
     }
     tx.insert(table).values(v).run();
   }
