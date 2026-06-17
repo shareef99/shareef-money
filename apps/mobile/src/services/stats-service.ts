@@ -622,6 +622,80 @@ export function flow(txns: StatsTxn[]): { nodes: SankeyNode[]; links: SankeyLink
   return { nodes: [...nodes.values()], links: [...links.values()] };
 }
 
+// ---- Phase 3: depth aggregations ----
+
+// Per-day totals for a type, keyed "YYYY-MM-DD" (drives the calendar heatmap).
+export function dailyTotals(txns: StatsTxn[], type: StatsTypeKey): Map<string, number> {
+  const map = new Map<string, number>();
+  for (const t of txns) {
+    if (t.type !== type) continue;
+    const d = t.date;
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    map.set(key, (map.get(key) ?? 0) + t.amount);
+  }
+  return map;
+}
+
+export type StackSeries = { name: string; color: string | null; total: number; values: number[] };
+
+// Top-N categories stacked per time bucket (the rest folded into "Other").
+export function stackedByCategory(
+  txns: StatsTxn[],
+  from: Date,
+  to: Date,
+  bucket: TimeBucket,
+  weekStartMonday: boolean,
+  type: StatsTypeKey = "expense",
+  topN = 5,
+): { labels: string[]; series: StackSeries[] } {
+  const typed = txns.filter((t) => t.type === type);
+  const totals = breakdownBy(typed, "category");
+  const top = totals.rows.slice(0, topN);
+  const topIds = new Set(top.map((r) => r.id));
+
+  // Ordered bucket keys across the range.
+  const keys: string[] = [];
+  const labels: string[] = [];
+  const cursor = new Date(from);
+  cursor.setHours(0, 0, 0, 0);
+  let guard = 0;
+  while (cursor <= to && guard < 1000) {
+    const k = bucketKey(cursor, bucket, weekStartMonday);
+    keys.push(k);
+    labels.push(bucketLabel(k, bucket));
+    if (bucket === "month") cursor.setMonth(cursor.getMonth() + 1);
+    else if (bucket === "week") cursor.setDate(cursor.getDate() + 7);
+    else cursor.setDate(cursor.getDate() + 1);
+    guard += 1;
+  }
+  const idx = new Map(keys.map((k, i) => [k, i]));
+
+  const series: StackSeries[] = top.map((r) => ({
+    name: r.name,
+    color: r.color,
+    total: r.total,
+    values: new Array(keys.length).fill(0),
+  }));
+  const seriesByCat = new Map(top.map((r, i) => [r.id, series[i]!]));
+  const other: StackSeries = {
+    name: "Other",
+    color: null,
+    total: 0,
+    values: new Array(keys.length).fill(0),
+  };
+
+  for (const t of typed) {
+    const i = idx.get(bucketKey(t.date, bucket, weekStartMonday));
+    if (i == null) continue;
+    const s = topIds.has(t.rootId) ? seriesByCat.get(t.rootId) : other;
+    if (!s) continue;
+    s.values[i] = (s.values[i] ?? 0) + t.amount;
+    if (s === other) other.total += t.amount;
+  }
+
+  return { labels, series: other.total > 0 ? [...series, other] : series };
+}
+
 export type TransferEdge = {
   fromId: number;
   toId: number;

@@ -146,6 +146,34 @@ export function clearFilters(filter: StatsFilter): StatsFilter {
   };
 }
 
+// Persistable form of a filter (Dates -> epoch millis) for saved views.
+export type StoredFilter = Omit<StatsFilter, "from" | "to" | "anchor"> & {
+  from: number;
+  to: number;
+  anchor: number;
+};
+
+export function toStored(f: StatsFilter): StoredFilter {
+  return { ...f, from: f.from.getTime(), to: f.to.getTime(), anchor: f.anchor.getTime() };
+}
+
+export function fromStored(s: StoredFilter): StatsFilter {
+  return {
+    period: s.period,
+    anchor: new Date(s.anchor),
+    from: new Date(s.from),
+    to: new Date(s.to),
+    types: s.types ?? [],
+    accountIds: s.accountIds ?? [],
+    categoryIds: s.categoryIds ?? [],
+    locationIds: s.locationIds ?? [],
+    contactIds: s.contactIds ?? [],
+    amountMin: s.amountMin ?? null,
+    amountMax: s.amountMax ?? null,
+    search: s.search ?? "",
+  };
+}
+
 // Stable string for the React Query key — same filter => same key => cache hit.
 export function serializeFilter(filter: StatsFilter): string {
   return JSON.stringify({

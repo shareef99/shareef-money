@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, SlidersHorizontal } from "lucide-react-nativ
 import { useColorScheme } from "nativewind";
 import { useStatsFilter } from "./stats-filter-context";
 import { StatsFilterSheet } from "./stats-filter-sheet";
+import { SavedViewsBar } from "./saved-views-bar";
 import type { ChipOption } from "./multi-select-chips";
 import {
   activeFilterCount,
@@ -117,6 +118,10 @@ export function StatsFilterBar() {
         >
           <ChevronRight size={20} color={filter.period === "custom" ? c.textMuted : c.text} />
         </Pressable>
+      </View>
+
+      <View className="mt-1">
+        <SavedViewsBar />
       </View>
 
       <StatsFilterSheet
