@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   FlatList,
-  Keyboard,
   Modal,
   Pressable,
   Text,
@@ -12,6 +11,7 @@ import {
 import { Check, Plus, X } from "lucide-react-native";
 import type { Contact } from "@shareef-money/db/schema";
 import { getColors } from "../lib/colors";
+import { useKeyboardHeight } from "../lib/use-keyboard-height";
 import { cn } from "../lib/cn";
 
 type Props = {
@@ -32,21 +32,8 @@ export function ContactPicker({
   onCreate,
 }: Props) {
   const [newName, setNewName] = useState("");
-  const [kbHeight, setKbHeight] = useState(0);
+  const kbHeight = useKeyboardHeight();
   const c = getColors(useColorScheme());
-
-  // Lift the bottom sheet above the keyboard so the "Add a person" input stays
-  // visible (KeyboardAvoidingView is unreliable inside a transparent Modal).
-  useEffect(() => {
-    const show = Keyboard.addListener("keyboardDidShow", (e) =>
-      setKbHeight(e.endCoordinates.height),
-    );
-    const hide = Keyboard.addListener("keyboardDidHide", () => setKbHeight(0));
-    return () => {
-      show.remove();
-      hide.remove();
-    };
-  }, []);
 
   const handleAdd = () => {
     const trimmed = newName.trim();

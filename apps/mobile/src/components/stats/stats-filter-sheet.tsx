@@ -20,6 +20,7 @@ import {
 } from "../../lib/stats-filter";
 import { MultiSelectChips, type ChipOption } from "./multi-select-chips";
 import { getColors } from "../../lib/colors";
+import { useKeyboardHeight } from "../../lib/use-keyboard-height";
 import { cn } from "../../lib/cn";
 
 type Props = {
@@ -70,6 +71,7 @@ export function StatsFilterSheet({
   const c = getColors(useColorScheme().colorScheme);
   const [draft, setDraft] = useState<StatsFilter>(filter);
   const [picker, setPicker] = useState<"from" | "to" | null>(null);
+  const kbHeight = useKeyboardHeight();
 
   // Reset the draft to the live filter whenever the sheet opens.
   useEffect(() => {
@@ -97,7 +99,11 @@ export function StatsFilterSheet({
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <Pressable className="flex-1 bg-black/60 justify-end" onPress={onClose}>
-        <Pressable className="bg-card rounded-t-2xl max-h-[88%]" onPress={() => {}}>
+        <Pressable
+          className="bg-card rounded-t-2xl max-h-[88%]"
+          style={{ marginBottom: kbHeight }}
+          onPress={() => {}}
+        >
           <View className="flex-row items-center justify-between px-5 pt-4 pb-2">
             <Text className="text-lg font-semibold text-text">Filters</Text>
             <Pressable onPress={() => setDraft((d) => clearFilters(d))}>

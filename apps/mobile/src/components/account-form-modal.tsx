@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Modal, Pressable, Switch, Text, TextInput, View, useColorScheme } from "react-native";
 import { getColors } from "../lib/colors";
+import { useKeyboardHeight } from "../lib/use-keyboard-height";
 import { ColorPicker, DEFAULT_PICKER_COLOR } from "./color-picker";
 
 type Values = {
@@ -42,6 +43,7 @@ export function AccountFormModal({
   const [description, setDescription] = useState("");
   const [color, setColor] = useState(DEFAULT_PICKER_COLOR);
   const [hidden, setHidden] = useState(false);
+  const kbHeight = useKeyboardHeight();
   const colors = getColors(useColorScheme());
 
   useEffect(() => {
@@ -69,7 +71,10 @@ export function AccountFormModal({
 
   return (
     <Modal visible={visible} animationType="fade" transparent onRequestClose={onClose}>
-      <View className="flex-1 bg-black/60 items-center justify-center px-6">
+      <View
+        className="flex-1 bg-black/60 items-center justify-center px-6"
+        style={{ paddingBottom: kbHeight }}
+      >
         <View className="w-full bg-card rounded-2xl p-5">
           <Text className="text-lg font-semibold text-text mb-4">{title}</Text>
 

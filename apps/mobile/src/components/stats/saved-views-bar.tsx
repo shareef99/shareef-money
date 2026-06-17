@@ -13,6 +13,7 @@ import { useStatsFilter } from "./stats-filter-context";
 import { useSavedViews, useSaveView, useDeleteView } from "../../queries/use-stats-views";
 import { fromStored } from "../../lib/stats-filter";
 import { getColors } from "../../lib/colors";
+import { useKeyboardHeight } from "../../lib/use-keyboard-height";
 
 // Save the current filter as a named view, and re-apply / delete saved ones.
 export function SavedViewsBar() {
@@ -23,6 +24,7 @@ export function SavedViewsBar() {
   const deleteView = useDeleteView();
   const [naming, setNaming] = useState(false);
   const [name, setName] = useState("");
+  const kbHeight = useKeyboardHeight();
 
   return (
     <View className="pb-1">
@@ -56,7 +58,11 @@ export function SavedViewsBar() {
       </ScrollView>
 
       <Modal visible={naming} transparent animationType="fade" onRequestClose={() => setNaming(false)}>
-        <Pressable className="flex-1 bg-black/60 items-center justify-center px-8" onPress={() => setNaming(false)}>
+        <Pressable
+          className="flex-1 bg-black/60 items-center justify-center px-8"
+          style={{ paddingBottom: kbHeight }}
+          onPress={() => setNaming(false)}
+        >
           <Pressable className="w-full bg-card rounded-2xl p-5" onPress={() => {}}>
             <Text className="text-base font-semibold text-text mb-3">Name this view</Text>
             <TextInput

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Modal, Pressable, Text, TextInput, View, useColorScheme } from "react-native";
 import { getColors } from "../lib/colors";
+import { useKeyboardHeight } from "../lib/use-keyboard-height";
 import { cn } from "../lib/cn";
 
 type Props = {
@@ -24,6 +25,7 @@ export function AmountInputModal({
 }: Props) {
   const [value, setValue] = useState("");
   const [applyToAll, setApplyToAll] = useState(true);
+  const kbHeight = useKeyboardHeight();
   const { textMuted } = getColors(useColorScheme());
 
   useEffect(() => {
@@ -39,7 +41,10 @@ export function AmountInputModal({
 
   return (
     <Modal visible={visible} animationType="fade" transparent onRequestClose={onClose}>
-      <View className="flex-1 bg-black/60 items-center justify-center px-6">
+      <View
+        className="flex-1 bg-black/60 items-center justify-center px-6"
+        style={{ paddingBottom: kbHeight }}
+      >
         <View className="w-full bg-card rounded-2xl p-5">
           <Text className="text-lg font-semibold text-text mb-4">{title}</Text>
           <TextInput
