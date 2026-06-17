@@ -17,7 +17,7 @@
     "zod": "^4.0.0",
     "jose": "^6.0.0",
     "argon2": "^0.41.0",
-    "better-sqlite3": "^11.8.0",
+    "better-sqlite3": "^12.11.1",
     "drizzle-orm": "^0.44.0",
     "@shareef-money/db": "workspace:*",
     "@shareef-money/shared": "workspace:*"
