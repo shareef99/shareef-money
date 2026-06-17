@@ -9,11 +9,16 @@ import {
   type StatsFilter,
   type RangeOpts,
 } from "../lib/stats-filter";
+import type { TimeBucket } from "../services/stats-service";
 
 export const statsKeys = {
   all: ["stats"] as const,
   txns: (userId: string | undefined, key: string) =>
     [...statsKeys.all, "txns", userId, key] as const,
+  cashflow: (userId: string | undefined, from: number, to: number) =>
+    [...statsKeys.all, "cashflow", userId, from, to] as const,
+  netWorth: (userId: string | undefined, from: number, to: number, bucket: string) =>
+    [...statsKeys.all, "networth", userId, from, to, bucket] as const,
 };
 
 // One synchronous filtered read per filter. keepPreviousData keeps the current
@@ -27,6 +32,37 @@ export function useStatsTransactions(filter: StatsFilter) {
   return useQuery({
     queryKey: statsKeys.txns(user?.id, serializeFilter(filter)),
     queryFn: () => statsService.queryStatsTransactions(db, user!.id, filter),
+    enabled: !!user,
+    placeholderData: keepPreviousData,
+    staleTime: 60_000,
+  });
+}
+
+// Whole-portfolio cash flow for the filter's range (for the waterfall).
+export function useCashFlow(filter: StatsFilter) {
+  const { db } = useDatabase();
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: statsKeys.cashflow(user?.id, filter.from.getTime(), filter.to.getTime()),
+    queryFn: () => statsService.cashFlow(db, user!.id, filter.from, filter.to),
+    enabled: !!user,
+    placeholderData: keepPreviousData,
+    staleTime: 60_000,
+  });
+}
+
+// Cumulative net worth per bucket across the range (for the net-worth line).
+export function useNetWorthSeries(
+  filter: StatsFilter,
+  bucket: TimeBucket,
+  weekStartMonday: boolean,
+) {
+  const { db } = useDatabase();
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: statsKeys.netWorth(user?.id, filter.from.getTime(), filter.to.getTime(), bucket),
+    queryFn: () =>
+      statsService.netWorthSeries(db, user!.id, filter.from, filter.to, bucket, weekStartMonday),
     enabled: !!user,
     placeholderData: keepPreviousData,
     staleTime: 60_000,

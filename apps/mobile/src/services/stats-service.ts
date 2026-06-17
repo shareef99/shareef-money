@@ -2,7 +2,7 @@
 // .all()), so a query resolves in-tick and React Query's keepPreviousData +
 // prefetch make period changes instant. One filtered read returns enriched
 // rows; the pure derive functions below compute every chart's data from them.
-import { and, eq, gte, lte, inArray, or, like, desc } from "drizzle-orm";
+import { and, eq, gte, lte, lt, inArray, or, like, desc } from "drizzle-orm";
 import {
   transactionsTable,
   transactionContactsTable,
@@ -428,4 +428,229 @@ export function timeSeries(
   const points = [...map.values()].sort((a, b) => a.key.localeCompare(b.key));
   for (const p of points) p.net = p.income - p.expense;
   return points;
+}
+
+// ---- Phase 2: money-flow aggregations ----
+
+// Total net worth (all accounts) just before `before`. Opening balances are
+// modelled as income transactions, so this is initialBalance (usually 0) plus
+// the running effect of every earlier transaction; transfers net to zero across
+// accounts except for their fee.
+function balanceBefore(db: Db, userId: string, before: Date): number {
+  const accs = db
+    .select({ initialBalance: accountsTable.initialBalance })
+    .from(accountsTable)
+    .where(eq(accountsTable.userId, userId))
+    .all();
+  let total = accs.reduce((s, a) => s + a.initialBalance, 0);
+
+  const txns = db
+    .select({
+      type: transactionsTable.type,
+      amount: transactionsTable.amount,
+      fee: transactionsTable.fee,
+    })
+    .from(transactionsTable)
+    .where(and(eq(transactionsTable.userId, userId), lt(transactionsTable.date, before)))
+    .all();
+  for (const t of txns) {
+    if (t.type === "income") total += t.amount;
+    else if (t.type === "expense") total -= t.amount;
+    else total -= t.fee;
+  }
+  return total;
+}
+
+export type CashFlow = {
+  opening: number;
+  income: number;
+  expense: number;
+  fees: number;
+  closing: number;
+};
+
+// Whole-portfolio cash flow across the filter's date range (ignores account /
+// category filters — net worth is global). Drives the waterfall.
+export function cashFlow(db: Db, userId: string, from: Date, to: Date): CashFlow {
+  const opening = balanceBefore(db, userId, from);
+  const txns = db
+    .select({
+      type: transactionsTable.type,
+      amount: transactionsTable.amount,
+      fee: transactionsTable.fee,
+    })
+    .from(transactionsTable)
+    .where(
+      and(
+        eq(transactionsTable.userId, userId),
+        gte(transactionsTable.date, from),
+        lte(transactionsTable.date, to),
+      ),
+    )
+    .all();
+  let income = 0;
+  let expense = 0;
+  let fees = 0;
+  for (const t of txns) {
+    if (t.type === "income") income += t.amount;
+    else if (t.type === "expense") expense += t.amount;
+    else fees += t.fee;
+  }
+  return { opening, income, expense, fees, closing: opening + income - expense - fees };
+}
+
+export type NetWorthPoint = { key: string; label: string; value: number };
+
+// Cumulative net worth at the end of each bucket across [from,to].
+export function netWorthSeries(
+  db: Db,
+  userId: string,
+  from: Date,
+  to: Date,
+  bucket: TimeBucket,
+  weekStartMonday: boolean,
+): NetWorthPoint[] {
+  const opening = balanceBefore(db, userId, from);
+  const txns = db
+    .select({
+      type: transactionsTable.type,
+      amount: transactionsTable.amount,
+      fee: transactionsTable.fee,
+      date: transactionsTable.date,
+    })
+    .from(transactionsTable)
+    .where(
+      and(
+        eq(transactionsTable.userId, userId),
+        gte(transactionsTable.date, from),
+        lte(transactionsTable.date, to),
+      ),
+    )
+    .all();
+
+  const delta = new Map<string, number>();
+  const order: string[] = [];
+  const ensure = (key: string) => {
+    if (!delta.has(key)) {
+      delta.set(key, 0);
+      order.push(key);
+    }
+  };
+
+  const cursor = new Date(from);
+  cursor.setHours(0, 0, 0, 0);
+  let guard = 0;
+  while (cursor <= to && guard < 1000) {
+    ensure(bucketKey(cursor, bucket, weekStartMonday));
+    if (bucket === "month") cursor.setMonth(cursor.getMonth() + 1);
+    else if (bucket === "week") cursor.setDate(cursor.getDate() + 7);
+    else cursor.setDate(cursor.getDate() + 1);
+    guard += 1;
+  }
+
+  for (const t of txns) {
+    const d = t.date instanceof Date ? t.date : new Date(t.date as number);
+    const key = bucketKey(d, bucket, weekStartMonday);
+    ensure(key);
+    const v = t.type === "income" ? t.amount : t.type === "expense" ? -t.amount : -t.fee;
+    delta.set(key, (delta.get(key) ?? 0) + v);
+  }
+
+  order.sort((a, b) => a.localeCompare(b));
+  let running = opening;
+  return order.map((key) => {
+    running += delta.get(key) ?? 0;
+    return { key, label: bucketLabel(key, bucket), value: running };
+  });
+}
+
+export type SankeyNode = {
+  id: string;
+  name: string;
+  color: string | null;
+  column: 0 | 1 | 2;
+  value: number;
+};
+export type SankeyLink = { source: string; target: string; value: number };
+
+// Sankey edges: income category -> account -> expense category. Transfers are
+// shown separately (see transferMatrix).
+export function flow(txns: StatsTxn[]): { nodes: SankeyNode[]; links: SankeyLink[] } {
+  const nodes = new Map<string, SankeyNode>();
+  const links = new Map<string, SankeyLink>();
+
+  const node = (id: string, name: string, color: string | null, column: 0 | 1 | 2) => {
+    const existing = nodes.get(id);
+    if (existing) return existing;
+    const n: SankeyNode = { id, name, color, column, value: 0 };
+    nodes.set(id, n);
+    return n;
+  };
+  const link = (source: string, target: string, value: number) => {
+    const key = `${source}->${target}`;
+    const existing = links.get(key);
+    if (existing) existing.value += value;
+    else links.set(key, { source, target, value });
+  };
+
+  for (const t of txns) {
+    if (t.type === "income") {
+      const cat = node(
+        `inc:${t.rootId ?? "none"}`,
+        t.rootName ?? "Income",
+        t.rootColor,
+        0,
+      );
+      const acc = node(`acc:${t.accountId}`, t.accountName ?? "Account", t.accountColor, 1);
+      cat.value += t.amount;
+      acc.value += t.amount;
+      link(cat.id, acc.id, t.amount);
+    } else if (t.type === "expense") {
+      const acc = node(`acc:${t.accountId}`, t.accountName ?? "Account", t.accountColor, 1);
+      const cat = node(
+        `exp:${t.rootId ?? "none"}`,
+        t.rootName ?? "Expense",
+        t.rootColor,
+        2,
+      );
+      acc.value += t.amount;
+      cat.value += t.amount;
+      link(acc.id, cat.id, t.amount);
+    }
+  }
+
+  return { nodes: [...nodes.values()], links: [...links.values()] };
+}
+
+export type TransferEdge = {
+  fromId: number;
+  toId: number;
+  fromName: string;
+  toName: string;
+  total: number;
+  count: number;
+};
+
+// Account -> account transfer totals.
+export function transferMatrix(txns: StatsTxn[]): TransferEdge[] {
+  const map = new Map<string, TransferEdge>();
+  for (const t of txns) {
+    if (t.type !== "transfer" || t.toAccountId == null) continue;
+    const key = `${t.accountId}->${t.toAccountId}`;
+    const existing = map.get(key);
+    if (existing) {
+      existing.total += t.amount;
+      existing.count += 1;
+    } else {
+      map.set(key, {
+        fromId: t.accountId,
+        toId: t.toAccountId,
+        fromName: t.accountName ?? "Account",
+        toName: t.toAccountName ?? "Account",
+        total: t.amount,
+        count: 1,
+      });
+    }
+  }
+  return [...map.values()].sort((a, b) => b.total - a.total);
 }
