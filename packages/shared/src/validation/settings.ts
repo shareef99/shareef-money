@@ -30,7 +30,6 @@ export const settingsUpdateSchema = z
       .string()
       .regex(/^([01]\d|2[0-3]):([0-5]\d)$/)
       .optional(),
-    show_description: z.boolean().optional(),
     autocomplete: z.boolean().optional(),
     input_order: z.enum(inputOrders).optional(),
     subcategory_enabled: z.boolean().optional(),

@@ -152,7 +152,6 @@ export async function materializeDueRecurring(
           toAccountId: template.toAccountId,
           locationId: template.locationId,
           note: template.note,
-          description: template.description,
           date: new Date(next),
         })
         .returning();

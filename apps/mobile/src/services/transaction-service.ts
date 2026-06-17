@@ -19,7 +19,6 @@ type CreateTransactionPayload = {
   locationId?: number | null;
   contactIds?: number[];
   note?: string | null;
-  description?: string | null;
   date: number;
 };
 
@@ -158,7 +157,6 @@ export async function createTransaction(db: Db, userId: string, payload: CreateT
       dueDate: data.dueDate != null ? new Date(data.dueDate) : null,
       locationId: data.locationId ?? null,
       note: data.note ?? null,
-      description: data.description ?? null,
       date: new Date(data.date),
     })
     .returning();
@@ -189,7 +187,6 @@ export async function updateTransaction(db: Db, userId: string, id: number, payl
     setData.dueDate = data.dueDate != null ? new Date(data.dueDate) : null;
   if (data.locationId !== undefined) setData.locationId = data.locationId;
   if (data.note !== undefined) setData.note = data.note;
-  if (data.description !== undefined) setData.description = data.description;
   if (data.date !== undefined) setData.date = new Date(data.date);
 
   const [transaction] = await db

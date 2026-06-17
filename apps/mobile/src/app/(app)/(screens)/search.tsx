@@ -35,7 +35,6 @@ export default function SearchScreen() {
         t.category?.name,
         t.account?.name,
         t.note,
-        t.description,
         String(t.amount / 100),
       ]
         .filter(Boolean)

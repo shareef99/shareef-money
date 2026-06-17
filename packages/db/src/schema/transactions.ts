@@ -32,7 +32,6 @@ export const transactionsTable = sqliteTable(
     dueDate: integer("due_date", { mode: "timestamp" }),
     locationId: integer("location_id").references(() => locationsTable.id),
     note: text("note"),
-    description: text("description"),
     date: integer("date", { mode: "timestamp" }).notNull(),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()

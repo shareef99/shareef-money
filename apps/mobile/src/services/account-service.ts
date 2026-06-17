@@ -132,7 +132,6 @@ export async function createAccount(db: Db, userId: string, payload: CreateAccou
       toAccountId: null,
       locationId: null,
       note: "Opening balance",
-      description: null,
       date: new Date(),
     });
   }
@@ -165,7 +164,6 @@ export async function migrateOpeningBalances(db: Db, userId: string): Promise<nu
       toAccountId: null,
       locationId: null,
       note: "Opening balance",
-      description: null,
       date: account.createdAt instanceof Date ? account.createdAt : new Date(),
     });
     await db

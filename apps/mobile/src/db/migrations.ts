@@ -3,6 +3,7 @@ import m0000 from "../../../../packages/db/drizzle/0000_wet_slayback.sql";
 import m0001 from "../../../../packages/db/drizzle/0001_parallel_maggott.sql";
 import m0002 from "../../../../packages/db/drizzle/0002_round_nitro.sql";
 import m0003 from "../../../../packages/db/drizzle/0003_large_morg.sql";
+import m0004 from "../../../../packages/db/drizzle/0004_blushing_robin_chapel.sql";
 
 export default {
   journal,
@@ -11,5 +12,6 @@ export default {
     m0001,
     m0002,
     m0003,
+    m0004,
   },
 };

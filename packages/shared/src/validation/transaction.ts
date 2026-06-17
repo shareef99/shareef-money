@@ -9,7 +9,6 @@ const tagsFields = {
 const baseFields = {
   amount: z.number().int().positive(),
   note: z.string().max(200).optional(),
-  description: z.string().max(1000).optional(),
   date: z.number().int().positive(),
   ...tagsFields,
 };
@@ -84,7 +83,6 @@ export const transactionUpdateSchema = z
     locationId: z.number().int().positive().nullable().optional(),
     contactIds: z.array(z.number().int().positive()).optional(),
     note: z.string().max(200).nullable().optional(),
-    description: z.string().max(1000).nullable().optional(),
     date: z.number().int().positive().optional(),
   })
   .strict();

@@ -4,7 +4,6 @@ type ExportTxn = {
   amount: number;
   fee: number;
   note: string | null;
-  description: string | null;
   category?: { name: string } | null;
   account?: { name: string } | null;
 };
@@ -20,7 +19,6 @@ export function transactionsToCsv(rows: ExportTxn[]): string {
     "Amount",
     "Fee",
     "Note",
-    "Description",
   ];
   const lines = [header.join(",")];
 
@@ -35,7 +33,6 @@ export function transactionsToCsv(rows: ExportTxn[]): string {
         (t.amount / 100).toFixed(2),
         (t.fee / 100).toFixed(2),
         esc(t.note),
-        esc(t.description),
       ].join(","),
     );
   }

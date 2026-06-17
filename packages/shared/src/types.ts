@@ -77,7 +77,6 @@ export interface AppSettings {
   passcode_enabled: boolean;
   alarm_enabled: boolean;
   alarm_time: string;
-  show_description: boolean;
   autocomplete: boolean;
   input_order: InputOrder;
   subcategory_enabled: boolean;
