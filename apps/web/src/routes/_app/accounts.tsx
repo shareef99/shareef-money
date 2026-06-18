@@ -5,10 +5,12 @@ import { useDisclosure } from "@mantine/hooks";
 import { ActionIcon, Badge, Button, Modal } from "@mantine/core";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { formatCurrency, setActiveCurrency } from "@shareef-money/shared/utils";
-import { computeAccountBalances } from "@shareef-money/shared/calc";
+import { computeAccountBalances, computeDebtLedger } from "@shareef-money/shared/calc";
 import { getAccounts, useArchiveAccount } from "../../queries/accounts";
 import { getTransactions } from "../../queries/transactions";
+import { getContacts } from "../../queries/contacts";
 import { getSettings } from "../../queries/settings";
+import { toDebtLedgerTxns } from "../../lib/stats";
 import { Title } from "../../components/ui/title";
 import { Text } from "../../components/ui/text";
 import { AccountFormModal } from "../../components/accounts/account-form-modal";
@@ -23,6 +25,7 @@ export const Route = createFileRoute("/_app/accounts")({
     await Promise.all([
       queryClient.ensureQueryData(getAccounts()),
       queryClient.ensureQueryData(getTransactions({ limit: 500 })),
+      queryClient.ensureQueryData(getContacts()),
     ]);
   },
   component: AccountsPage,
@@ -31,6 +34,7 @@ export const Route = createFileRoute("/_app/accounts")({
 function AccountsPage() {
   const { data: accounts } = useSuspenseQuery(getAccounts());
   const { data: txns } = useSuspenseQuery(getTransactions({ limit: 500 }));
+  const { data: contacts } = useSuspenseQuery(getContacts());
   const archiveAccount = useArchiveAccount();
 
   const [formOpened, formHandlers] = useDisclosure(false);
@@ -51,6 +55,15 @@ function AccountsPage() {
       ),
     [accounts, txns],
   );
+
+  // Net worth folds the outstanding debt position into the cash total: a
+  // receivable is an asset, a payable a liability (cash already left/entered the
+  // account when the debt was recorded). netWorth = accounts total + debt net.
+  const ledger = useMemo(() => {
+    const names = new Map(contacts.map((c) => [c.id, c.name]));
+    return computeDebtLedger(toDebtLedgerTxns(txns, names), Date.now());
+  }, [txns, contacts]);
+  const netWorth = total + ledger.net;
 
   const openAdd = () => {
     setEditTarget(undefined);
@@ -78,13 +91,34 @@ function AccountsPage() {
         </Button>
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-5">
-        <Text variant="secondary" size="xs">
-          Total in accounts
-        </Text>
-        <p className={cn("text-3xl font-bold", total >= 0 ? "text-text" : "text-expense")}>
-          {formatCurrency(total)}
-        </p>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="rounded-xl border border-border bg-card p-5 max-lg:col-span-2">
+          <Text variant="secondary" size="xs">
+            Net worth
+          </Text>
+          <p className={cn("text-3xl font-bold", netWorth >= 0 ? "text-text" : "text-expense")}>
+            {formatCurrency(netWorth)}
+          </p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-5">
+          <Text variant="secondary" size="xs">
+            In accounts
+          </Text>
+          <p className={cn("text-xl font-bold", total >= 0 ? "text-text" : "text-expense")}>
+            {formatCurrency(total)}
+          </p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-5">
+          <Text variant="secondary" size="xs">
+            Owed to you
+          </Text>
+          <p className="text-xl font-bold text-income">{formatCurrency(ledger.receivable)}</p>
+          {ledger.payable > 0 && (
+            <p className="mt-0.5 text-xs text-text-muted">
+              you owe {formatCurrency(ledger.payable)}
+            </p>
+          )}
+        </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
