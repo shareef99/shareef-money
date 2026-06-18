@@ -40,7 +40,6 @@ export const defaultSettings: AppSettings = {
   passcode_enabled: false,
   alarm_enabled: true,
   alarm_time: "21:00",
-  show_description: true,
   autocomplete: true,
   input_order: "amount",
   subcategory_enabled: true,

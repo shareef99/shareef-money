@@ -4,12 +4,21 @@ type ExportTxn = {
   amount: number;
   fee: number;
   note: string | null;
-  description: string | null;
+  dueDate?: Date | number | null;
   category?: { name: string } | null;
   account?: { name: string } | null;
+  location?: { name: string } | null;
+  // Debt counterparty (debt_lend / debt_borrow).
+  contact?: { name: string } | null;
 };
 
 const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+
+const isoOrEmpty = (v: Date | number | null | undefined) => {
+  if (v == null) return "";
+  const d = v instanceof Date ? v : new Date(v);
+  return d.toISOString();
+};
 
 export function transactionsToCsv(rows: ExportTxn[]): string {
   const header = [
@@ -17,10 +26,12 @@ export function transactionsToCsv(rows: ExportTxn[]): string {
     "Type",
     "Category",
     "Account",
+    "Person",
+    "Location",
     "Amount",
     "Fee",
+    "Due date",
     "Note",
-    "Description",
   ];
   const lines = [header.join(",")];
 
@@ -32,10 +43,12 @@ export function transactionsToCsv(rows: ExportTxn[]): string {
         esc(t.type),
         esc(t.category?.name ?? ""),
         esc(t.account?.name ?? ""),
+        esc(t.contact?.name ?? ""),
+        esc(t.location?.name ?? ""),
         (t.amount / 100).toFixed(2),
         (t.fee / 100).toFixed(2),
+        esc(isoOrEmpty(t.dueDate)),
         esc(t.note),
-        esc(t.description),
       ].join(","),
     );
   }

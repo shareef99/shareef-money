@@ -1,4 +1,4 @@
-import { eq, and, gte, lte, desc, sql, inArray } from "drizzle-orm";
+import { eq, and, gte, lte, desc, sql, inArray, or, isNull } from "drizzle-orm";
 import {
   transactionsTable,
   transactionContactsTable,
@@ -14,10 +14,11 @@ type CreateTransactionPayload = {
   categoryId?: number | null;
   accountId: number;
   toAccountId?: number | null;
+  contactId?: number | null; // debt counterparty (debt_lend / debt_borrow)
+  dueDate?: number | null; // optional repayment due date (debts)
   locationId?: number | null;
   contactIds?: number[];
   note?: string | null;
-  description?: string | null;
   date: number;
 };
 
@@ -34,7 +35,10 @@ type TransactionFilters = {
 };
 
 export async function getTransactions(db: Db, userId: string, filters: TransactionFilters = {}) {
-  const conditions = [eq(transactionsTable.userId, userId)];
+  const conditions = [
+    eq(transactionsTable.userId, userId),
+    isNull(transactionsTable.deletedAt),
+  ];
 
   if (filters.type) conditions.push(eq(transactionsTable.type, filters.type));
   if (filters.dateFrom) conditions.push(gte(transactionsTable.date, filters.dateFrom));
@@ -50,13 +54,36 @@ export async function getTransactions(db: Db, userId: string, filters: Transacti
     with: {
       category: true,
       account: true,
+      toAccount: true,
+      contact: true,
+      location: true,
       transactionContacts: true,
     },
   });
 }
 
-export async function getTransactionsByDateRange(db: Db, userId: string, from: Date, to: Date) {
-  return getTransactions(db, userId, { dateFrom: from, dateTo: to });
+// Every transaction touching an account — as the source OR the transfer target.
+// Filtered in SQL (not by loading all rows and filtering in JS) and uncapped, so
+// an account's full history is visible regardless of how many transactions exist.
+export async function getAccountTransactions(db: Db, userId: string, accountId: number) {
+  return db.query.transactionsTable.findMany({
+    where: and(
+      eq(transactionsTable.userId, userId),
+      isNull(transactionsTable.deletedAt),
+      or(
+        eq(transactionsTable.accountId, accountId),
+        eq(transactionsTable.toAccountId, accountId),
+      ),
+    ),
+    orderBy: desc(transactionsTable.date),
+    with: {
+      category: true,
+      account: true,
+      toAccount: true,
+      contact: true,
+      location: true,
+    },
+  });
 }
 
 export type CategoryBreakdownRow = {
@@ -78,6 +105,7 @@ export async function getCategoryBreakdown(
   const txns = await db.query.transactionsTable.findMany({
     where: and(
       eq(transactionsTable.userId, userId),
+      isNull(transactionsTable.deletedAt),
       eq(transactionsTable.type, type),
       gte(transactionsTable.date, from),
       lte(transactionsTable.date, to),
@@ -120,6 +148,7 @@ export async function getTransactionsSummary(db: Db, userId: string, from: Date,
     .where(
       and(
         eq(transactionsTable.userId, userId),
+        isNull(transactionsTable.deletedAt),
         gte(transactionsTable.date, from),
         lte(transactionsTable.date, to),
       ),
@@ -136,6 +165,47 @@ export async function getTransactionsSummary(db: Db, userId: string, from: Date,
   return { income, expense, net: income - expense };
 }
 
+export type MonthlySummary = { income: number; expense: number; net: number };
+
+// Per-month income/expense/net totals for a calendar year, in a single read.
+// Buckets in JS to avoid depending on the stored date's unit (drives the
+// Monthly tab, which previously fired one summary query per month).
+export async function getMonthlySummary(
+  db: Db,
+  userId: string,
+  year: number,
+): Promise<MonthlySummary[]> {
+  const from = new Date(year, 0, 1, 0, 0, 0, 0);
+  const to = new Date(year, 11, 31, 23, 59, 59, 999);
+
+  const rows = await db.query.transactionsTable.findMany({
+    where: and(
+      eq(transactionsTable.userId, userId),
+      isNull(transactionsTable.deletedAt),
+      gte(transactionsTable.date, from),
+      lte(transactionsTable.date, to),
+    ),
+    columns: { type: true, amount: true, date: true },
+  });
+
+  const months: MonthlySummary[] = Array.from({ length: 12 }, () => ({
+    income: 0,
+    expense: 0,
+    net: 0,
+  }));
+
+  for (const r of rows) {
+    const d = r.date instanceof Date ? r.date : new Date(r.date as number);
+    const m = months[d.getMonth()];
+    if (!m) continue;
+    if (r.type === "income") m.income += r.amount;
+    else if (r.type === "expense") m.expense += r.amount;
+  }
+  for (const m of months) m.net = m.income - m.expense;
+
+  return months;
+}
+
 export async function createTransaction(db: Db, userId: string, payload: CreateTransactionPayload) {
   const { contactIds, ...data } = payload;
 
@@ -150,9 +220,10 @@ export async function createTransaction(db: Db, userId: string, payload: CreateT
       categoryId: data.categoryId ?? null,
       accountId: data.accountId,
       toAccountId: data.toAccountId ?? null,
+      contactId: data.contactId ?? null,
+      dueDate: data.dueDate != null ? new Date(data.dueDate) : null,
       locationId: data.locationId ?? null,
       note: data.note ?? null,
-      description: data.description ?? null,
       date: new Date(data.date),
     })
     .returning();
@@ -178,9 +249,11 @@ export async function updateTransaction(db: Db, userId: string, id: number, payl
   if (data.categoryId !== undefined) setData.categoryId = data.categoryId;
   if (data.accountId !== undefined) setData.accountId = data.accountId;
   if (data.toAccountId !== undefined) setData.toAccountId = data.toAccountId;
+  if (data.contactId !== undefined) setData.contactId = data.contactId;
+  if (data.dueDate !== undefined)
+    setData.dueDate = data.dueDate != null ? new Date(data.dueDate) : null;
   if (data.locationId !== undefined) setData.locationId = data.locationId;
   if (data.note !== undefined) setData.note = data.note;
-  if (data.description !== undefined) setData.description = data.description;
   if (data.date !== undefined) setData.date = new Date(data.date);
 
   const [transaction] = await db
@@ -204,8 +277,11 @@ export async function updateTransaction(db: Db, userId: string, id: number, payl
   return transaction;
 }
 
+// Soft delete: tombstone the row so the deletion syncs and can't resurrect on
+// the next pull. Reads filter `deletedAt IS NULL`.
 export async function deleteTransaction(db: Db, userId: string, id: number) {
   await db
-    .delete(transactionsTable)
+    .update(transactionsTable)
+    .set({ deletedAt: Date.now(), updatedAt: new Date() })
     .where(and(eq(transactionsTable.id, id), eq(transactionsTable.userId, userId)));
 }

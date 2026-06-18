@@ -37,6 +37,7 @@
       "expo-web-browser",
       "expo-notifications",
       "expo-local-authentication",
+      "expo-document-picker",
       "@react-native-community/datetimepicker"
     ],
     "experiments": {

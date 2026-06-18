@@ -44,7 +44,6 @@ export function list(db: AppDatabase, userId: string, filters: TransactionFilter
       toAccountId: transactionsTable.toAccountId,
       locationId: transactionsTable.locationId,
       note: transactionsTable.note,
-      description: transactionsTable.description,
       date: transactionsTable.date,
       createdAt: transactionsTable.createdAt,
       updatedAt: transactionsTable.updatedAt,
@@ -75,7 +74,6 @@ export function getById(db: AppDatabase, userId: string, id: number) {
       toAccountId: transactionsTable.toAccountId,
       locationId: transactionsTable.locationId,
       note: transactionsTable.note,
-      description: transactionsTable.description,
       date: transactionsTable.date,
       createdAt: transactionsTable.createdAt,
       updatedAt: transactionsTable.updatedAt,
@@ -120,7 +118,6 @@ export function create(db: AppDatabase, userId: string, payload: TransactionCrea
       toAccountId: "toAccountId" in transactionData ? transactionData.toAccountId : null,
       locationId: transactionData.locationId ?? null,
       note: transactionData.note ?? null,
-      description: transactionData.description ?? null,
       date: new Date(transactionData.date),
     })
     .returning()
@@ -159,7 +156,6 @@ export function update(db: AppDatabase, userId: string, id: number, payload: Tra
   if (updateData.toAccountId !== undefined) setData.toAccountId = updateData.toAccountId;
   if (updateData.locationId !== undefined) setData.locationId = updateData.locationId;
   if (updateData.note !== undefined) setData.note = updateData.note;
-  if (updateData.description !== undefined) setData.description = updateData.description;
   if (updateData.date !== undefined) setData.date = new Date(updateData.date);
 
   const transaction = db

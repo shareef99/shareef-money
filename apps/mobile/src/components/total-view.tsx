@@ -4,7 +4,8 @@ import { ALL_TIME_FROM, ALL_TIME_TO } from "@shareef-money/shared/constants";
 import { useTransactionsSummary } from "../queries/use-transactions";
 
 export function TotalView() {
-  const { data: summary } = useTransactionsSummary(ALL_TIME_FROM, ALL_TIME_TO);
+  const { data: summary = { income: 0, expense: 0, net: 0 } } =
+    useTransactionsSummary(ALL_TIME_FROM, ALL_TIME_TO);
 
   return (
     <View className="flex-1 bg-background items-center justify-center px-6">

@@ -1,24 +1,33 @@
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, isNull } from "drizzle-orm";
 import { accountsTable, transactionsTable } from "@shareef-money/db/schema";
 import type { Db } from "../db/client";
 import { generateSyncId } from "../lib/sync-id";
 import { getOrCreateOpeningBalanceCategory } from "./category-service";
 
+// Visible, selectable accounts (used by the entry pickers). Hidden accounts are
+// excluded here so you can't file new transactions against them.
 export async function getAccounts(db: Db, userId: string) {
+  return db.query.accountsTable.findMany({
+    where: and(
+      eq(accountsTable.userId, userId),
+      eq(accountsTable.isArchived, false),
+      eq(accountsTable.isHidden, false),
+    ),
+    orderBy: accountsTable.sortOrder,
+  });
+}
+
+// All non-archived accounts, including hidden ones (used by the Accounts list,
+// which still shows hidden accounts — just flagged and out of the total).
+async function getAllAccounts(db: Db, userId: string) {
   return db.query.accountsTable.findMany({
     where: and(eq(accountsTable.userId, userId), eq(accountsTable.isArchived, false)),
     orderBy: accountsTable.sortOrder,
   });
 }
 
-export async function getAccountById(db: Db, userId: string, id: number) {
-  return db.query.accountsTable.findFirst({
-    where: and(eq(accountsTable.id, id), eq(accountsTable.userId, userId)),
-  });
-}
-
 export type AccountWithBalance = Awaited<
-  ReturnType<typeof getAccounts>
+  ReturnType<typeof getAllAccounts>
 >[number] & { balance: number };
 
 // Balance = initialBalance + incomes − expenses + transfers in − (transfers out + fees)
@@ -26,10 +35,13 @@ export async function getAccountsWithBalances(
   db: Db,
   userId: string,
 ): Promise<{ accounts: AccountWithBalance[]; total: number }> {
-  const accounts = await getAccounts(db, userId);
+  const accounts = await getAllAccounts(db, userId);
 
   const txns = await db.query.transactionsTable.findMany({
-    where: eq(transactionsTable.userId, userId),
+    where: and(
+      eq(transactionsTable.userId, userId),
+      isNull(transactionsTable.deletedAt),
+    ),
     columns: {
       type: true,
       amount: true,
@@ -52,6 +64,9 @@ export async function getAccountsWithBalances(
       add(t.accountId, -(t.amount + t.fee));
       add(t.toAccountId, t.amount);
     }
+    // Debts move real cash: "you gave" leaves the account, "you got" enters it.
+    else if (t.type === "debt_lend") add(t.accountId, -t.amount);
+    else if (t.type === "debt_borrow") add(t.accountId, t.amount);
   }
 
   const withBalances = accounts.map((a) => ({
@@ -59,7 +74,10 @@ export async function getAccountsWithBalances(
     balance: a.initialBalance + (delta.get(a.id) ?? 0),
   }));
 
-  const total = withBalances.reduce((s, a) => s + a.balance, 0);
+  // Hidden accounts still show in the list but don't count toward Total Assets.
+  const total = withBalances
+    .filter((a) => !a.isHidden)
+    .reduce((s, a) => s + a.balance, 0);
   return { accounts: withBalances, total };
 }
 
@@ -67,12 +85,15 @@ type CreateAccountPayload = {
   name: string;
   initialBalance?: number;
   description?: string | null;
+  color?: string | null;
 };
 
 type UpdateAccountPayload = {
   name?: string;
   initialBalance?: number;
   description?: string | null;
+  color?: string | null;
+  isHidden?: boolean;
 };
 
 export async function createAccount(db: Db, userId: string, payload: CreateAccountPayload) {
@@ -96,6 +117,7 @@ export async function createAccount(db: Db, userId: string, payload: CreateAccou
       name: payload.name,
       initialBalance: 0,
       description: payload.description ?? null,
+      color: payload.color ?? null,
       sortOrder: nextSortOrder,
     })
     .returning();
@@ -113,7 +135,6 @@ export async function createAccount(db: Db, userId: string, payload: CreateAccou
       toAccountId: null,
       locationId: null,
       note: "Opening balance",
-      description: null,
       date: new Date(),
     });
   }
@@ -129,26 +150,41 @@ export async function migrateOpeningBalances(db: Db, userId: string): Promise<nu
   const accounts = await db.query.accountsTable.findMany({
     where: eq(accountsTable.userId, userId),
   });
+  const toMigrate = accounts.filter((a) => a.initialBalance && a.initialBalance !== 0);
+  if (toMigrate.length === 0) return 0;
+
+  const category = await getOrCreateOpeningBalanceCategory(db, userId);
+
+  // Accounts that already carry an Opening Balance income must not get a second
+  // one. Without this, a non-zero initialBalance synced back from another device
+  // (which still has the legacy value) would mint a duplicate on a fresh launch.
+  const existing = await db.query.transactionsTable.findMany({
+    where: and(
+      eq(transactionsTable.userId, userId),
+      eq(transactionsTable.categoryId, category.id),
+      isNull(transactionsTable.deletedAt),
+    ),
+    columns: { accountId: true },
+  });
+  const alreadyHasOpening = new Set(existing.map((t) => t.accountId));
 
   let migrated = 0;
-  for (const account of accounts) {
-    if (!account.initialBalance || account.initialBalance === 0) continue;
-
-    const category = await getOrCreateOpeningBalanceCategory(db, userId);
-    await db.insert(transactionsTable).values({
-      id: generateSyncId(),
-      userId,
-      type: "income",
-      amount: account.initialBalance,
-      fee: 0,
-      categoryId: category.id,
-      accountId: account.id,
-      toAccountId: null,
-      locationId: null,
-      note: "Opening balance",
-      description: null,
-      date: account.createdAt instanceof Date ? account.createdAt : new Date(),
-    });
+  for (const account of toMigrate) {
+    if (!alreadyHasOpening.has(account.id)) {
+      await db.insert(transactionsTable).values({
+        id: generateSyncId(),
+        userId,
+        type: "income",
+        amount: account.initialBalance,
+        fee: 0,
+        categoryId: category.id,
+        accountId: account.id,
+        toAccountId: null,
+        locationId: null,
+        note: "Opening balance",
+        date: account.createdAt instanceof Date ? account.createdAt : new Date(),
+      });
+    }
     await db
       .update(accountsTable)
       .set({ initialBalance: 0, updatedAt: new Date() })
@@ -164,6 +200,8 @@ export async function updateAccount(db: Db, userId: string, id: number, payload:
   if (payload.name !== undefined) setData.name = payload.name;
   if (payload.initialBalance !== undefined) setData.initialBalance = payload.initialBalance;
   if (payload.description !== undefined) setData.description = payload.description;
+  if (payload.color !== undefined) setData.color = payload.color;
+  if (payload.isHidden !== undefined) setData.isHidden = payload.isHidden;
 
   const [account] = await db
     .update(accountsTable)

@@ -125,7 +125,7 @@ export async function pullChanges(db: Db, api: AxiosInstance, userId: string) {
 
     for (const row of rows) {
       const id = row.id as number;
-      const rowData = {
+      const rowData: Record<string, unknown> = {
         ...row,
         userId,
         date: row.date ? new Date(row.date as number) : undefined,
@@ -141,17 +141,17 @@ export async function pullChanges(db: Db, api: AxiosInstance, userId: string) {
         .get();
 
       if (existing) {
-        const updateData = { ...rowData };
+        const updateData: Record<string, unknown> = { ...rowData };
         delete updateData.id;
         delete updateData.createdAt;
 
         db.update(table as typeof accountsTable)
-          .set(updateData as Record<string, unknown>)
+          .set(updateData as never)
           .where(eq((table as typeof accountsTable).id, id))
           .run();
       } else {
         db.insert(table as typeof accountsTable)
-          .values(rowData as Record<string, unknown>)
+          .values(rowData as never)
           .run();
       }
     }
@@ -161,10 +161,14 @@ export async function pullChanges(db: Db, api: AxiosInstance, userId: string) {
   return data.syncedAt;
 }
 
-export async function pushChanges(db: Db, api: AxiosInstance, userId: string) {
+export async function pushChanges(db: Db, api: AxiosInstance) {
   const lastSyncAt = await getLastSyncAt();
   const since = new Date(lastSyncAt);
   const deviceId = await getDeviceId();
+  // Stamp the next cursor BEFORE reading rows. Anything written while the push
+  // is in flight then has updatedAt >= syncedAt and is re-selected on the next
+  // push instead of being skipped (worst case: re-sent once — a harmless upsert).
+  const syncedAt = Date.now();
 
   const changes: Array<{ table: string; action: string; data: Record<string, unknown>; updatedAt: number }> = [];
 
@@ -221,12 +225,11 @@ export async function pushChanges(db: Db, api: AxiosInstance, userId: string) {
   if (changes.length === 0) return;
 
   await api.post("/sync/push", { changes, deviceId });
-  const syncedAt = Date.now();
   await api.post("/sync/ack", { deviceId, syncedAt });
   await setLastSyncAt(syncedAt);
 }
 
 export async function fullSync(db: Db, api: AxiosInstance, userId: string) {
-  await pushChanges(db, api, userId);
+  await pushChanges(db, api);
   await pullChanges(db, api, userId);
 }

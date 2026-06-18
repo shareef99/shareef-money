@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Pressable, ScrollView, Text, TextInput, View, useColorScheme } from "react-native";
+import { FlatList, Pressable, ScrollView, Text, TextInput, View, useColorScheme } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { ArrowLeft, Search as SearchIcon } from "lucide-react-native";
@@ -16,6 +16,8 @@ const FILTERS: { key: Filter; label: string }[] = [
   { key: "income", label: "Income" },
   { key: "expense", label: "Expense" },
   { key: "transfer", label: "Transfer" },
+  { key: "debt_lend", label: "You gave" },
+  { key: "debt_borrow", label: "You got" },
 ];
 
 export default function SearchScreen() {
@@ -24,7 +26,9 @@ export default function SearchScreen() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
 
-  const { data: transactions = [] } = useTransactions({});
+  // Uncapped: search must see the full history, not just the most recent rows.
+  // The result list is virtualized (FlatList) so rendering many matches is cheap.
+  const { data: transactions = [] } = useTransactions({ limit: 100_000 });
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -34,8 +38,8 @@ export default function SearchScreen() {
       const haystack = [
         t.category?.name,
         t.account?.name,
+        t.contact?.name,
         t.note,
-        t.description,
         String(t.amount / 100),
       ]
         .filter(Boolean)
@@ -56,7 +60,7 @@ export default function SearchScreen() {
             <SearchIcon size={18} className="text-text-secondary" />
             <TextInput
               className="flex-1 text-base text-text py-2 px-2"
-              placeholder="Search notes, category, amount…"
+              placeholder="Search notes, category, person, amount…"
               placeholderTextColor={textMuted}
               value={query}
               onChangeText={setQuery}
@@ -65,7 +69,17 @@ export default function SearchScreen() {
           </View>
         </View>
 
-        <View className="flex-row px-4 gap-2 py-2">
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ flexGrow: 0 }}
+          contentContainerStyle={{
+            paddingHorizontal: 16,
+            gap: 8,
+            paddingVertical: 8,
+            alignItems: "center",
+          }}
+        >
           {FILTERS.map((f) => (
             <Pressable
               key={f.key}
@@ -87,31 +101,45 @@ export default function SearchScreen() {
               </Text>
             </Pressable>
           ))}
-        </View>
+        </ScrollView>
 
-        <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
-          {results.length === 0 ? (
+        <FlatList
+          data={results}
+          keyExtractor={(item) => String(item.id)}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingBottom: 24 }}
+          ListEmptyComponent={
             <View className="items-center py-20">
               <Text className="text-text-secondary text-base">No results</Text>
             </View>
-          ) : (
-            results.map((item) => (
+          }
+          renderItem={({ item }) => {
+            const isDebt =
+              item.type === "debt_lend" || item.type === "debt_borrow";
+            const title =
+              item.type === "debt_lend"
+                ? `→ ${item.contact?.name ?? "Someone"}`
+                : item.type === "debt_borrow"
+                  ? `← ${item.contact?.name ?? "Someone"}`
+                  : (item.category?.name ??
+                    (item.type === "transfer" ? "Transfer" : "(No category)"));
+            const subtitle = isDebt
+              ? "Debt"
+              : `${item.account?.name ?? ""}${item.note ? ` · ${item.note}` : ""}`;
+            return (
               <Pressable
-                key={item.id}
                 className="flex-row items-center px-4 py-3 border-b border-border active:bg-card"
                 onPress={() =>
-                  router.push({ pathname: "/add-transaction", params: { id: item.id } })
+                  router.push(
+                    isDebt
+                      ? { pathname: "/add-debt", params: { id: String(item.id) } }
+                      : { pathname: "/add-transaction", params: { id: item.id } },
+                  )
                 }
               >
                 <View className="flex-1">
-                  <Text className="text-sm text-text">
-                    {item.category?.name ??
-                      (item.type === "transfer" ? "Transfer" : "(No category)")}
-                  </Text>
-                  <Text className="text-xs text-text-muted mt-0.5">
-                    {item.account?.name}
-                    {item.note ? ` · ${item.note}` : ""}
-                  </Text>
+                  <Text className="text-sm text-text">{title}</Text>
+                  <Text className="text-xs text-text-muted mt-0.5">{subtitle}</Text>
                 </View>
                 <View className="items-end">
                   <Text
@@ -119,10 +147,14 @@ export default function SearchScreen() {
                       "text-sm font-medium",
                       item.type === "income" && "text-income",
                       item.type === "expense" && "text-expense",
-                      item.type === "transfer" && "text-transfer",
+                      (item.type === "transfer" || isDebt) && "text-transfer",
                     )}
                   >
-                    {item.type === "expense" ? "-" : ""}
+                    {item.type === "expense" || item.type === "debt_lend"
+                      ? "-"
+                      : item.type === "debt_borrow"
+                        ? "+"
+                        : ""}
                     {formatCurrency(item.amount)}
                   </Text>
                   <Text className="text-xs text-text-muted">
@@ -136,9 +168,9 @@ export default function SearchScreen() {
                   </Text>
                 </View>
               </Pressable>
-            ))
-          )}
-        </ScrollView>
+            );
+          }}
+        />
       </View>
     </SafeAreaView>
   );

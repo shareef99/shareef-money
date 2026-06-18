@@ -95,7 +95,7 @@ export default function MoreScreen() {
             onPress={logout}
           >
             <LogOut size={28} strokeWidth={1.5} color={c.text} />
-            <Text className="text-sm text-error">Logout</Text>
+            <Text className="text-sm text-text">Logout</Text>
           </Pressable>
         </View>
       </SafeAreaView>

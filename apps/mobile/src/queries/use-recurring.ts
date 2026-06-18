@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useDatabase } from "../providers/database-provider";
 import { useAuth } from "../providers/auth-provider";
 import { useSync } from "../providers/sync-provider";
-import { transactionKeys } from "./use-transactions";
 import * as recurringService from "../services/recurring-service";
 
 export const recurringKeys = {
@@ -70,25 +69,5 @@ export function useDeleteRecurringRule() {
   });
 }
 
-// Run once when the app comes up: generate any transactions that fell due
-// while the app was closed, then refresh the transaction + recurring caches.
-export function useMaterializeRecurring() {
-  const { db } = useDatabase();
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
-
-  return useQuery({
-    queryKey: [...recurringKeys.all, "materialize", user?.id],
-    queryFn: async () => {
-      const created = await recurringService.materializeDueRecurring(db, user!.id);
-      if (created > 0) {
-        queryClient.invalidateQueries({ queryKey: transactionKeys.all });
-        queryClient.invalidateQueries({ queryKey: recurringKeys.all });
-      }
-      return created;
-    },
-    enabled: !!user,
-    staleTime: Infinity,
-    refetchOnWindowFocus: false,
-  });
-}
+// Note: due recurring transactions are materialized inside SyncProvider.sync(),
+// right before each push, so they always sync in the same cycle.

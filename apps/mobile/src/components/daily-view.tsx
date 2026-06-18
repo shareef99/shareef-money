@@ -5,6 +5,7 @@ import {
   useTransactions,
   useTransactionsSummary,
 } from "../queries/use-transactions";
+import { useCategories } from "../queries/use-categories";
 import { useSettings } from "../queries/use-settings";
 import { SummaryBar } from "./summary-bar";
 import { formatCurrency } from "@shareef-money/shared/utils";
@@ -24,13 +25,27 @@ export function DailyView({ monthStart, monthEnd }: Props) {
     dateTo: monthEnd,
   });
 
-  const { data: summary } = useTransactionsSummary(monthStart, monthEnd);
+  const { data: summary = { income: 0, expense: 0, net: 0 } } =
+    useTransactionsSummary(monthStart, monthEnd);
   const { data: settings } = useSettings();
+  const { data: categories = [] } = useCategories();
+
+  // Resolve a category's parent name so rows can show "Parent › Subcategory".
+  const categoryName = useMemo(
+    () => new Map(categories.map((c) => [c.id, c.name])),
+    [categories],
+  );
 
   // Brought-forward balance = net of everything before this month.
-  const priorEnd = useMemo(() => new Date(monthStart.getTime() - 1), [monthStart]);
-  const { data: priorSummary } = useTransactionsSummary(ALL_TIME_FROM, priorEnd);
-  const carriedForward = settings.incomeCarryForward ? priorSummary.net : undefined;
+  const priorEnd = useMemo(
+    () => new Date(monthStart.getTime() - 1),
+    [monthStart],
+  );
+  const { data: priorSummary = { income: 0, expense: 0, net: 0 } } =
+    useTransactionsSummary(ALL_TIME_FROM, priorEnd);
+  const carriedForward = settings.incomeCarryForward
+    ? priorSummary.net
+    : undefined;
 
   const sections = useMemo(() => {
     const grouped = new Map<string, typeof transactions>();
@@ -73,7 +88,8 @@ export function DailyView({ monthStart, monthEnd }: Props) {
       <SectionList
         sections={sections}
         keyExtractor={(item) => String(item.id)}
-        contentContainerStyle={{ paddingBottom: 80 }}
+        contentContainerStyle={{ paddingBottom: 80, paddingTop: 4 }}
+        stickySectionHeadersEnabled={false}
         ListEmptyComponent={
           <View className="items-center justify-center py-20">
             <Text className="text-text-secondary text-base">
@@ -85,13 +101,22 @@ export function DailyView({ monthStart, monthEnd }: Props) {
           </View>
         }
         renderSectionHeader={({ section }) => {
-          const dayStr = section.date.toLocaleDateString("en-US", {
+          const weekday = section.date.toLocaleDateString("en-US", {
             weekday: "short",
-            day: "numeric",
+          });
+          const monthShort = section.date.toLocaleDateString("en-US", {
+            month: "short",
           });
           return (
-            <View className="flex-row items-center justify-between px-4 py-2 bg-background">
-              <Text className="text-sm font-medium text-text">{dayStr}</Text>
+            <View className="mx-3 mt-2.5 bg-card rounded-t-xl px-4 pt-3 pb-2.5 flex-row items-center justify-between border-b border-border">
+              <View className="flex-row items-baseline">
+                <Text className="text-lg font-bold text-text">
+                  {section.date.getDate()}
+                </Text>
+                <Text className="text-xs text-text-secondary ml-2">
+                  {weekday}, {monthShort}
+                </Text>
+              </View>
               <View className="flex-row gap-3">
                 {section.income > 0 && (
                   <Text className="text-xs text-income">
@@ -100,55 +125,88 @@ export function DailyView({ monthStart, monthEnd }: Props) {
                 )}
                 {section.expense > 0 && (
                   <Text className="text-xs text-expense">
-                    {formatCurrency(section.expense)}
+                    -{formatCurrency(section.expense)}
                   </Text>
                 )}
               </View>
             </View>
           );
         }}
-        renderItem={({ item }) => (
-          <Pressable
-            className="flex-row items-center px-4 py-3 bg-background active:bg-card"
-            onPress={() =>
-              router.push({
-                pathname: "/add-transaction",
-                params: { id: item.id },
-              })
-            }
-          >
-            <View className="flex-1">
-              <Text className="text-sm text-text">
-                {item.category?.name ??
-                  (item.type === "transfer" ? "Transfer" : "(No category)")}
-              </Text>
-              {item.note ? (
-                <Text
-                  className="text-xs text-text-muted mt-0.5"
-                  numberOfLines={1}
-                >
-                  {item.note}
-                </Text>
-              ) : null}
-            </View>
-            <View className="items-end">
-              <Text
-                className={cn(
-                  "text-sm font-medium",
-                  item.type === "income" && "text-income",
-                  item.type === "expense" && "text-expense",
-                  item.type === "transfer" && "text-transfer",
-                )}
-              >
-                {item.type === "expense" ? "-" : ""}
-                {formatCurrency(item.amount)}
-              </Text>
-              <Text className="text-xs text-text-muted">
-                {item.account?.name}
-              </Text>
-            </View>
-          </Pressable>
+        renderSectionFooter={() => (
+          <View className="mx-3 bg-card rounded-b-xl h-2.5" />
         )}
+        renderItem={({ item, index }) => {
+          const cat = item.category;
+          const parentName =
+            cat?.parentId != null ? categoryName.get(cat.parentId) : undefined;
+          const isDebt =
+            item.type === "debt_lend" || item.type === "debt_borrow";
+          const label =
+            item.type === "transfer"
+              ? `${item.account?.name ?? "?"} → ${item.toAccount?.name ?? "?"}`
+              : item.type === "debt_lend"
+                ? `→ ${item.contact?.name ?? "Someone"}`
+                : item.type === "debt_borrow"
+                  ? `← ${item.contact?.name ?? "Someone"}`
+                  : cat
+                    ? parentName
+                      ? `${parentName} › ${cat.name}`
+                      : cat.name
+                    : "(No category)";
+          return (
+            <Pressable
+              className={cn(
+                "flex-row items-center mx-3 px-4 py-3 bg-card active:opacity-70",
+                index > 0 && "border-t border-border",
+              )}
+              onPress={() =>
+                router.push(
+                  isDebt
+                    ? { pathname: "/add-debt", params: { id: String(item.id) } }
+                    : { pathname: "/add-transaction", params: { id: item.id } },
+                )
+              }
+            >
+              <View className="flex-1 pr-3">
+                <Text className="text-sm text-text" numberOfLines={1}>
+                  {label}
+                </Text>
+                {item.note ? (
+                  <Text
+                    className="text-xs text-text-muted mt-0.5"
+                    numberOfLines={1}
+                  >
+                    {item.note}
+                  </Text>
+                ) : null}
+              </View>
+              <View className="items-end">
+                <Text
+                  className={cn(
+                    "text-sm font-medium",
+                    item.type === "income" && "text-income",
+                    item.type === "expense" && "text-expense",
+                    (item.type === "transfer" || isDebt) && "text-transfer",
+                  )}
+                >
+                  {item.type === "expense" || item.type === "debt_lend"
+                    ? "-"
+                    : item.type === "debt_borrow"
+                      ? "+"
+                      : ""}
+                  {formatCurrency(item.amount)}
+                </Text>
+                <Text className="text-xs text-text-muted">
+                  {item.type === "transfer"
+                    ? "Transfer"
+                    : isDebt
+                      ? "Debt"
+                      : item.account?.name}
+                </Text>
+              </View>
+            </Pressable>
+          );
+        }}
       />
     </>
   );

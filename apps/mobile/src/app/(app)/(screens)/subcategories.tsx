@@ -57,7 +57,7 @@ export default function SubcategoriesScreen() {
   );
 
   const handleSubmit = useCallback(
-    (values: { name: string }) => {
+    (values: { name: string; color: string }) => {
       if (formTarget === "add" && parent) {
         createCategory.mutate({
           ...values,
@@ -117,6 +117,9 @@ export default function SubcategoriesScreen() {
           }
           initialName={
             formTarget && formTarget !== "add" ? formTarget.name : undefined
+          }
+          initialColor={
+            formTarget && formTarget !== "add" ? formTarget.color : undefined
           }
           onClose={() => setFormTarget(null)}
           onSubmit={handleSubmit}

@@ -1,5 +1,14 @@
-export const transactionTypes = ["income", "expense", "transfer"] as const;
+export const transactionTypes = [
+  "income",
+  "expense",
+  "transfer",
+  "debt_lend", // "You gave" — money out to a person (receivable up)
+  "debt_borrow", // "You got" — money in from a person (payable up / receivable down)
+] as const;
 export type TransactionType = (typeof transactionTypes)[number];
+
+export const debtTypes = ["debt_lend", "debt_borrow"] as const;
+export type DebtType = (typeof debtTypes)[number];
 
 export const categoryTypes = ["income", "expense"] as const;
 export type CategoryType = (typeof categoryTypes)[number];
@@ -68,7 +77,6 @@ export interface AppSettings {
   passcode_enabled: boolean;
   alarm_enabled: boolean;
   alarm_time: string;
-  show_description: boolean;
   autocomplete: boolean;
   input_order: InputOrder;
   subcategory_enabled: boolean;

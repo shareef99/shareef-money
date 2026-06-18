@@ -11,6 +11,7 @@ import {
 import { Check, Plus, X } from "lucide-react-native";
 import type { Contact } from "@shareef-money/db/schema";
 import { getColors } from "../lib/colors";
+import { useKeyboardHeight } from "../lib/use-keyboard-height";
 import { cn } from "../lib/cn";
 
 type Props = {
@@ -31,6 +32,7 @@ export function ContactPicker({
   onCreate,
 }: Props) {
   const [newName, setNewName] = useState("");
+  const kbHeight = useKeyboardHeight();
   const c = getColors(useColorScheme());
 
   const handleAdd = () => {
@@ -43,7 +45,10 @@ export function ContactPicker({
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View className="flex-1 bg-black/50 justify-end">
-        <View className="h-1/2 bg-background rounded-t-2xl">
+        <View
+          className="h-1/2 bg-background rounded-t-2xl"
+          style={{ marginBottom: kbHeight }}
+        >
           <View className="flex-row items-center px-4 py-3 border-b border-border">
             <Text className="text-lg font-semibold text-text flex-1">People</Text>
             <Pressable onPress={onClose} className="px-2 py-1">

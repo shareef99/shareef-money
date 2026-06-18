@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { FlatList, Pressable, Text, View } from "react-native";
 import { useColorScheme } from "nativewind";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft, Pencil, Trash2 } from "lucide-react-native";
 import { formatCurrency } from "@shareef-money/shared/utils";
-import { useTransactions } from "../../../queries/use-transactions";
+import { useAccountTransactions } from "../../../queries/use-transactions";
 import {
   useAccountsWithBalances,
   useUpdateAccount,
@@ -26,21 +26,13 @@ export default function AccountDetailScreen() {
   const [showArchive, setShowArchive] = useState(false);
 
   const { data } = useAccountsWithBalances();
-  const { data: transactions = [] } = useTransactions({});
+  const { data: accountTxns = [] } = useAccountTransactions(accountId);
   const updateAccount = useUpdateAccount();
   const archiveAccount = useArchiveAccount();
 
   const account = useMemo(
     () => data.accounts.find((a) => a.id === accountId),
     [data, accountId],
-  );
-
-  const accountTxns = useMemo(
-    () =>
-      transactions.filter(
-        (t) => t.accountId === accountId || t.toAccountId === accountId,
-      ),
-    [transactions, accountId],
   );
 
   if (!account) {
@@ -87,59 +79,60 @@ export default function AccountDetailScreen() {
           ) : null}
         </View>
 
-        <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
-          {accountTxns.length === 0 ? (
+        <FlatList
+          data={accountTxns}
+          keyExtractor={(item) => String(item.id)}
+          contentContainerStyle={{ paddingBottom: 24 }}
+          ListEmptyComponent={
             <View className="items-center py-16">
               <Text className="text-text-secondary">No transactions</Text>
             </View>
-          ) : (
-            accountTxns.map((item) => {
-              const isOutgoingTransfer =
-                item.type === "transfer" && item.accountId === accountId;
-              const isIncomingTransfer =
-                item.type === "transfer" && item.toAccountId === accountId;
-              const negative = item.type === "expense" || isOutgoingTransfer;
-              return (
-                <Pressable
-                  key={item.id}
-                  className="flex-row items-center px-4 py-3 border-b border-border active:bg-card"
-                  onPress={() =>
-                    router.push({ pathname: "/add-transaction", params: { id: item.id } })
-                  }
-                >
-                  <View className="flex-1">
-                    <Text className="text-sm text-text">
-                      {item.category?.name ??
-                        (item.type === "transfer"
-                          ? isIncomingTransfer
-                            ? "Transfer in"
-                            : "Transfer out"
-                          : "(No category)")}
-                    </Text>
-                    <Text className="text-xs text-text-muted mt-0.5">
-                      {(item.date instanceof Date
-                        ? item.date
-                        : new Date(item.date as number)
-                      ).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
-                      {item.note ? ` · ${item.note}` : ""}
-                    </Text>
-                  </View>
-                  <Text
-                    className={cn(
-                      "text-sm font-medium",
-                      item.type === "income" && "text-income",
-                      negative && "text-expense",
-                      isIncomingTransfer && "text-income",
-                    )}
-                  >
-                    {negative ? "-" : ""}
-                    {formatCurrency(item.amount)}
+          }
+          renderItem={({ item }) => {
+            const isOutgoingTransfer =
+              item.type === "transfer" && item.accountId === accountId;
+            const isIncomingTransfer =
+              item.type === "transfer" && item.toAccountId === accountId;
+            const negative = item.type === "expense" || isOutgoingTransfer;
+            return (
+              <Pressable
+                className="flex-row items-center px-4 py-3 border-b border-border active:bg-card"
+                onPress={() =>
+                  router.push({ pathname: "/add-transaction", params: { id: item.id } })
+                }
+              >
+                <View className="flex-1">
+                  <Text className="text-sm text-text">
+                    {item.category?.name ??
+                      (item.type === "transfer"
+                        ? isIncomingTransfer
+                          ? "Transfer in"
+                          : "Transfer out"
+                        : "(No category)")}
                   </Text>
-                </Pressable>
-              );
-            })
-          )}
-        </ScrollView>
+                  <Text className="text-xs text-text-muted mt-0.5">
+                    {(item.date instanceof Date
+                      ? item.date
+                      : new Date(item.date as number)
+                    ).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
+                    {item.note ? ` · ${item.note}` : ""}
+                  </Text>
+                </View>
+                <Text
+                  className={cn(
+                    "text-sm font-medium",
+                    item.type === "income" && "text-income",
+                    negative && "text-expense",
+                    isIncomingTransfer && "text-income",
+                  )}
+                >
+                  {negative ? "-" : ""}
+                  {formatCurrency(item.amount)}
+                </Text>
+              </Pressable>
+            );
+          }}
+        />
 
         <AccountFormModal
           visible={showEdit}
@@ -147,9 +140,21 @@ export default function AccountDetailScreen() {
           initialName={account.name}
           initialBalance={account.initialBalance}
           initialDescription={account.description}
+          initialColor={account.color}
+          initialHidden={account.isHidden}
+          showHideToggle
           onClose={() => setShowEdit(false)}
           onSubmit={(values) => {
-            updateAccount.mutate({ id: account.id, payload: values });
+            updateAccount.mutate({
+              id: account.id,
+              payload: {
+                name: values.name,
+                initialBalance: values.initialBalance,
+                description: values.description,
+                color: values.color,
+                isHidden: values.isHidden,
+              },
+            });
             setShowEdit(false);
           }}
         />

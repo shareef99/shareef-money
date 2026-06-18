@@ -27,29 +27,6 @@ export const googleAuthSchema = z
   .strict();
 export type GoogleAuthInput = z.infer<typeof googleAuthSchema>;
 
-export const refreshTokenSchema = z
-  .object({
-    refreshToken: z.string().min(1),
-  })
-  .strict();
-export type RefreshTokenInput = z.infer<typeof refreshTokenSchema>;
-
-export const updateProfileSchema = z
-  .object({
-    name: z.string().min(1).max(100).optional(),
-    avatarUrl: z.string().url().nullable().optional(),
-  })
-  .strict();
-export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
-
-export const authTokensSchema = z
-  .object({
-    accessToken: z.string(),
-    refreshToken: z.string(),
-  })
-  .strict();
-export type AuthTokens = z.infer<typeof authTokensSchema>;
-
 export const userProfileSchema = z
   .object({
     id: z.string(),

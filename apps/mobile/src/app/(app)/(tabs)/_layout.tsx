@@ -4,14 +4,15 @@ import {
   ArrowLeftRight,
   BarChart3,
   Wallet,
+  HandCoins,
   MoreHorizontal,
 } from "lucide-react-native";
 import { useColorScheme } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getColors } from "../../../lib/colors";
-import { useMaterializeRecurring } from "../../../queries/use-recurring";
 import { useEnsureDefaultCategories } from "../../../queries/use-categories";
 import { useMigrateOpeningBalances } from "../../../queries/use-accounts";
+import { useDebtReminders } from "../../../queries/use-debts";
 import { useSettings } from "../../../queries/use-settings";
 
 export default function TabLayout() {
@@ -22,12 +23,12 @@ export default function TabLayout() {
   const { data: settings } = useSettings();
   const didRedirect = useRef(false);
 
-  // Generate any recurring transactions that came due while the app was closed.
-  useMaterializeRecurring();
   // Make sure the user always has default categories to choose from.
   useEnsureDefaultCategories();
   // Convert any legacy account opening balances into income transactions.
   useMigrateOpeningBalances();
+  // Keep debt due-date reminders scheduled as debts change.
+  useDebtReminders();
 
   // Honor the configured start screen on first load (default is transactions).
   // Route groups in parens aren't URL segments, so the tab href is just "/tab".
@@ -86,6 +87,15 @@ export default function TabLayout() {
           title: "Accounts",
           tabBarIcon: ({ color, size }) => (
             <Wallet size={size} color={color} strokeWidth={1.5} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="debts"
+        options={{
+          title: "Debts",
+          tabBarIcon: ({ color, size }) => (
+            <HandCoins size={size} color={color} strokeWidth={1.5} />
           ),
         }}
       />

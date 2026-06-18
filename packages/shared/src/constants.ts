@@ -6,10 +6,15 @@ export const MONTH_NAMES = [
   "July", "August", "September", "October", "November", "December",
 ] as const;
 
-export const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
-
 export const TRANSACTION_TYPE_TABS = [
   { type: "income", label: "Income" },
   { type: "expense", label: "Expense" },
   { type: "transfer", label: "Transfer" },
+] as const;
+
+// Debt entry directions (Khatabook-style). Added from the Debts tab, not the
+// main add screen, so the income/expense/transfer tabs stay uncluttered.
+export const DEBT_TYPE_TABS = [
+  { type: "debt_lend", label: "You gave" },
+  { type: "debt_borrow", label: "You got" },
 ] as const;
