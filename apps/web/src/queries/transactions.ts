@@ -76,10 +76,26 @@ export const useUpdateTransaction = () => {
       const snapshots = queryClient.getQueriesData<Transaction[]>({
         queryKey: transactionKeys.all,
       });
+      // The raw update input encodes dates as epoch numbers and contacts as a
+      // number[], whereas a cached Transaction uses ISO strings and a joined
+      // contactIds string. Merge only the representation-compatible fields and
+      // convert the dates so the optimistic row stays a valid Transaction.
+      const { date, dueDate, contactIds, ...rest } = payload;
       queryClient.setQueriesData<Transaction[]>(
         { queryKey: transactionKeys.all },
         (old) =>
-          old?.map((t) => (t.id === id ? { ...t, ...payload } : t)),
+          old?.map((t) =>
+            t.id === id
+              ? {
+                  ...t,
+                  ...rest,
+                  ...(date != null ? { date: new Date(date).toISOString() } : {}),
+                  ...(dueDate !== undefined
+                    ? { dueDate: dueDate == null ? null : new Date(dueDate).toISOString() }
+                    : {}),
+                }
+              : t,
+          ),
       );
       return { snapshots };
     },

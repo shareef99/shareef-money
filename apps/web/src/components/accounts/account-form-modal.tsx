@@ -68,7 +68,12 @@ export function AccountFormModal({ opened, onClose, account }: Props) {
         });
         successNotification({ message: "Account updated" });
       } else {
-        await createAccount.mutateAsync({ name, initialBalance, description, color });
+        await createAccount.mutateAsync({
+          name,
+          initialBalance,
+          description: description ?? undefined,
+          color: color ?? undefined,
+        });
         successNotification({ message: "Account created" });
       }
       close();

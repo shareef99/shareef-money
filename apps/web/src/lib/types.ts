@@ -57,6 +57,9 @@ export type Transaction = {
   categoryId: number | null;
   accountId: number;
   toAccountId: number | null;
+  // Debt counterparty + optional repayment due date (debt_lend / debt_borrow).
+  contactId: number | null;
+  dueDate: string | null;
   locationId: number | null;
   note: string | null;
   date: string;
@@ -65,6 +68,8 @@ export type Transaction = {
   categoryName: string | null;
   categoryColor: string | null;
   accountName: string | null;
+  // Tagged people (many-to-many) as a comma-joined id string, or null.
+  contactIds: string | null;
 };
 
 export type SettingsMap = Record<string, string>;

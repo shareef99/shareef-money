@@ -22,7 +22,7 @@ import type { Transaction } from "../../lib/types";
 export const Route = createFileRoute("/_app/transactions")({
   loader: async ({ context: { queryClient } }) => {
     const settings = await queryClient.ensureQueryData(getSettings());
-    setActiveCurrency(settings.currencyCode);
+    setActiveCurrency(settings.currency_code);
     await Promise.all([
       queryClient.ensureQueryData(getTransactions({ limit: 500 })),
       queryClient.ensureQueryData(getAccounts()),
