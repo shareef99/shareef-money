@@ -3,8 +3,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useDisclosure } from "@mantine/hooks";
 import { ActionIcon, Button, Modal } from "@mantine/core";
-import { ChevronLeft, ChevronRight, Pencil, Plus, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Pencil, Plus, Trash2 } from "lucide-react";
 import { formatCurrency, setActiveCurrency } from "@shareef-money/shared/utils";
+import { toTransactionsCsv, downloadCsv } from "../../lib/csv";
 import { getTransactions, useDeleteTransaction } from "../../queries/transactions";
 import { getAccounts } from "../../queries/accounts";
 import { getCategories } from "../../queries/categories";
@@ -113,13 +114,23 @@ function TransactionsPage() {
     setDeleteTarget(null);
   };
 
+  const exportCsv = () => {
+    const csv = toTransactionsCsv(txns, { accounts, categories, contacts, locations });
+    downloadCsv(`transactions-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <Title order={1}>Transactions</Title>
-        <Button leftSection={<Plus size={16} />} onClick={openAdd}>
-          Add transaction
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" leftSection={<Download size={16} />} onClick={exportCsv}>
+            Export CSV
+          </Button>
+          <Button leftSection={<Plus size={16} />} onClick={openAdd}>
+            Add transaction
+          </Button>
+        </div>
       </div>
 
       {/* Month nav + totals */}
