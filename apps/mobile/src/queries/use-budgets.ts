@@ -1,20 +1,20 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  effectiveBudget,
+  type BudgetData,
+  type BudgetMap,
+} from "@shareef-money/shared/calc";
 import { useDatabase } from "../providers/database-provider";
 import { useAuth } from "../providers/auth-provider";
 import { useSync } from "../providers/sync-provider";
 import * as settingsService from "../services/settings-service";
 
+// Re-exported from the shared calc package so existing imports keep working.
+export { effectiveBudget };
+export type { BudgetData, BudgetMap };
+
 const BUDGETS_KEY = "budgets_v2";
 const LEGACY_KEY = "monthly_budgets";
-
-// categoryId (as string) -> amount in smallest unit.
-export type BudgetMap = Record<string, number>;
-export type BudgetData = {
-  // Applies to every month unless overridden.
-  default: BudgetMap;
-  // "YYYY-MM" -> per-month overrides.
-  months: Record<string, BudgetMap>;
-};
 
 const EMPTY: BudgetData = { default: {}, months: {} };
 
@@ -22,17 +22,6 @@ export const budgetKeys = {
   all: ["budgets"] as const,
   data: (userId?: string) => [...budgetKeys.all, userId] as const,
 };
-
-// Effective budget for a category in a given month: a month override wins,
-// otherwise the default.
-export function effectiveBudget(
-  data: BudgetData,
-  monthKey: string,
-  categoryId: number,
-): number {
-  const id = String(categoryId);
-  return data.months[monthKey]?.[id] ?? data.default[id] ?? 0;
-}
 
 async function load(db: ReturnType<typeof useDatabase>["db"], userId: string): Promise<BudgetData> {
   const raw = await settingsService.getSetting(db, userId, BUDGETS_KEY);
