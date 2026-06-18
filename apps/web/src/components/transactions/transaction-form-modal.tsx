@@ -154,7 +154,7 @@ export function TransactionFormModal({
         successNotification({ message: "Transaction added" });
       }
       close();
-    } catch (e) {
+    } catch {
       errorNotification({ message: "Could not save the transaction" });
     }
   };

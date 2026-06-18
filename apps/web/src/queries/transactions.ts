@@ -80,7 +80,9 @@ export const useUpdateTransaction = () => {
       // number[], whereas a cached Transaction uses ISO strings and a joined
       // contactIds string. Merge only the representation-compatible fields and
       // convert the dates so the optimistic row stays a valid Transaction.
-      const { date, dueDate, contactIds, ...rest } = payload;
+      // contactIds (number[]) is dropped from the optimistic merge — the cached
+      // Transaction carries the joined-string form, refreshed on settle.
+      const { date, dueDate, contactIds: _contactIds, ...rest } = payload;
       queryClient.setQueriesData<Transaction[]>(
         { queryKey: transactionKeys.all },
         (old) =>

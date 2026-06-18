@@ -59,10 +59,11 @@ function AccountsPage() {
   // Net worth folds the outstanding debt position into the cash total: a
   // receivable is an asset, a payable a liability (cash already left/entered the
   // account when the debt was recorded). netWorth = accounts total + debt net.
+  const [now] = useState(() => Date.now());
   const ledger = useMemo(() => {
     const names = new Map(contacts.map((c) => [c.id, c.name]));
-    return computeDebtLedger(toDebtLedgerTxns(txns, names), Date.now());
-  }, [txns, contacts]);
+    return computeDebtLedger(toDebtLedgerTxns(txns, names), now);
+  }, [txns, contacts, now]);
   const netWorth = total + ledger.net;
 
   const openAdd = () => {

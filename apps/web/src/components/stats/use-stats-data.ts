@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import {
   autoBucket,
@@ -40,6 +40,8 @@ export function useStatsData(period: Period, anchor: Date) {
   const { data: allTxns } = useSuspenseQuery(getTransactions({ limit: 500 }));
 
   const weekStartMonday = settings.weekly_start_day === "monday";
+  // Stable "now" for overdue checks (a render-time Date.now() is impure).
+  const [now] = useState(() => Date.now());
 
   return useMemo(() => {
     const { from, to, label } = periodRange(period, anchor, weekStartMonday);
@@ -64,7 +66,7 @@ export function useStatsData(period: Period, anchor: Date) {
 
     // Debts (current position is across all history, not range-filtered).
     const contactNames = new Map(contacts.map((c) => [c.id, c.name]));
-    const debtLedger = computeDebtLedger(toDebtLedgerTxns(allTxns, contactNames), Date.now());
+    const debtLedger = computeDebtLedger(toDebtLedgerTxns(allTxns, contactNames), now);
     const debtTrendTxns = toDebtTrendTxns(allTxns).filter((t) => t.date <= to);
     const debtTrendPoints = debtTrend(debtTrendTxns, from, to, bucket, weekStartMonday);
 
@@ -115,5 +117,5 @@ export function useStatsData(period: Period, anchor: Date) {
       locationItems,
       peopleItems,
     };
-  }, [period, anchor, weekStartMonday, allTxns, accounts, categories, locations, contacts, settings]);
+  }, [period, anchor, weekStartMonday, now, allTxns, accounts, categories, locations, contacts, settings]);
 }

@@ -39,10 +39,11 @@ function DebtsPage() {
   const [preset, setPreset] = useState<DebtPreset | undefined>(undefined);
   const [ledgerContactId, setLedgerContactId] = useState<number | null>(null);
 
+  const [now] = useState(() => Date.now());
   const ledger = useMemo(() => {
     const names = new Map(contacts.map((c) => [c.id, c.name]));
-    return computeDebtLedger(toDebtLedgerTxns(txns, names), Date.now());
-  }, [txns, contacts]);
+    return computeDebtLedger(toDebtLedgerTxns(txns, names), now);
+  }, [txns, contacts, now]);
 
   const openAdd = (type: DebtPreset["type"]) => {
     setPreset({ type });
