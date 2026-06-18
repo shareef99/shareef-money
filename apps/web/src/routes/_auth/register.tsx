@@ -39,7 +39,7 @@ function RegisterPage() {
 
   return (
     <>
-      <h1 className="text-2xl font-bold text-foreground mb-8">
+      <h1 className="text-2xl font-bold text-text mb-8">
         Create Account
       </h1>
       <form onSubmit={onSubmit(handleSubmit)} className="flex flex-col gap-4">
@@ -63,7 +63,7 @@ function RegisterPage() {
         </Button>
       </form>
 
-      <p className="text-sm text-foreground-secondary mt-6 text-center">
+      <p className="text-sm text-text-secondary mt-6 text-center">
         Already have an account?{" "}
         <Link to="/login" className="text-primary font-medium hover:underline">
           Sign in
