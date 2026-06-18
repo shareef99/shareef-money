@@ -1,4 +1,4 @@
-import { eq, and, gte, lte, inArray, desc } from "drizzle-orm";
+import { eq, and, gte, lte, inArray, desc, isNull } from "drizzle-orm";
 import {
   transactionsTable,
   transactionContactsTable,
@@ -14,7 +14,11 @@ import { AppError } from "../../lib/error.js";
 import type { AppDatabase } from "../../db.js";
 
 export function list(db: AppDatabase, userId: string, filters: TransactionFilters) {
-  const conditions = [eq(transactionsTable.userId, userId)];
+  // Exclude soft-deleted (tombstoned) rows from the REST list.
+  const conditions = [
+    eq(transactionsTable.userId, userId),
+    isNull(transactionsTable.deletedAt),
+  ];
 
   if (filters.type) {
     conditions.push(eq(transactionsTable.type, filters.type));
@@ -84,7 +88,13 @@ export function getById(db: AppDatabase, userId: string, id: number) {
     .from(transactionsTable)
     .leftJoin(categoriesTable, eq(transactionsTable.categoryId, categoriesTable.id))
     .leftJoin(accountsTable, eq(transactionsTable.accountId, accountsTable.id))
-    .where(and(eq(transactionsTable.id, id), eq(transactionsTable.userId, userId)))
+    .where(
+      and(
+        eq(transactionsTable.id, id),
+        eq(transactionsTable.userId, userId),
+        isNull(transactionsTable.deletedAt),
+      ),
+    )
     .get();
 
   if (!transaction) {
