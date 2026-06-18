@@ -31,6 +31,9 @@ type Props<THeader extends TableHeader> = {
   withColors?: boolean;
   emptyStateText?: string;
   enableColumnVisibility?: boolean;
+  // Per-column custom display. Sorting still uses the raw row value, so pass a
+  // sortable value (e.g. a number) in `rows` and format it for display here.
+  cellRenderers?: Partial<Record<keyof THeader, (row: RowFromHeader<THeader>) => ReactNode>>;
   renderActions?: (row: RowFromHeader<THeader>) => ReactNode;
 };
 
@@ -64,6 +67,7 @@ export function Table<THeader extends TableHeader>({
   withColors = true,
   emptyStateText = "No records found.",
   enableColumnVisibility = true,
+  cellRenderers,
   renderActions,
 }: Props<THeader>) {
   const headerKeys = useMemo(
@@ -197,7 +201,7 @@ export function Table<THeader extends TableHeader>({
             <MantineTable.Tr key={row.id ?? `row-${rowIndex}`}>
               {visibleKeys.map((key) => (
                 <MantineTable.Td key={`${String(key)}-${rowIndex}`} className="whitespace-nowrap">
-                  {renderCell(row[key], withColors)}
+                  {cellRenderers?.[key] ? cellRenderers[key]!(row) : renderCell(row[key], withColors)}
                 </MantineTable.Td>
               ))}
               {renderActions && (
