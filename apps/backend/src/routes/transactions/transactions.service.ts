@@ -1,4 +1,4 @@
-import { eq, and, gte, lte, inArray, desc, isNull } from "drizzle-orm";
+import { eq, and, gte, lte, inArray, desc, isNull, sql } from "drizzle-orm";
 import {
   transactionsTable,
   transactionContactsTable,
@@ -46,6 +46,8 @@ export function list(db: AppDatabase, userId: string, filters: TransactionFilter
       categoryId: transactionsTable.categoryId,
       accountId: transactionsTable.accountId,
       toAccountId: transactionsTable.toAccountId,
+      contactId: transactionsTable.contactId,
+      dueDate: transactionsTable.dueDate,
       locationId: transactionsTable.locationId,
       note: transactionsTable.note,
       date: transactionsTable.date,
@@ -54,6 +56,14 @@ export function list(db: AppDatabase, userId: string, filters: TransactionFilter
       categoryName: categoriesTable.name,
       categoryColor: categoriesTable.color,
       accountName: accountsTable.name,
+      // Tagged people (many-to-many) as a comma-joined id list — kept in one
+      // query via a correlated subquery so list rows don't multiply. Null when
+      // no contacts are tagged; the client parses it into number[].
+      contactIds: sql<
+        string | null
+      >`(SELECT group_concat(${transactionContactsTable.contactId}) FROM ${transactionContactsTable} WHERE ${transactionContactsTable.transactionId} = ${transactionsTable.id})`.as(
+        "contact_ids",
+      ),
     })
     .from(transactionsTable)
     .leftJoin(categoriesTable, eq(transactionsTable.categoryId, categoriesTable.id))
@@ -76,6 +86,8 @@ export function getById(db: AppDatabase, userId: string, id: number) {
       categoryId: transactionsTable.categoryId,
       accountId: transactionsTable.accountId,
       toAccountId: transactionsTable.toAccountId,
+      contactId: transactionsTable.contactId,
+      dueDate: transactionsTable.dueDate,
       locationId: transactionsTable.locationId,
       note: transactionsTable.note,
       date: transactionsTable.date,
@@ -126,6 +138,11 @@ export function create(db: AppDatabase, userId: string, payload: TransactionCrea
       categoryId: "categoryId" in transactionData ? transactionData.categoryId : null,
       accountId: transactionData.accountId,
       toAccountId: "toAccountId" in transactionData ? transactionData.toAccountId : null,
+      contactId: "contactId" in transactionData ? transactionData.contactId : null,
+      dueDate:
+        "dueDate" in transactionData && transactionData.dueDate != null
+          ? new Date(transactionData.dueDate)
+          : null,
       locationId: transactionData.locationId ?? null,
       note: transactionData.note ?? null,
       date: new Date(transactionData.date),
@@ -164,6 +181,10 @@ export function update(db: AppDatabase, userId: string, id: number, payload: Tra
   if (updateData.categoryId !== undefined) setData.categoryId = updateData.categoryId;
   if (updateData.accountId !== undefined) setData.accountId = updateData.accountId;
   if (updateData.toAccountId !== undefined) setData.toAccountId = updateData.toAccountId;
+  if (updateData.contactId !== undefined) setData.contactId = updateData.contactId;
+  if (updateData.dueDate !== undefined) {
+    setData.dueDate = updateData.dueDate == null ? null : new Date(updateData.dueDate);
+  }
   if (updateData.locationId !== undefined) setData.locationId = updateData.locationId;
   if (updateData.note !== undefined) setData.note = updateData.note;
   if (updateData.date !== undefined) setData.date = new Date(updateData.date);
