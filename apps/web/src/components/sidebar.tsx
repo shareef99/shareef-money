@@ -4,6 +4,9 @@ import {
   ArrowLeftRight,
   BarChart3,
   Wallet,
+  HandCoins,
+  PiggyBank,
+  Tags,
   Settings,
   LogOut,
 } from "lucide-react";
@@ -19,6 +22,9 @@ const navItems = [
   { to: "/transactions", label: "Transactions", icon: ArrowLeftRight },
   { to: "/stats", label: "Stats", icon: BarChart3 },
   { to: "/accounts", label: "Accounts", icon: Wallet },
+  { to: "/debts", label: "Debts", icon: HandCoins },
+  { to: "/budgets", label: "Budgets", icon: PiggyBank },
+  { to: "/manage", label: "Manage", icon: Tags },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
