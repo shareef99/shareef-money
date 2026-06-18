@@ -16,6 +16,8 @@ export const recurringRulesTable = sqliteTable("recurring_rules", {
   endDate: integer("end_date", { mode: "timestamp" }),
   nextOccurrence: integer("next_occurrence", { mode: "timestamp" }).notNull(),
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  // Soft-delete tombstone (epoch ms; see transactions.deletedAt). Reads filter it.
+  deletedAt: integer("deleted_at"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .$defaultFn(() => new Date()),

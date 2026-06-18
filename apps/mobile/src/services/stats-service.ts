@@ -2,7 +2,7 @@
 // .all()), so a query resolves in-tick and React Query's keepPreviousData +
 // prefetch make period changes instant. One filtered read returns enriched
 // rows; the pure derive functions below compute every chart's data from them.
-import { and, eq, gte, lte, lt, inArray, or, like, desc } from "drizzle-orm";
+import { and, eq, gte, lte, lt, inArray, or, like, desc, isNull } from "drizzle-orm";
 import {
   transactionsTable,
   transactionContactsTable,
@@ -108,6 +108,7 @@ export function queryStatsTransactions(
 
   const conditions = [
     eq(transactionsTable.userId, userId),
+    isNull(transactionsTable.deletedAt),
     gte(transactionsTable.date, filter.from),
     lte(transactionsTable.date, filter.to),
   ];
@@ -457,7 +458,13 @@ function balanceBefore(db: Db, userId: string, before: Date): number {
       fee: transactionsTable.fee,
     })
     .from(transactionsTable)
-    .where(and(eq(transactionsTable.userId, userId), lt(transactionsTable.date, before)))
+    .where(
+      and(
+        eq(transactionsTable.userId, userId),
+        isNull(transactionsTable.deletedAt),
+        lt(transactionsTable.date, before),
+      ),
+    )
     .all();
   for (const t of txns) {
     if (t.type === "income") total += t.amount;
@@ -489,6 +496,7 @@ export function cashFlow(db: Db, userId: string, from: Date, to: Date): CashFlow
     .where(
       and(
         eq(transactionsTable.userId, userId),
+        isNull(transactionsTable.deletedAt),
         gte(transactionsTable.date, from),
         lte(transactionsTable.date, to),
       ),
@@ -528,6 +536,7 @@ export function netWorthSeries(
     .where(
       and(
         eq(transactionsTable.userId, userId),
+        isNull(transactionsTable.deletedAt),
         gte(transactionsTable.date, from),
         lte(transactionsTable.date, to),
       ),
@@ -602,6 +611,7 @@ export function debtTrend(
     .where(
       and(
         eq(transactionsTable.userId, userId),
+        isNull(transactionsTable.deletedAt),
         inArray(transactionsTable.type, ["debt_lend", "debt_borrow"]),
         lte(transactionsTable.date, to),
       ),

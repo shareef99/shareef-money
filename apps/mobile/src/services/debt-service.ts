@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { transactionsTable } from "@shareef-money/db/schema";
 import type { Db } from "../db/client";
 import { getAccounts, getAccountsWithBalances } from "./account-service";
@@ -29,6 +29,7 @@ export async function getDebtLedger(db: Db, userId: string): Promise<DebtLedger>
   const rows = await db.query.transactionsTable.findMany({
     where: and(
       eq(transactionsTable.userId, userId),
+      isNull(transactionsTable.deletedAt),
       inArray(transactionsTable.type, [...DEBT_TYPES]),
     ),
     columns: { type: true, amount: true, contactId: true, dueDate: true },
@@ -98,6 +99,7 @@ export async function getContactDebtEntries(
     where: and(
       eq(transactionsTable.userId, userId),
       eq(transactionsTable.contactId, contactId),
+      isNull(transactionsTable.deletedAt),
       inArray(transactionsTable.type, [...DEBT_TYPES]),
     ),
     orderBy: asc(transactionsTable.date),

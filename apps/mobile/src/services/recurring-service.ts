@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import {
   recurringRulesTable,
   transactionsTable,
@@ -72,7 +72,10 @@ export async function createRecurringRule(
 
 export async function getRecurringRules(db: Db, userId: string) {
   return db.query.recurringRulesTable.findMany({
-    where: eq(recurringRulesTable.userId, userId),
+    where: and(
+      eq(recurringRulesTable.userId, userId),
+      isNull(recurringRulesTable.deletedAt),
+    ),
     with: {
       transaction: {
         with: { category: true, account: true },
@@ -93,9 +96,11 @@ export async function setRecurringActive(
     .where(and(eq(recurringRulesTable.id, id), eq(recurringRulesTable.userId, userId)));
 }
 
+// Soft delete so the removal syncs (see transaction-service.deleteTransaction).
 export async function deleteRecurringRule(db: Db, userId: string, id: number) {
   await db
-    .delete(recurringRulesTable)
+    .update(recurringRulesTable)
+    .set({ deletedAt: Date.now(), updatedAt: new Date() })
     .where(and(eq(recurringRulesTable.id, id), eq(recurringRulesTable.userId, userId)));
 }
 
@@ -113,6 +118,7 @@ export async function materializeDueRecurring(
     where: and(
       eq(recurringRulesTable.userId, userId),
       eq(recurringRulesTable.isActive, true),
+      isNull(recurringRulesTable.deletedAt),
     ),
     with: {
       transaction: { with: { transactionContacts: true } },

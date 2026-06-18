@@ -43,6 +43,11 @@ export const transactionsTable = sqliteTable(
     dueDate: integer("due_date", { mode: "timestamp" }),
     locationId: integer("location_id").references(() => locationsTable.id),
     note: text("note"),
+    // Soft-delete tombstone (epoch ms, plain integer so it rides through sync
+    // untouched). Set instead of hard-deleting, so the deletion propagates
+    // (updatedAt bumps) and the row can't resurrect on the next pull. All reads
+    // must filter `deletedAt IS NULL`.
+    deletedAt: integer("deleted_at"),
     date: integer("date", { mode: "timestamp" }).notNull(),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()

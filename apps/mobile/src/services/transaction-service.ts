@@ -1,4 +1,4 @@
-import { eq, and, gte, lte, desc, sql, inArray, or } from "drizzle-orm";
+import { eq, and, gte, lte, desc, sql, inArray, or, isNull } from "drizzle-orm";
 import {
   transactionsTable,
   transactionContactsTable,
@@ -35,7 +35,10 @@ type TransactionFilters = {
 };
 
 export async function getTransactions(db: Db, userId: string, filters: TransactionFilters = {}) {
-  const conditions = [eq(transactionsTable.userId, userId)];
+  const conditions = [
+    eq(transactionsTable.userId, userId),
+    isNull(transactionsTable.deletedAt),
+  ];
 
   if (filters.type) conditions.push(eq(transactionsTable.type, filters.type));
   if (filters.dateFrom) conditions.push(gte(transactionsTable.date, filters.dateFrom));
@@ -66,6 +69,7 @@ export async function getAccountTransactions(db: Db, userId: string, accountId: 
   return db.query.transactionsTable.findMany({
     where: and(
       eq(transactionsTable.userId, userId),
+      isNull(transactionsTable.deletedAt),
       or(
         eq(transactionsTable.accountId, accountId),
         eq(transactionsTable.toAccountId, accountId),
@@ -101,6 +105,7 @@ export async function getCategoryBreakdown(
   const txns = await db.query.transactionsTable.findMany({
     where: and(
       eq(transactionsTable.userId, userId),
+      isNull(transactionsTable.deletedAt),
       eq(transactionsTable.type, type),
       gte(transactionsTable.date, from),
       lte(transactionsTable.date, to),
@@ -143,6 +148,7 @@ export async function getTransactionsSummary(db: Db, userId: string, from: Date,
     .where(
       and(
         eq(transactionsTable.userId, userId),
+        isNull(transactionsTable.deletedAt),
         gte(transactionsTable.date, from),
         lte(transactionsTable.date, to),
       ),
@@ -175,6 +181,7 @@ export async function getMonthlySummary(
   const rows = await db.query.transactionsTable.findMany({
     where: and(
       eq(transactionsTable.userId, userId),
+      isNull(transactionsTable.deletedAt),
       gte(transactionsTable.date, from),
       lte(transactionsTable.date, to),
     ),
@@ -270,8 +277,11 @@ export async function updateTransaction(db: Db, userId: string, id: number, payl
   return transaction;
 }
 
+// Soft delete: tombstone the row so the deletion syncs and can't resurrect on
+// the next pull. Reads filter `deletedAt IS NULL`.
 export async function deleteTransaction(db: Db, userId: string, id: number) {
   await db
-    .delete(transactionsTable)
+    .update(transactionsTable)
+    .set({ deletedAt: Date.now(), updatedAt: new Date() })
     .where(and(eq(transactionsTable.id, id), eq(transactionsTable.userId, userId)));
 }

@@ -1,4 +1,4 @@
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, isNull } from "drizzle-orm";
 import { accountsTable, transactionsTable } from "@shareef-money/db/schema";
 import type { Db } from "../db/client";
 import { generateSyncId } from "../lib/sync-id";
@@ -38,7 +38,10 @@ export async function getAccountsWithBalances(
   const accounts = await getAllAccounts(db, userId);
 
   const txns = await db.query.transactionsTable.findMany({
-    where: eq(transactionsTable.userId, userId),
+    where: and(
+      eq(transactionsTable.userId, userId),
+      isNull(transactionsTable.deletedAt),
+    ),
     columns: {
       type: true,
       amount: true,
@@ -159,6 +162,7 @@ export async function migrateOpeningBalances(db: Db, userId: string): Promise<nu
     where: and(
       eq(transactionsTable.userId, userId),
       eq(transactionsTable.categoryId, category.id),
+      isNull(transactionsTable.deletedAt),
     ),
     columns: { accountId: true },
   });
