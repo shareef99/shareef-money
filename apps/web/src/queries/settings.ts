@@ -26,6 +26,19 @@ export const useUpdateSettings = () => {
       const { data } = await api.patch<SettingsMap>("/api/settings", patch);
       return data;
     },
+    // Optimistically merge so toggles/selects flip instantly.
+    onMutate: async (patch) => {
+      await queryClient.cancelQueries({ queryKey: settingsKeys.all });
+      const previous = queryClient.getQueryData<SettingsMap>(settingsKeys.all);
+      queryClient.setQueryData<SettingsMap>(settingsKeys.all, (old) => ({
+        ...(old ?? {}),
+        ...patch,
+      }));
+      return { previous };
+    },
+    onError: (_e, _patch, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(settingsKeys.all, ctx.previous);
+    },
     onSuccess: (data) => queryClient.setQueryData(settingsKeys.all, data),
   });
 };
