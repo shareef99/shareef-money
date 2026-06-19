@@ -29,10 +29,10 @@ const listRoute = createRoute({
   },
 });
 
-locationsRoute.openapi(listRoute, (c) => {
+locationsRoute.openapi(listRoute, async (c) => {
   const db = c.get("db");
   const userId = c.get("userId");
-  return c.json(locationsService.list(db, userId), 200);
+  return c.json(await locationsService.list(db, userId), 200);
 });
 
 const createLocationRoute = createRoute({
@@ -52,11 +52,11 @@ const createLocationRoute = createRoute({
   },
 });
 
-locationsRoute.openapi(createLocationRoute, (c) => {
+locationsRoute.openapi(createLocationRoute, async (c) => {
   const db = c.get("db");
   const userId = c.get("userId");
   const body = c.req.valid("json");
-  return c.json(locationsService.create(db, userId, body), 201);
+  return c.json(await locationsService.create(db, userId, body), 201);
 });
 
 const updateLocationRoute = createRoute({
@@ -81,14 +81,14 @@ const updateLocationRoute = createRoute({
   },
 });
 
-locationsRoute.openapi(updateLocationRoute, (c) => {
+locationsRoute.openapi(updateLocationRoute, async (c) => {
   const db = c.get("db");
   const userId = c.get("userId");
   const { id } = c.req.valid("param");
   const body = c.req.valid("json");
 
   try {
-    return c.json(locationsService.update(db, userId, id, body), 200);
+    return c.json(await locationsService.update(db, userId, id, body), 200);
   } catch (error) {
     if (error instanceof AppError) {
       return c.json({ message: error.message }, error.status as 404);
@@ -116,13 +116,13 @@ const deleteLocationRoute = createRoute({
   },
 });
 
-locationsRoute.openapi(deleteLocationRoute, (c) => {
+locationsRoute.openapi(deleteLocationRoute, async (c) => {
   const db = c.get("db");
   const userId = c.get("userId");
   const { id } = c.req.valid("param");
 
   try {
-    locationsService.archive(db, userId, id);
+    await locationsService.archive(db, userId, id);
     return c.json({ message: "Location archived" }, 200);
   } catch (error) {
     if (error instanceof AppError) {

@@ -7,7 +7,7 @@ import type {
 import { AppError } from "../../lib/error.js";
 import type { AppDatabase } from "../../db.js";
 
-export function list(db: AppDatabase, userId: string) {
+export async function list(db: AppDatabase, userId: string) {
   return db
     .select()
     .from(locationsTable)
@@ -16,8 +16,8 @@ export function list(db: AppDatabase, userId: string) {
     .all();
 }
 
-export function getById(db: AppDatabase, userId: string, id: number) {
-  const location = db
+export async function getById(db: AppDatabase, userId: string, id: number) {
+  const location = await db
     .select()
     .from(locationsTable)
     .where(and(eq(locationsTable.id, id), eq(locationsTable.userId, userId)))
@@ -30,7 +30,7 @@ export function getById(db: AppDatabase, userId: string, id: number) {
   return location;
 }
 
-export function create(db: AppDatabase, userId: string, payload: LocationCreateInput) {
+export async function create(db: AppDatabase, userId: string, payload: LocationCreateInput) {
   return db
     .insert(locationsTable)
     .values({ userId, name: payload.name })
@@ -38,13 +38,13 @@ export function create(db: AppDatabase, userId: string, payload: LocationCreateI
     .get();
 }
 
-export function update(
+export async function update(
   db: AppDatabase,
   userId: string,
   id: number,
   payload: LocationUpdateInput,
 ) {
-  getById(db, userId, id);
+  await getById(db, userId, id);
 
   return db
     .update(locationsTable)
@@ -54,10 +54,11 @@ export function update(
     .get();
 }
 
-export function archive(db: AppDatabase, userId: string, id: number) {
-  getById(db, userId, id);
+export async function archive(db: AppDatabase, userId: string, id: number) {
+  await getById(db, userId, id);
 
-  db.update(locationsTable)
+  await db
+    .update(locationsTable)
     .set({ isArchived: true, updatedAt: new Date() })
     .where(and(eq(locationsTable.id, id), eq(locationsTable.userId, userId)))
     .run();

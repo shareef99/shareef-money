@@ -44,11 +44,11 @@ const pushRoute = createRoute({
   },
 });
 
-syncRoute.openapi(pushRoute, (c) => {
+syncRoute.openapi(pushRoute, async (c) => {
   const db = c.get("db");
   const userId = c.get("userId");
   const body = c.req.valid("json");
-  const results = syncService.push(db, userId, body);
+  const results = await syncService.push(db, userId, body);
   return c.json({ results }, 200);
 });
 
@@ -78,11 +78,11 @@ const pullRoute = createRoute({
   },
 });
 
-syncRoute.openapi(pullRoute, (c) => {
+syncRoute.openapi(pullRoute, async (c) => {
   const db = c.get("db");
   const userId = c.get("userId");
   const body = c.req.valid("json");
-  const changes = syncService.pull(db, userId, body.lastSyncAt, body.tables);
+  const changes = await syncService.pull(db, userId, body.lastSyncAt, body.tables);
   return c.json({ changes, syncedAt: Date.now() }, 200);
 });
 
@@ -107,11 +107,11 @@ const ackRoute = createRoute({
   },
 });
 
-syncRoute.openapi(ackRoute, (c) => {
+syncRoute.openapi(ackRoute, async (c) => {
   const db = c.get("db");
   const userId = c.get("userId");
   const body = c.req.valid("json");
-  syncService.ack(db, userId, body);
+  await syncService.ack(db, userId, body);
   return c.json({ message: "Sync acknowledged" }, 200);
 });
 
@@ -141,10 +141,10 @@ const statusRoute = createRoute({
   },
 });
 
-syncRoute.openapi(statusRoute, (c) => {
+syncRoute.openapi(statusRoute, async (c) => {
   const db = c.get("db");
   const userId = c.get("userId");
   const { deviceId } = c.req.valid("query");
-  const logs = syncService.status(db, userId, deviceId);
+  const logs = await syncService.status(db, userId, deviceId);
   return c.json(logs, 200);
 });

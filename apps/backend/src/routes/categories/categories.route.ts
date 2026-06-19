@@ -26,10 +26,10 @@ const listRoute = createRoute({
   },
 });
 
-categoriesRoute.openapi(listRoute, (c) => {
+categoriesRoute.openapi(listRoute, async (c) => {
   const db = c.get("db");
   const userId = c.get("userId");
-  const categories = categoriesService.list(db, userId);
+  const categories = await categoriesService.list(db, userId);
   return c.json(categories, 200);
 });
 
@@ -50,11 +50,11 @@ const createCategoryRoute = createRoute({
   },
 });
 
-categoriesRoute.openapi(createCategoryRoute, (c) => {
+categoriesRoute.openapi(createCategoryRoute, async (c) => {
   const db = c.get("db");
   const userId = c.get("userId");
   const body = c.req.valid("json");
-  const category = categoriesService.create(db, userId, body);
+  const category = await categoriesService.create(db, userId, body);
   return c.json(category, 201);
 });
 
@@ -80,14 +80,14 @@ const updateCategoryRoute = createRoute({
   },
 });
 
-categoriesRoute.openapi(updateCategoryRoute, (c) => {
+categoriesRoute.openapi(updateCategoryRoute, async (c) => {
   const db = c.get("db");
   const userId = c.get("userId");
   const { id } = c.req.valid("param");
   const body = c.req.valid("json");
 
   try {
-    const category = categoriesService.update(db, userId, id, body);
+    const category = await categoriesService.update(db, userId, id, body);
     return c.json(category, 200);
   } catch (error) {
     if (error instanceof AppError) {
@@ -118,13 +118,13 @@ const deleteCategoryRoute = createRoute({
   },
 });
 
-categoriesRoute.openapi(deleteCategoryRoute, (c) => {
+categoriesRoute.openapi(deleteCategoryRoute, async (c) => {
   const db = c.get("db");
   const userId = c.get("userId");
   const { id } = c.req.valid("param");
 
   try {
-    categoriesService.archive(db, userId, id);
+    await categoriesService.archive(db, userId, id);
     return c.json({ message: "Category archived" }, 200);
   } catch (error) {
     if (error instanceof AppError) {

@@ -4,7 +4,7 @@ import type { CategoryCreateInput, CategoryUpdateInput } from "@shareef-money/sh
 import { AppError } from "../../lib/error.js";
 import type { AppDatabase } from "../../db.js";
 
-export function list(db: AppDatabase, userId: string) {
+export async function list(db: AppDatabase, userId: string) {
   return db
     .select()
     .from(categoriesTable)
@@ -13,8 +13,8 @@ export function list(db: AppDatabase, userId: string) {
     .all();
 }
 
-export function getById(db: AppDatabase, userId: string, id: number) {
-  const category = db
+export async function getById(db: AppDatabase, userId: string, id: number) {
+  const category = await db
     .select()
     .from(categoriesTable)
     .where(and(eq(categoriesTable.id, id), eq(categoriesTable.userId, userId)))
@@ -27,7 +27,7 @@ export function getById(db: AppDatabase, userId: string, id: number) {
   return category;
 }
 
-export function create(db: AppDatabase, userId: string, payload: CategoryCreateInput) {
+export async function create(db: AppDatabase, userId: string, payload: CategoryCreateInput) {
   return db
     .insert(categoriesTable)
     .values({
@@ -41,8 +41,8 @@ export function create(db: AppDatabase, userId: string, payload: CategoryCreateI
     .get();
 }
 
-export function update(db: AppDatabase, userId: string, id: number, payload: CategoryUpdateInput) {
-  getById(db, userId, id);
+export async function update(db: AppDatabase, userId: string, id: number, payload: CategoryUpdateInput) {
+  await getById(db, userId, id);
 
   return db
     .update(categoriesTable)
@@ -52,10 +52,11 @@ export function update(db: AppDatabase, userId: string, id: number, payload: Cat
     .get();
 }
 
-export function archive(db: AppDatabase, userId: string, id: number) {
-  getById(db, userId, id);
+export async function archive(db: AppDatabase, userId: string, id: number) {
+  await getById(db, userId, id);
 
-  db.update(categoriesTable)
+  await db
+    .update(categoriesTable)
     .set({ isArchived: true, updatedAt: new Date() })
     .where(and(eq(categoriesTable.id, id), eq(categoriesTable.userId, userId)))
     .run();

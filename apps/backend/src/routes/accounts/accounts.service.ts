@@ -4,7 +4,7 @@ import type { AccountCreatePayload, AccountUpdatePayload } from "@shareef-money/
 import { AppError } from "../../lib/error.js";
 import type { AppDatabase } from "../../db.js";
 
-export function list(db: AppDatabase, userId: string) {
+export async function list(db: AppDatabase, userId: string) {
   return db
     .select()
     .from(accountsTable)
@@ -13,8 +13,8 @@ export function list(db: AppDatabase, userId: string) {
     .all();
 }
 
-export function getById(db: AppDatabase, userId: string, id: number) {
-  const account = db
+export async function getById(db: AppDatabase, userId: string, id: number) {
+  const account = await db
     .select()
     .from(accountsTable)
     .where(and(eq(accountsTable.id, id), eq(accountsTable.userId, userId)))
@@ -27,7 +27,7 @@ export function getById(db: AppDatabase, userId: string, id: number) {
   return account;
 }
 
-export function create(db: AppDatabase, userId: string, payload: AccountCreatePayload) {
+export async function create(db: AppDatabase, userId: string, payload: AccountCreatePayload) {
   return db
     .insert(accountsTable)
     .values({
@@ -42,8 +42,8 @@ export function create(db: AppDatabase, userId: string, payload: AccountCreatePa
     .get();
 }
 
-export function update(db: AppDatabase, userId: string, id: number, payload: AccountUpdatePayload) {
-  getById(db, userId, id);
+export async function update(db: AppDatabase, userId: string, id: number, payload: AccountUpdatePayload) {
+  await getById(db, userId, id);
 
   return db
     .update(accountsTable)
@@ -53,10 +53,11 @@ export function update(db: AppDatabase, userId: string, id: number, payload: Acc
     .get();
 }
 
-export function archive(db: AppDatabase, userId: string, id: number) {
-  getById(db, userId, id);
+export async function archive(db: AppDatabase, userId: string, id: number) {
+  await getById(db, userId, id);
 
-  db.update(accountsTable)
+  await db
+    .update(accountsTable)
     .set({ isArchived: true, updatedAt: new Date() })
     .where(and(eq(accountsTable.id, id), eq(accountsTable.userId, userId)))
     .run();

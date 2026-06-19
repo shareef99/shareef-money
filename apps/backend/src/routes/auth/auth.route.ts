@@ -270,7 +270,7 @@ authRoute.openapi(meRoute, async (c) => {
   const userId = c.get("userId");
 
   try {
-    const profile = authService.getProfile(db, userId);
+    const profile = await authService.getProfile(db, userId);
     return c.json(
       {
         ...profile,

@@ -13,12 +13,12 @@ import {
 import type { AppDatabase } from "../../db.js";
 import type { SyncPushInput, SyncAckInput } from "@shareef-money/shared/validation";
 
-export function push(db: AppDatabase, userId: string, input: SyncPushInput) {
+export async function push(db: AppDatabase, userId: string, input: SyncPushInput) {
   const results: Array<{ table: string; action: string; id: unknown; status: string }> = [];
 
   for (const change of input.changes) {
     try {
-      applyChange(db, userId, change, results);
+      await applyChange(db, userId, change, results);
     } catch (error) {
       console.error(`Sync push failed for ${change.table}:`, error);
       results.push({
@@ -33,7 +33,7 @@ export function push(db: AppDatabase, userId: string, input: SyncPushInput) {
   return results;
 }
 
-function applyChange(
+async function applyChange(
   db: AppDatabase,
   userId: string,
   change: SyncPushInput["changes"][number],
@@ -45,19 +45,20 @@ function applyChange(
     const key = data.key as string;
     const value = data.value as string;
 
-    const existing = db
+    const existing = await db
       .select()
       .from(settingsTable)
       .where(and(eq(settingsTable.userId, userId), eq(settingsTable.key, key)))
       .get();
 
     if (existing) {
-      db.update(settingsTable)
+      await db
+        .update(settingsTable)
         .set({ value })
         .where(and(eq(settingsTable.userId, userId), eq(settingsTable.key, key)))
         .run();
     } else {
-      db.insert(settingsTable).values({ userId, key, value }).run();
+      await db.insert(settingsTable).values({ userId, key, value }).run();
     }
     results.push({ table: "settings", action: "upserted", id: key, status: "ok" });
     return;
@@ -67,7 +68,8 @@ function applyChange(
     const txId = data.transactionId as number;
     const contactId = data.contactId as number;
     if (change.action === "delete") {
-      db.delete(transactionContactsTable)
+      await db
+        .delete(transactionContactsTable)
         .where(
           and(
             eq(transactionContactsTable.transactionId, txId),
@@ -76,7 +78,8 @@ function applyChange(
         )
         .run();
     } else {
-      db.insert(transactionContactsTable)
+      await db
+        .insert(transactionContactsTable)
         .values({ transactionId: txId, contactId })
         .onConflictDoNothing()
         .run();
@@ -86,26 +89,26 @@ function applyChange(
   }
 
   if (change.table === "recurring_rules") {
-    handleRecurringSync(db, userId, data.id as number, change, data, results);
+    await handleRecurringSync(db, userId, data.id as number, change, data, results);
     return;
   }
 
   const id = data.id as number;
 
   if (change.table === "accounts") {
-    handleTableSync(db, accountsTable, userId, id, change, data, results);
+    await handleTableSync(db, accountsTable, userId, id, change, data, results);
   } else if (change.table === "categories") {
-    handleTableSync(db, categoriesTable, userId, id, change, data, results);
+    await handleTableSync(db, categoriesTable, userId, id, change, data, results);
   } else if (change.table === "contacts") {
-    handleTableSync(db, contactsTable, userId, id, change, data, results);
+    await handleTableSync(db, contactsTable, userId, id, change, data, results);
   } else if (change.table === "locations") {
-    handleTableSync(db, locationsTable, userId, id, change, data, results);
+    await handleTableSync(db, locationsTable, userId, id, change, data, results);
   } else if (change.table === "transactions") {
-    handleTransactionSync(db, userId, id, change, data, results);
+    await handleTransactionSync(db, userId, id, change, data, results);
   }
 }
 
-function handleTableSync(
+async function handleTableSync(
   db: AppDatabase,
   table: any,
   userId: string,
@@ -115,7 +118,8 @@ function handleTableSync(
   results: Array<{ table: string; action: string; id: unknown; status: string }>,
 ) {
   if (change.action === "delete") {
-    db.update(table)
+    await db
+      .update(table)
       .set({ isArchived: true, updatedAt: new Date() })
       .where(and(eq(table.id, id), eq(table.userId, userId)))
       .run();
@@ -123,7 +127,7 @@ function handleTableSync(
     return;
   }
 
-  const existing = db.select().from(table).where(and(eq(table.id, id), eq(table.userId, userId))).get();
+  const existing = await db.select().from(table).where(and(eq(table.id, id), eq(table.userId, userId))).get();
 
   if (existing) {
     const existingTs = existing.updatedAt instanceof Date
@@ -134,13 +138,14 @@ function handleTableSync(
       const updateData: any = { ...data, userId, updatedAt: new Date(change.updatedAt) };
       delete updateData.id;
       delete updateData.createdAt;
-      db.update(table).set(updateData).where(and(eq(table.id, id), eq(table.userId, userId))).run();
+      await db.update(table).set(updateData).where(and(eq(table.id, id), eq(table.userId, userId))).run();
       results.push({ table: change.table, action: "updated", id, status: "ok" });
     } else {
       results.push({ table: change.table, action: "skipped", id, status: "server_newer" });
     }
   } else {
-    db.insert(table)
+    await db
+      .insert(table)
       .values({
         ...data,
         userId,
@@ -152,7 +157,7 @@ function handleTableSync(
   }
 }
 
-function handleTransactionSync(
+async function handleTransactionSync(
   db: AppDatabase,
   userId: string,
   id: number,
@@ -161,14 +166,15 @@ function handleTransactionSync(
   results: Array<{ table: string; action: string; id: unknown; status: string }>,
 ) {
   if (change.action === "delete") {
-    db.delete(transactionsTable)
+    await db
+      .delete(transactionsTable)
       .where(and(eq(transactionsTable.id, id), eq(transactionsTable.userId, userId)))
       .run();
     results.push({ table: "transactions", action: "deleted", id, status: "ok" });
     return;
   }
 
-  const existing = db
+  const existing = await db
     .select()
     .from(transactionsTable)
     .where(and(eq(transactionsTable.id, id), eq(transactionsTable.userId, userId)))
@@ -188,7 +194,8 @@ function handleTransactionSync(
       };
       delete updateData.id;
       delete updateData.createdAt;
-      db.update(transactionsTable)
+      await db
+        .update(transactionsTable)
         .set(updateData)
         .where(and(eq(transactionsTable.id, id), eq(transactionsTable.userId, userId)))
         .run();
@@ -197,7 +204,8 @@ function handleTransactionSync(
       results.push({ table: "transactions", action: "skipped", id, status: "server_newer" });
     }
   } else {
-    db.insert(transactionsTable)
+    await db
+      .insert(transactionsTable)
       .values({
         ...data,
         userId,
@@ -210,7 +218,7 @@ function handleTransactionSync(
   }
 }
 
-function handleRecurringSync(
+async function handleRecurringSync(
   db: AppDatabase,
   userId: string,
   id: number,
@@ -219,7 +227,8 @@ function handleRecurringSync(
   results: Array<{ table: string; action: string; id: unknown; status: string }>,
 ) {
   if (change.action === "delete") {
-    db.delete(recurringRulesTable)
+    await db
+      .delete(recurringRulesTable)
       .where(and(eq(recurringRulesTable.id, id), eq(recurringRulesTable.userId, userId)))
       .run();
     results.push({ table: "recurring_rules", action: "deleted", id, status: "ok" });
@@ -236,7 +245,7 @@ function handleRecurringSync(
     updatedAt: new Date(change.updatedAt),
   };
 
-  const existing = db
+  const existing = await db
     .select()
     .from(recurringRulesTable)
     .where(and(eq(recurringRulesTable.id, id), eq(recurringRulesTable.userId, userId)))
@@ -252,7 +261,8 @@ function handleRecurringSync(
       const updateData: any = { ...values };
       delete updateData.id;
       delete updateData.createdAt;
-      db.update(recurringRulesTable)
+      await db
+        .update(recurringRulesTable)
         .set(updateData)
         .where(and(eq(recurringRulesTable.id, id), eq(recurringRulesTable.userId, userId)))
         .run();
@@ -261,9 +271,7 @@ function handleRecurringSync(
       results.push({ table: "recurring_rules", action: "skipped", id, status: "server_newer" });
     }
   } else {
-    db.insert(recurringRulesTable)
-      .values(values as any)
-      .run();
+    await db.insert(recurringRulesTable).values(values as any).run();
     results.push({ table: "recurring_rules", action: "created", id, status: "ok" });
   }
 }
@@ -277,7 +285,7 @@ function serializeRow(row: Record<string, any>) {
   };
 }
 
-export function pull(
+export async function pull(
   db: AppDatabase,
   userId: string,
   lastSyncAt: number,
@@ -289,68 +297,78 @@ export function pull(
   const shouldInclude = (name: string) => !tables?.length || tables.includes(name);
 
   if (shouldInclude("accounts")) {
-    result.accounts = db
-      .select().from(accountsTable)
-      .where(and(eq(accountsTable.userId, userId), gt(accountsTable.updatedAt, since)))
-      .all().map(serializeRow);
+    result.accounts = (
+      await db
+        .select().from(accountsTable)
+        .where(and(eq(accountsTable.userId, userId), gt(accountsTable.updatedAt, since)))
+        .all()
+    ).map(serializeRow);
   }
 
   if (shouldInclude("categories")) {
-    result.categories = db
-      .select().from(categoriesTable)
-      .where(and(eq(categoriesTable.userId, userId), gt(categoriesTable.updatedAt, since)))
-      .all().map(serializeRow);
+    result.categories = (
+      await db
+        .select().from(categoriesTable)
+        .where(and(eq(categoriesTable.userId, userId), gt(categoriesTable.updatedAt, since)))
+        .all()
+    ).map(serializeRow);
   }
 
   if (shouldInclude("contacts")) {
-    result.contacts = db
-      .select().from(contactsTable)
-      .where(and(eq(contactsTable.userId, userId), gt(contactsTable.updatedAt, since)))
-      .all().map(serializeRow);
+    result.contacts = (
+      await db
+        .select().from(contactsTable)
+        .where(and(eq(contactsTable.userId, userId), gt(contactsTable.updatedAt, since)))
+        .all()
+    ).map(serializeRow);
   }
 
   if (shouldInclude("locations")) {
-    result.locations = db
-      .select().from(locationsTable)
-      .where(and(eq(locationsTable.userId, userId), gt(locationsTable.updatedAt, since)))
-      .all().map(serializeRow);
+    result.locations = (
+      await db
+        .select().from(locationsTable)
+        .where(and(eq(locationsTable.userId, userId), gt(locationsTable.updatedAt, since)))
+        .all()
+    ).map(serializeRow);
   }
 
   if (shouldInclude("transactions")) {
-    result.transactions = db
-      .select().from(transactionsTable)
-      .where(and(eq(transactionsTable.userId, userId), gt(transactionsTable.updatedAt, since)))
-      .all().map(serializeRow);
+    result.transactions = (
+      await db
+        .select().from(transactionsTable)
+        .where(and(eq(transactionsTable.userId, userId), gt(transactionsTable.updatedAt, since)))
+        .all()
+    ).map(serializeRow);
   }
 
   if (shouldInclude("recurring_rules")) {
-    result.recurring_rules = db
-      .select().from(recurringRulesTable)
-      .where(and(eq(recurringRulesTable.userId, userId), gt(recurringRulesTable.updatedAt, since)))
-      .all()
-      .map((row) => ({
-        ...row,
-        startDate: row.startDate instanceof Date ? row.startDate.getTime() : row.startDate,
-        endDate:
-          row.endDate instanceof Date ? row.endDate.getTime() : row.endDate,
-        nextOccurrence:
-          row.nextOccurrence instanceof Date
-            ? row.nextOccurrence.getTime()
-            : row.nextOccurrence,
-        createdAt: row.createdAt instanceof Date ? row.createdAt.getTime() : row.createdAt,
-        updatedAt: row.updatedAt instanceof Date ? row.updatedAt.getTime() : row.updatedAt,
-      }));
+    result.recurring_rules = (
+      await db
+        .select().from(recurringRulesTable)
+        .where(and(eq(recurringRulesTable.userId, userId), gt(recurringRulesTable.updatedAt, since)))
+        .all()
+    ).map((row) => ({
+      ...row,
+      startDate: row.startDate instanceof Date ? row.startDate.getTime() : row.startDate,
+      endDate: row.endDate instanceof Date ? row.endDate.getTime() : row.endDate,
+      nextOccurrence:
+        row.nextOccurrence instanceof Date
+          ? row.nextOccurrence.getTime()
+          : row.nextOccurrence,
+      createdAt: row.createdAt instanceof Date ? row.createdAt.getTime() : row.createdAt,
+      updatedAt: row.updatedAt instanceof Date ? row.updatedAt.getTime() : row.updatedAt,
+    }));
   }
 
   if (shouldInclude("settings")) {
-    result.settings = db
+    result.settings = await db
       .select().from(settingsTable)
       .where(eq(settingsTable.userId, userId))
       .all();
   }
 
   if (shouldInclude("transaction_contacts")) {
-    result.transaction_contacts = db
+    result.transaction_contacts = await db
       .select().from(transactionContactsTable)
       .all();
   }
@@ -358,12 +376,12 @@ export function pull(
   return result;
 }
 
-export function ack(db: AppDatabase, userId: string, input: SyncAckInput) {
+export async function ack(db: AppDatabase, userId: string, input: SyncAckInput) {
   const syncedAt = new Date(input.syncedAt);
   const tableNames = ["accounts", "categories", "contacts", "locations", "transactions", "recurring_rules", "settings", "transaction_contacts"];
 
   for (const tableName of tableNames) {
-    const existing = db
+    const existing = await db
       .select()
       .from(syncLogTable)
       .where(
@@ -376,27 +394,30 @@ export function ack(db: AppDatabase, userId: string, input: SyncAckInput) {
       .get();
 
     if (existing) {
-      db.update(syncLogTable)
+      await db
+        .update(syncLogTable)
         .set({ lastSyncAt: syncedAt })
         .where(eq(syncLogTable.id, existing.id))
         .run();
     } else {
-      db.insert(syncLogTable)
+      await db
+        .insert(syncLogTable)
         .values({ userId, deviceId: input.deviceId, tableName, lastSyncAt: syncedAt })
         .run();
     }
   }
 }
 
-export function status(db: AppDatabase, userId: string, deviceId: string) {
-  return db
-    .select()
-    .from(syncLogTable)
-    .where(and(eq(syncLogTable.userId, userId), eq(syncLogTable.deviceId, deviceId)))
-    .all()
-    .map((log) => ({
-      ...log,
-      lastSyncAt: log.lastSyncAt instanceof Date ? log.lastSyncAt.getTime() : log.lastSyncAt,
-      createdAt: log.createdAt instanceof Date ? log.createdAt.getTime() : log.createdAt,
-    }));
+export async function status(db: AppDatabase, userId: string, deviceId: string) {
+  return (
+    await db
+      .select()
+      .from(syncLogTable)
+      .where(and(eq(syncLogTable.userId, userId), eq(syncLogTable.deviceId, deviceId)))
+      .all()
+  ).map((log) => ({
+    ...log,
+    lastSyncAt: log.lastSyncAt instanceof Date ? log.lastSyncAt.getTime() : log.lastSyncAt,
+    createdAt: log.createdAt instanceof Date ? log.createdAt.getTime() : log.createdAt,
+  }));
 }

@@ -57,7 +57,8 @@ async function createSession(
 
   const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
 
-  db.insert(sessionsTable)
+  await db
+    .insert(sessionsTable)
     .values({
       id: crypto.randomUUID(),
       userId,
@@ -79,10 +80,11 @@ async function hashRefreshToken(token: string): Promise<string> {
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-function seedUserDefaults(db: AppDatabase, userId: string): void {
+async function seedUserDefaults(db: AppDatabase, userId: string): Promise<void> {
   const allCategories = [...defaultExpenseCategories, ...defaultIncomeCategories];
   for (const cat of allCategories) {
-    db.insert(categoriesTable)
+    await db
+      .insert(categoriesTable)
       .values({
         userId,
         name: cat.name,
@@ -93,9 +95,7 @@ function seedUserDefaults(db: AppDatabase, userId: string): void {
       .run();
   }
 
-  db.insert(accountsTable)
-    .values({ userId, name: defaultAccountName })
-    .run();
+  await db.insert(accountsTable).values({ userId, name: defaultAccountName }).run();
 
   const entries = Object.entries(defaultSettings).map(([key, val]) => ({
     userId,
@@ -103,7 +103,7 @@ function seedUserDefaults(db: AppDatabase, userId: string): void {
     value: typeof val === "string" ? val : JSON.stringify(val),
   }));
   for (const entry of entries) {
-    db.insert(settingsTable).values(entry).run();
+    await db.insert(settingsTable).values(entry).run();
   }
 }
 
@@ -111,7 +111,7 @@ export async function register(
   db: AppDatabase,
   payload: RegisterPayload,
 ): Promise<AuthTokens> {
-  const existing = db
+  const existing = await db
     .select({ id: usersTable.id })
     .from(usersTable)
     .where(eq(usersTable.email, payload.email))
@@ -124,7 +124,8 @@ export async function register(
   const passwordHash = await hashPassword(payload.password);
   const userId = crypto.randomUUID();
 
-  db.insert(usersTable)
+  await db
+    .insert(usersTable)
     .values({
       id: userId,
       email: payload.email,
@@ -134,7 +135,7 @@ export async function register(
     })
     .run();
 
-  seedUserDefaults(db, userId);
+  await seedUserDefaults(db, userId);
 
   return createSession(db, userId, undefined, "web");
 }
@@ -143,7 +144,7 @@ export async function login(
   db: AppDatabase,
   payload: LoginPayload,
 ): Promise<AuthTokens> {
-  const user = db
+  const user = await db
     .select()
     .from(usersTable)
     .where(eq(usersTable.email, payload.email))
@@ -172,7 +173,7 @@ export async function googleAuth(
     throw new AppError("Invalid Google ID token", 401);
   }
 
-  const existingByGoogleId = db
+  const existingByGoogleId = await db
     .select()
     .from(usersTable)
     .where(eq(usersTable.googleId, googleUser.sub))
@@ -182,14 +183,15 @@ export async function googleAuth(
     return createSession(db, existingByGoogleId.id, payload.deviceName, payload.deviceType);
   }
 
-  const existingByEmail = db
+  const existingByEmail = await db
     .select()
     .from(usersTable)
     .where(eq(usersTable.email, googleUser.email))
     .get();
 
   if (existingByEmail) {
-    db.update(usersTable)
+    await db
+      .update(usersTable)
       .set({
         googleId: googleUser.sub,
         avatarUrl: googleUser.picture ?? existingByEmail.avatarUrl,
@@ -203,7 +205,8 @@ export async function googleAuth(
 
   const userId = crypto.randomUUID();
 
-  db.insert(usersTable)
+  await db
+    .insert(usersTable)
     .values({
       id: userId,
       email: googleUser.email,
@@ -214,7 +217,7 @@ export async function googleAuth(
     })
     .run();
 
-  seedUserDefaults(db, userId);
+  await seedUserDefaults(db, userId);
 
   return createSession(db, userId, payload.deviceName, payload.deviceType);
 }
@@ -236,7 +239,7 @@ export async function refresh(
 
   const hashedRefresh = await hashRefreshToken(payload.refreshToken);
 
-  const session = db
+  const session = await db
     .select()
     .from(sessionsTable)
     .where(eq(sessionsTable.refreshToken, hashedRefresh))
@@ -247,28 +250,22 @@ export async function refresh(
   }
 
   if (session.expiresAt < new Date()) {
-    db.delete(sessionsTable)
-      .where(eq(sessionsTable.id, session.id))
-      .run();
+    await db.delete(sessionsTable).where(eq(sessionsTable.id, session.id)).run();
     throw new AppError("Session expired", 401);
   }
 
-  db.delete(sessionsTable)
-    .where(eq(sessionsTable.id, session.id))
-    .run();
+  await db.delete(sessionsTable).where(eq(sessionsTable.id, session.id)).run();
 
   return createSession(db, tokenPayload.userId, session.deviceName ?? undefined, session.deviceType as "mobile" | "web");
 }
 
 export async function logout(db: AppDatabase, refreshToken: string): Promise<void> {
   const hashed = await hashRefreshToken(refreshToken);
-  db.delete(sessionsTable)
-    .where(eq(sessionsTable.refreshToken, hashed))
-    .run();
+  await db.delete(sessionsTable).where(eq(sessionsTable.refreshToken, hashed)).run();
 }
 
-export function getProfile(db: AppDatabase, userId: string) {
-  const user = db
+export async function getProfile(db: AppDatabase, userId: string) {
+  const user = await db
     .select({
       id: usersTable.id,
       email: usersTable.email,
