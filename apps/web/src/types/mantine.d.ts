@@ -5,6 +5,7 @@ type ExtendedButtonVariant =
   | "primary-outline"
   | "secondary"
   | "destructive"
+  | "muted"
   | "ghost";
 
 declare module "@mantine/core" {

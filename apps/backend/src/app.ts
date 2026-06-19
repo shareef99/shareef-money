@@ -10,6 +10,9 @@ import { authRoute } from "./routes/auth/auth.route.js";
 import { accountsRoute } from "./routes/accounts/accounts.route.js";
 import { categoriesRoute } from "./routes/categories/categories.route.js";
 import { transactionsRoute } from "./routes/transactions/transactions.route.js";
+import { contactsRoute } from "./routes/contacts/contacts.route.js";
+import { locationsRoute } from "./routes/locations/locations.route.js";
+import { settingsRoute } from "./routes/settings/settings.route.js";
 import { syncRoute } from "./routes/sync/sync.route.js";
 
 export type AppEnv = { Variables: DbVariables & AuthVariables };
@@ -33,6 +36,9 @@ app.route("/auth", authRoute);
 app.route("/api/accounts", accountsRoute);
 app.route("/api/categories", categoriesRoute);
 app.route("/api/transactions", transactionsRoute);
+app.route("/api/contacts", contactsRoute);
+app.route("/api/locations", locationsRoute);
+app.route("/api/settings", settingsRoute);
 app.route("/sync", syncRoute);
 
 app.openAPIRegistry.registerComponent("securitySchemes", "Bearer", {

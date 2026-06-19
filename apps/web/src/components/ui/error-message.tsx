@@ -7,7 +7,7 @@ type Props = {
 export default function ErrorMessage({ error }: Props) {
   return (
     <div>
-      <p className="text-destructive font-medium">Error: {parseError(error)}</p>
+      <p className="text-error font-medium">Error: {parseError(error)}</p>
     </div>
   );
 }

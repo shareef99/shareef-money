@@ -1,5 +1,6 @@
 import { eq, and, desc, isNull } from "drizzle-orm";
 import { accountsTable, transactionsTable } from "@shareef-money/db/schema";
+import { computeAccountBalances } from "@shareef-money/shared/calc";
 import type { Db } from "../db/client";
 import { generateSyncId } from "../lib/sync-id";
 import { getOrCreateOpeningBalanceCategory } from "./category-service";
@@ -51,33 +52,13 @@ export async function getAccountsWithBalances(
     },
   });
 
-  const delta = new Map<number, number>();
-  const add = (id: number | null, value: number) => {
-    if (id == null) return;
-    delta.set(id, (delta.get(id) ?? 0) + value);
-  };
-
-  for (const t of txns) {
-    if (t.type === "income") add(t.accountId, t.amount);
-    else if (t.type === "expense") add(t.accountId, -t.amount);
-    else if (t.type === "transfer") {
-      add(t.accountId, -(t.amount + t.fee));
-      add(t.toAccountId, t.amount);
-    }
-    // Debts move real cash: "you gave" leaves the account, "you got" enters it.
-    else if (t.type === "debt_lend") add(t.accountId, -t.amount);
-    else if (t.type === "debt_borrow") add(t.accountId, t.amount);
-  }
-
+  // Balance math lives in @shareef-money/shared/calc (shared with web). Debts
+  // move real cash; hidden accounts are excluded from the total.
+  const { balances, total } = computeAccountBalances(accounts, txns);
   const withBalances = accounts.map((a) => ({
     ...a,
-    balance: a.initialBalance + (delta.get(a.id) ?? 0),
+    balance: balances[a.id] ?? 0,
   }));
-
-  // Hidden accounts still show in the list but don't count toward Total Assets.
-  const total = withBalances
-    .filter((a) => !a.isHidden)
-    .reduce((s, a) => s + a.balance, 0);
   return { accounts: withBalances, total };
 }
 

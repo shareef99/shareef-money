@@ -17,6 +17,9 @@ import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as AppTransactionsRouteImport } from './routes/_app/transactions'
 import { Route as AppStatsRouteImport } from './routes/_app/stats'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
+import { Route as AppManageRouteImport } from './routes/_app/manage'
+import { Route as AppDebtsRouteImport } from './routes/_app/debts'
+import { Route as AppBudgetsRouteImport } from './routes/_app/budgets'
 import { Route as AppAccountsRouteImport } from './routes/_app/accounts'
 
 const AuthRoute = AuthRouteImport.update({
@@ -57,6 +60,21 @@ const AppSettingsRoute = AppSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AppRoute,
 } as any)
+const AppManageRoute = AppManageRouteImport.update({
+  id: '/manage',
+  path: '/manage',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDebtsRoute = AppDebtsRouteImport.update({
+  id: '/debts',
+  path: '/debts',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppBudgetsRoute = AppBudgetsRouteImport.update({
+  id: '/budgets',
+  path: '/budgets',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAccountsRoute = AppAccountsRouteImport.update({
   id: '/accounts',
   path: '/accounts',
@@ -66,6 +84,9 @@ const AppAccountsRoute = AppAccountsRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/accounts': typeof AppAccountsRoute
+  '/budgets': typeof AppBudgetsRoute
+  '/debts': typeof AppDebtsRoute
+  '/manage': typeof AppManageRoute
   '/settings': typeof AppSettingsRoute
   '/stats': typeof AppStatsRoute
   '/transactions': typeof AppTransactionsRoute
@@ -75,6 +96,9 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
   '/accounts': typeof AppAccountsRoute
+  '/budgets': typeof AppBudgetsRoute
+  '/debts': typeof AppDebtsRoute
+  '/manage': typeof AppManageRoute
   '/settings': typeof AppSettingsRoute
   '/stats': typeof AppStatsRoute
   '/transactions': typeof AppTransactionsRoute
@@ -86,6 +110,9 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/_auth': typeof AuthRouteWithChildren
   '/_app/accounts': typeof AppAccountsRoute
+  '/_app/budgets': typeof AppBudgetsRoute
+  '/_app/debts': typeof AppDebtsRoute
+  '/_app/manage': typeof AppManageRoute
   '/_app/settings': typeof AppSettingsRoute
   '/_app/stats': typeof AppStatsRoute
   '/_app/transactions': typeof AppTransactionsRoute
@@ -98,6 +125,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/accounts'
+    | '/budgets'
+    | '/debts'
+    | '/manage'
     | '/settings'
     | '/stats'
     | '/transactions'
@@ -107,6 +137,9 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/accounts'
+    | '/budgets'
+    | '/debts'
+    | '/manage'
     | '/settings'
     | '/stats'
     | '/transactions'
@@ -117,6 +150,9 @@ export interface FileRouteTypes {
     | '/_app'
     | '/_auth'
     | '/_app/accounts'
+    | '/_app/budgets'
+    | '/_app/debts'
+    | '/_app/manage'
     | '/_app/settings'
     | '/_app/stats'
     | '/_app/transactions'
@@ -188,6 +224,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/manage': {
+      id: '/_app/manage'
+      path: '/manage'
+      fullPath: '/manage'
+      preLoaderRoute: typeof AppManageRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/debts': {
+      id: '/_app/debts'
+      path: '/debts'
+      fullPath: '/debts'
+      preLoaderRoute: typeof AppDebtsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/budgets': {
+      id: '/_app/budgets'
+      path: '/budgets'
+      fullPath: '/budgets'
+      preLoaderRoute: typeof AppBudgetsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/accounts': {
       id: '/_app/accounts'
       path: '/accounts'
@@ -200,6 +257,9 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppAccountsRoute: typeof AppAccountsRoute
+  AppBudgetsRoute: typeof AppBudgetsRoute
+  AppDebtsRoute: typeof AppDebtsRoute
+  AppManageRoute: typeof AppManageRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppStatsRoute: typeof AppStatsRoute
   AppTransactionsRoute: typeof AppTransactionsRoute
@@ -208,6 +268,9 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppAccountsRoute: AppAccountsRoute,
+  AppBudgetsRoute: AppBudgetsRoute,
+  AppDebtsRoute: AppDebtsRoute,
+  AppManageRoute: AppManageRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppStatsRoute: AppStatsRoute,
   AppTransactionsRoute: AppTransactionsRoute,

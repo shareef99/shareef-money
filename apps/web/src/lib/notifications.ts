@@ -47,7 +47,7 @@ export function errorNotification({
 }: NotificationData & { id?: string; update?: boolean }) {
   if (update && args.id) {
     return notifications.update({
-      color: "var(--destructive)",
+      color: "var(--error)",
       id: args.id,
       loading: false,
       autoClose: 3000,
@@ -56,7 +56,7 @@ export function errorNotification({
     });
   } else {
     return notifications.show({
-      color: "var(--destructive)",
+      color: "var(--error)",
       autoClose: 3000,
       withCloseButton: true,
       ...args,

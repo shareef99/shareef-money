@@ -1,7 +1,6 @@
 import {
   createTheme,
   Button,
-  AppShell,
   NumberInput,
   TextInput,
   Select,
@@ -11,10 +10,12 @@ import {
   type MantineProviderProps,
   defaultVariantColorsResolver,
   type VariantColorsResolver,
+  type MantineColorsTuple,
 } from "@mantine/core";
 import "@mantine/core/styles.css";
 import "@mantine/carousel/styles.css";
 import "@mantine/dates/styles.css";
+import "@mantine/charts/styles.css";
 import "@mantine/notifications/styles.css";
 import { Notifications } from "@mantine/notifications";
 
@@ -25,7 +26,7 @@ const variantColorResolver: VariantColorsResolver = (input) => {
     case "primary":
       return {
         background: "var(--primary)",
-        hover: "var(--ring)",
+        hover: "color-mix(in srgb, var(--primary) 85%, black)",
         color: "var(--primary-foreground)",
         border: "none",
       };
@@ -40,25 +41,33 @@ const variantColorResolver: VariantColorsResolver = (input) => {
 
     case "secondary":
       return {
-        background: "var(--secondary)",
-        hover: "color-mix(in srgb, var(--secondary) 80%, var(--foreground))",
-        color: "var(--secondary-foreground)",
+        background: "var(--card-alt)",
+        hover: "color-mix(in srgb, var(--card-alt) 80%, var(--text))",
+        color: "var(--text)",
         border: "none",
       };
 
     case "destructive":
       return {
-        background: "var(--destructive)",
-        hover: "color-mix(in srgb, var(--destructive) 90%, black)",
-        color: "var(--destructive-foreground)",
+        background: "var(--error)",
+        hover: "color-mix(in srgb, var(--error) 90%, black)",
+        color: "var(--primary-foreground)",
+        border: "none",
+      };
+
+    case "muted":
+      return {
+        background: "transparent",
+        hover: "color-mix(in srgb, var(--text) 8%, transparent)",
+        color: "var(--text-secondary)",
         border: "none",
       };
 
     case "ghost":
       return {
         background: "transparent",
-        hover: "color-mix(in srgb, var(--foreground) 8%, transparent)",
-        color: "var(--foreground)",
+        hover: "color-mix(in srgb, var(--text) 8%, transparent)",
+        color: "var(--text)",
         border: "none",
       };
 
@@ -67,67 +76,20 @@ const variantColorResolver: VariantColorsResolver = (input) => {
   }
 };
 
+const fill = (v: string): MantineColorsTuple =>
+  new Array(10).fill(v) as unknown as MantineColorsTuple;
+
 const theme = createTheme({
   colors: {
-    primary: [
-      "var(--primary)",
-      "var(--primary)",
-      "var(--primary)",
-      "var(--primary)",
-      "var(--primary)",
-      "var(--primary)",
-      "var(--primary)",
-      "var(--primary)",
-      "var(--primary)",
-      "var(--primary)",
-    ],
-    destructive: [
-      "var(--destructive)",
-      "var(--destructive)",
-      "var(--destructive)",
-      "var(--destructive)",
-      "var(--destructive)",
-      "var(--destructive)",
-      "var(--destructive)",
-      "var(--destructive)",
-      "var(--destructive)",
-      "var(--destructive)",
-    ],
-    secondary: [
-      "var(--secondary)",
-      "var(--secondary)",
-      "var(--secondary)",
-      "var(--secondary)",
-      "var(--secondary)",
-      "var(--secondary)",
-      "var(--secondary)",
-      "var(--secondary)",
-      "var(--secondary)",
-      "var(--secondary)",
-    ],
+    primary: fill("var(--primary)"),
+    destructive: fill("var(--error)"),
+    secondary: fill("var(--card-alt)"),
   },
   primaryColor: "primary",
   primaryShade: 5,
   defaultRadius: "md",
   variantColorResolver,
   components: {
-    AppShell: AppShell.extend({
-      styles: {
-        main: {
-          backgroundColor: "var(--background)",
-          color: "var(--foreground)",
-        },
-        navbar: {
-          backgroundColor: "var(--card)",
-          color: "var(--card-foreground)",
-          borderRight: `1px solid var(--border)`,
-        },
-        header: {
-          backgroundColor: "var(--background)",
-          borderBottom: `1px solid var(--border)`,
-        },
-      },
-    }),
     Button: Button.extend({
       defaultProps: {
         variant: "primary",
@@ -136,7 +98,7 @@ const theme = createTheme({
     Card: {
       defaultProps: {
         bg: "var(--card)",
-        c: "var(--card-foreground)",
+        c: "var(--text)",
         withBorder: true,
       },
       styles: {
