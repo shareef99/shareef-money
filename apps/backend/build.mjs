@@ -30,7 +30,11 @@ const externalizeNodeModules = {
 rmSync(outdir, { recursive: true, force: true });
 
 await build({
-  entryPoints: [resolve(root, "src/index.ts"), resolve(root, "src/migrate.ts")],
+  entryPoints: [
+    resolve(root, "src/index.ts"),
+    resolve(root, "src/migrate.ts"),
+    resolve(root, "src/seed.ts"),
+  ],
   outdir,
   bundle: true,
   platform: "node",
@@ -45,4 +49,4 @@ cpSync(resolve(root, "../../packages/db/drizzle"), resolve(outdir, "drizzle"), {
   recursive: true,
 });
 
-console.log("Built dist/index.js, dist/migrate.js and dist/drizzle");
+console.log("Built dist/index.js, dist/migrate.js, dist/seed.js and dist/drizzle");
