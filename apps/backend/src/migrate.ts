@@ -1,14 +1,29 @@
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import { migrate } from "drizzle-orm/better-sqlite3/migrator";
+import { existsSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { createClient } from "@libsql/client";
+import { drizzle } from "drizzle-orm/libsql";
+import { migrate } from "drizzle-orm/libsql/migrator";
 import { env } from "./env.js";
 
-const sqlite = new Database(env.DATABASE_URL);
-sqlite.pragma("journal_mode = WAL");
-sqlite.pragma("foreign_keys = ON");
-const db = drizzle(sqlite);
-migrate(db, { migrationsFolder: "../../packages/db/drizzle" });
+// Resolve the migrations folder both when run via tsx from src/ (dev) and from
+// the bundled dist/ (the build copies the SQL files into dist/drizzle).
+const here = dirname(fileURLToPath(import.meta.url));
+const bundled = resolve(here, "drizzle");
+const migrationsFolder = existsSync(bundled)
+  ? bundled
+  : resolve(here, "../../../packages/db/drizzle");
 
-const tables = sqlite.prepare("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").all() as Array<{ name: string }>;
-console.log("Migrations applied. Tables:", tables.map((t) => t.name).join(", "));
-sqlite.close();
+const client = createClient({
+  url: env.DATABASE_URL,
+  ...(env.DATABASE_AUTH_TOKEN ? { authToken: env.DATABASE_AUTH_TOKEN } : {}),
+});
+const db = drizzle(client);
+
+await migrate(db, { migrationsFolder });
+
+const result = await client.execute(
+  "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name",
+);
+console.log("Migrations applied. Tables:", result.rows.map((r) => r.name).join(", "));
+client.close();

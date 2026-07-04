@@ -24,10 +24,10 @@ const getRoute = createRoute({
   },
 });
 
-settingsRoute.openapi(getRoute, (c) => {
+settingsRoute.openapi(getRoute, async (c) => {
   const db = c.get("db");
   const userId = c.get("userId");
-  return c.json(settingsService.getAll(db, userId), 200);
+  return c.json(await settingsService.getAll(db, userId), 200);
 });
 
 const patchRoute = createRoute({
@@ -47,9 +47,9 @@ const patchRoute = createRoute({
   },
 });
 
-settingsRoute.openapi(patchRoute, (c) => {
+settingsRoute.openapi(patchRoute, async (c) => {
   const db = c.get("db");
   const userId = c.get("userId");
   const body = c.req.valid("json");
-  return c.json(settingsService.upsertMany(db, userId, body), 200);
+  return c.json(await settingsService.upsertMany(db, userId, body), 200);
 });
