@@ -1,5 +1,43 @@
 # Shareef Money — Implementation Progress
 
+## Current status — 2026-07-04 (pre-Play-Store release)
+
+The app pivoted to **local-first** (no accounts, no cloud sync) to ship to the Play
+Store now. The cloud backend / sync / web items in the phase checklist below are
+built but **parked** — sync is dormant behind `SYNC_ENABLED = false` in
+`apps/mobile/src/providers/sync-provider.tsx` — for a post-launch pass. Treat the
+`[ ]` items below as reflecting the *old* cloud-first plan, not current TODOs.
+
+**Done**
+- Local-first conversion: device-local synthesized user, cloud auth/sync removed or
+  dormant, `(auth)` routes deleted. Package renamed to `com.shareef.money`.
+- New brand identity (infinity mark) across icon / splash / adaptive assets.
+- Pre-release code audit (strict typecheck + multi-area review): 8 bugs + 3 nits
+  found and **all fixed** in commit `16c8ec0`:
+  - Recurring auto-post revived (had gone dead when sync went dormant), transfer
+    now requires a distinct destination, backup restore due-date fix, account-edit
+    balance no longer double-counts, passcode lock engages on cold start, edit
+    modals load by id, soft-deleted recurring templates stop regenerating,
+    recurring clones carry the counterparty; + search-join / color-picker /
+    biometric-recheck nits.
+
+**Builds (EAS · `com.shareef.money` · new icon + audit fixes)**
+- Production `.aab` **versionCode 5** — the artifact to upload to Play (supersedes
+  the stale v4 icon-only builds).
+- Preview `.apk` — for on-device QA.
+
+**Next up (resume here)**
+- Install the preview APK, run the full on-device QA pass (esp. the fixed paths:
+  recurring posts, transfer-without-destination is blocked, backup with a due-dated
+  debt round-trips, edit an old transaction via Search).
+- Upload AAB **v5** to Play → closed testing (personal account = 12 testers / 14 days).
+- **Blocker for Play "App content":** a hosted **privacy policy URL** — draft is
+  ready in [BACKLOG.md](../BACKLOG.md).
+- Then: marketing site + privacy/terms pages; later (~1 month) re-enable sync +
+  dashboards (see BACKLOG.md).
+
+---
+
 ## Phase 1: Foundation (no UI)
 
 - [x] `packages/db` — Drizzle schema for all tables (users, sessions, accounts, categories, contacts, locations, transactions, transaction_contacts, recurring_rules, settings, sync_log)
