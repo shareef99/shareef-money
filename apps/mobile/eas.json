@@ -5,6 +5,7 @@
   },
   "build": {
     "development": {
+      "node": "24.11.1",
       "distribution": "internal",
       "android": {
         "buildType": "apk"
@@ -14,6 +15,7 @@
       }
     },
     "preview": {
+      "node": "24.11.1",
       "distribution": "internal",
       "android": {
         "buildType": "apk"
@@ -23,6 +25,7 @@
       }
     },
     "production": {
+      "node": "24.11.1",
       "autoIncrement": true,
       "android": {
         "buildType": "app-bundle"
