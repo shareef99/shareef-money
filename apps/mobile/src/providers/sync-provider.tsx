@@ -32,6 +32,11 @@ export function useSync(): SyncContextValue {
   return context;
 }
 
+// Cloud sync is OFF in the local-first build. The entire sync pipeline (this
+// provider + sync-service + the API client) is kept intact but dormant so it can
+// be switched back on when a backend/BaaS is added — flip this to true then.
+const SYNC_ENABLED = false;
+
 const SYNC_DEBOUNCE_MS = 10_000;
 const FOREGROUND_SYNC_INTERVAL_MS = 5 * 60 * 1000;
 
@@ -47,6 +52,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   const syncingRef = useRef(false);
 
   const sync = useCallback(async () => {
+    if (!SYNC_ENABLED) return;
     if (!isAuthenticated || !user) return;
     if (syncingRef.current) return;
 

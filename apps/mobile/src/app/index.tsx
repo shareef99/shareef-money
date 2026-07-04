@@ -3,7 +3,7 @@ import { useAuth } from "../providers/auth-provider";
 import { ActivityIndicator, View } from "react-native";
 
 export default function IndexScreen() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -13,9 +13,5 @@ export default function IndexScreen() {
     );
   }
 
-  if (isAuthenticated) {
-    return <Redirect href="/(app)/(tabs)/transactions" />;
-  }
-
-  return <Redirect href="/(auth)/welcome" />;
+  return <Redirect href="/(app)/(tabs)/transactions" />;
 }
