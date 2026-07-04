@@ -20,8 +20,13 @@ type Props = {
   initialDescription?: string | null;
   initialColor?: string | null;
   initialHidden?: boolean;
-  // Hide the balance + hidden toggle when adding (only relevant on edit).
+  // Show the "hidden account" toggle (only meaningful on edit).
   showHideToggle?: boolean;
+  // Show the initial-balance field. Only meaningful when ADDING: the amount is
+  // recorded as an opening-balance income entry. On edit the stored
+  // initialBalance is always 0 (balance is derived from that income), so editing
+  // this field would double-count — callers editing an account pass false.
+  showBalance?: boolean;
   onClose: () => void;
   onSubmit: (values: Values) => void;
 };
@@ -35,6 +40,7 @@ export function AccountFormModal({
   initialColor,
   initialHidden,
   showHideToggle,
+  showBalance = true,
   onClose,
   onSubmit,
 }: Props) {
@@ -88,18 +94,22 @@ export function AccountFormModal({
             autoFocus
           />
 
-          <Text className="text-xs text-text-secondary mb-1">Initial balance</Text>
-          <TextInput
-            className="text-base text-text border-b border-border pb-1"
-            placeholder="0"
-            placeholderTextColor={colors.textMuted}
-            value={balance}
-            onChangeText={setBalance}
-            keyboardType="numeric"
-          />
-          <Text className="text-[11px] text-text-muted mb-4">
-            Recorded as an “Opening Balance” income entry.
-          </Text>
+          {showBalance && (
+            <>
+              <Text className="text-xs text-text-secondary mb-1">Initial balance</Text>
+              <TextInput
+                className="text-base text-text border-b border-border pb-1"
+                placeholder="0"
+                placeholderTextColor={colors.textMuted}
+                value={balance}
+                onChangeText={setBalance}
+                keyboardType="numeric"
+              />
+              <Text className="text-[11px] text-text-muted mb-4">
+                Recorded as an “Opening Balance” income entry.
+              </Text>
+            </>
+          )}
 
           <Text className="text-xs text-text-secondary mb-1">Description (optional)</Text>
           <TextInput

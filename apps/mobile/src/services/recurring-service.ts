@@ -129,7 +129,10 @@ export async function materializeDueRecurring(
 
   for (const rule of rules) {
     const template = rule.transaction;
-    if (!template) {
+    // A soft-deleted template still resolves through the relation (the join
+    // doesn't filter deletedAt), so without this guard a "deleted" recurring
+    // transaction would keep regenerating from its tombstone every period.
+    if (!template || template.deletedAt != null) {
       await setRecurringActive(db, userId, rule.id, false);
       continue;
     }
@@ -156,6 +159,12 @@ export async function materializeDueRecurring(
           categoryId: template.categoryId,
           accountId: template.accountId,
           toAccountId: template.toAccountId,
+          // Carry the debt counterparty so recurring debt_lend/debt_borrow
+          // occurrences still group into the ledger. dueDate is intentionally
+          // NOT copied: it's a fixed date on the template, so every occurrence
+          // would inherit the same (stale) due date — a per-occurrence due date
+          // isn't defined by the rule, so leave it null.
+          contactId: template.contactId,
           locationId: template.locationId,
           note: template.note,
           date: new Date(next),

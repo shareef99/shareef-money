@@ -9,6 +9,9 @@ type Props = {
   title: string;
   initialName?: string;
   initialColor?: string | null;
+  // Categories have a color; contacts/locations reuse this modal but don't, so
+  // they pass false to drop the (otherwise ignored) color picker.
+  showColor?: boolean;
   onClose: () => void;
   onSubmit: (values: { name: string; color: string }) => void;
 };
@@ -18,6 +21,7 @@ export function CategoryFormModal({
   title,
   initialName,
   initialColor,
+  showColor = true,
   onClose,
   onSubmit,
 }: Props) {
@@ -58,10 +62,14 @@ export function CategoryFormModal({
             autoFocus
           />
 
-          <Text className="text-xs text-text-secondary mb-2">Color</Text>
-          <View className="mb-6">
-            <ColorPicker value={color} onChange={setColor} />
-          </View>
+          {showColor && (
+            <>
+              <Text className="text-xs text-text-secondary mb-2">Color</Text>
+              <View className="mb-6">
+                <ColorPicker value={color} onChange={setColor} />
+              </View>
+            </>
+          )}
 
           <View className="flex-row gap-3">
             <Pressable

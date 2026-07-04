@@ -6,6 +6,7 @@ import { ArrowLeft, Search as SearchIcon } from "lucide-react-native";
 import { formatCurrency } from "@shareef-money/shared/utils";
 import type { TransactionType } from "@shareef-money/shared/types";
 import { useTransactions } from "../../../queries/use-transactions";
+import { useContacts } from "../../../queries/use-contacts";
 import { getColors } from "../../../lib/colors";
 import { cn } from "../../../lib/cn";
 
@@ -29,6 +30,16 @@ export default function SearchScreen() {
   // Uncapped: search must see the full history, not just the most recent rows.
   // The result list is virtualized (FlatList) so rendering many matches is cheap.
   const { data: transactions = [] } = useTransactions({ limit: 100_000 });
+  const { data: contacts = [] } = useContacts();
+
+  // Tagged people live in the transaction_contacts join (contactId only), so
+  // resolve names here to make them searchable — the debt counterparty
+  // (t.contact) covers only debts, not people tagged on a normal expense.
+  const contactNameById = useMemo(() => {
+    const m = new Map<number, string>();
+    for (const c of contacts) m.set(c.id, c.name);
+    return m;
+  }, [contacts]);
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -39,6 +50,9 @@ export default function SearchScreen() {
         t.category?.name,
         t.account?.name,
         t.contact?.name,
+        ...(t.transactionContacts ?? []).map((tc) =>
+          contactNameById.get(tc.contactId),
+        ),
         t.note,
         String(t.amount / 100),
       ]
@@ -47,7 +61,7 @@ export default function SearchScreen() {
         .toLowerCase();
       return haystack.includes(q);
     });
-  }, [transactions, query, filter]);
+  }, [transactions, contacts, query, filter, contactNameById]);
 
   return (
     <SafeAreaView style={{ flex: 1 }} edges={["top"]}>

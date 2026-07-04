@@ -17,6 +17,7 @@ export const transactionKeys = {
   summary: (from: string, to: string) => [...transactionKeys.all, "summary", from, to] as const,
   monthlySummary: (year: number) => [...transactionKeys.all, "monthly-summary", year] as const,
   account: (accountId?: number) => [...transactionKeys.all, "account", accountId] as const,
+  byId: (id?: number) => [...transactionKeys.all, "byId", id] as const,
   breakdown: (type: string, from: string, to: string) =>
     [...transactionKeys.all, "breakdown", type, from, to] as const,
 };
@@ -49,6 +50,20 @@ export function useTransactions(filters: {
     // swiping never flashes an empty list.
     placeholderData: keepPreviousData,
     staleTime: READ_STALE_TIME,
+  });
+}
+
+// A single transaction by id, with relations. Hydrates the edit modal directly
+// so records outside the most-recent page (reachable via Search / account
+// history) still populate the form instead of loading blank.
+export function useTransaction(id: number | null) {
+  const { db } = useDatabase();
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: transactionKeys.byId(id ?? undefined),
+    queryFn: () => transactionService.getTransactionById(db, user!.id, id!),
+    enabled: !!user && id != null,
   });
 }
 
@@ -218,6 +233,8 @@ export function useDeleteTransaction() {
       queryClient.invalidateQueries({ queryKey: ["stats"] });
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
       queryClient.invalidateQueries({ queryKey: ["debts"] });
+      // Deleting a recurring template also cancels its rule (see service).
+      queryClient.invalidateQueries({ queryKey: ["recurring"] });
       triggerSync();
     },
   });

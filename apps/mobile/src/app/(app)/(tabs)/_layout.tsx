@@ -13,6 +13,7 @@ import { getColors } from "../../../lib/colors";
 import { useEnsureDefaultCategories } from "../../../queries/use-categories";
 import { useMigrateOpeningBalances } from "../../../queries/use-accounts";
 import { useDebtReminders } from "../../../queries/use-debts";
+import { useMaterializeRecurring } from "../../../queries/use-recurring";
 import { useSettings } from "../../../queries/use-settings";
 
 export default function TabLayout() {
@@ -29,6 +30,8 @@ export default function TabLayout() {
   useMigrateOpeningBalances();
   // Keep debt due-date reminders scheduled as debts change.
   useDebtReminders();
+  // Post any recurring transactions that have come due (cold start + foreground).
+  useMaterializeRecurring();
 
   // Honor the configured start screen on first load (default is transactions).
   // Route groups in parens aren't URL segments, so the tab href is just "/tab".

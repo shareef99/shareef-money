@@ -5,7 +5,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { ArrowLeft, ArrowUpDown, Trash2 } from "lucide-react-native";
 import {
-  useTransactions,
+  useTransaction,
   useCreateTransaction,
   useUpdateTransaction,
   useDeleteTransaction,
@@ -66,7 +66,7 @@ export default function AddTransactionScreen() {
   const { data: accounts = [] } = useAccounts();
   const { data: locations = [] } = useLocations();
   const { data: contacts = [] } = useContacts();
-  const { data: allTransactions = [] } = useTransactions({});
+  const { data: editTx } = useTransaction(editId);
   const { data: settings } = useSettings();
 
   const createTransaction = useCreateTransaction();
@@ -122,24 +122,19 @@ export default function AddTransactionScreen() {
   }, [accounts, accountId]);
 
   useEffect(() => {
-    if (!editId) return;
-    const tx = allTransactions.find((t) => t.id === editId);
-    if (tx) {
-      setType(tx.type);
-      setAmountStr(String(tx.amount / 100));
-      setFeeStr(String(tx.fee / 100));
-      setShowFeeRow(tx.fee > 0);
-      setDate(tx.date instanceof Date ? tx.date : new Date(tx.date as number));
-      setCategoryId(tx.categoryId);
-      setAccountId(tx.accountId);
-      setToAccountId(tx.toAccountId);
-      setLocationId(tx.locationId ?? null);
-      setContactIds(
-        (tx.transactionContacts ?? []).map((tc) => tc.contactId),
-      );
-      setNote(tx.note ?? "");
-    }
-  }, [editId, allTransactions]);
+    if (!editTx) return;
+    setType(editTx.type);
+    setAmountStr(String(editTx.amount / 100));
+    setFeeStr(String(editTx.fee / 100));
+    setShowFeeRow(editTx.fee > 0);
+    setDate(editTx.date instanceof Date ? editTx.date : new Date(editTx.date as number));
+    setCategoryId(editTx.categoryId);
+    setAccountId(editTx.accountId);
+    setToAccountId(editTx.toAccountId);
+    setLocationId(editTx.locationId ?? null);
+    setContactIds((editTx.transactionContacts ?? []).map((tc) => tc.contactId));
+    setNote(editTx.note ?? "");
+  }, [editTx]);
 
   const dateDisplay = useMemo(() => {
     const dd = String(date.getDate()).padStart(2, "0");
@@ -166,6 +161,20 @@ export default function AddTransactionScreen() {
     (onSuccess: () => void) => {
       const amount = toSmallestUnit(parseFloat(amountStr) || 0);
       if (amount <= 0 || !accountId) return;
+
+      // A transfer must have a distinct destination — otherwise the amount is
+      // debited from the source and credited nowhere (the balance calc no-ops a
+      // null target), silently losing money.
+      if (type === "transfer") {
+        if (!toAccountId) {
+          Alert.alert("Destination required", "Choose the account to transfer to.");
+          return;
+        }
+        if (toAccountId === accountId) {
+          Alert.alert("Same account", "Transfer source and destination must be different.");
+          return;
+        }
+      }
 
       // Required-field validation (category always; others per settings).
       if (type !== "transfer") {

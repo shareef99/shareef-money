@@ -13,7 +13,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { ArrowLeft, Trash2 } from "lucide-react-native";
 import {
-  useTransactions,
+  useTransaction,
   useCreateTransaction,
   useUpdateTransaction,
   useDeleteTransaction,
@@ -60,7 +60,7 @@ export default function AddDebtScreen() {
 
   const { data: accounts = [] } = useAccounts();
   const { data: contacts = [] } = useContacts();
-  const { data: allTransactions = [] } = useTransactions({});
+  const { data: editTx } = useTransaction(editId);
 
   const createTransaction = useCreateTransaction();
   const updateTransaction = useUpdateTransaction();
@@ -81,24 +81,21 @@ export default function AddDebtScreen() {
   }, [accounts, accountId]);
 
   useEffect(() => {
-    if (!editId) return;
-    const tx = allTransactions.find((t) => t.id === editId);
-    if (tx) {
-      setType(tx.type === "debt_borrow" ? "debt_borrow" : "debt_lend");
-      setAmountStr(String(tx.amount / 100));
-      setDate(tx.date instanceof Date ? tx.date : new Date(tx.date as number));
-      setAccountId(tx.accountId);
-      setContactId(tx.contactId ?? null);
-      setNote(tx.note ?? "");
-      setDueDate(
-        tx.dueDate
-          ? tx.dueDate instanceof Date
-            ? tx.dueDate
-            : new Date(tx.dueDate as number)
-          : null,
-      );
-    }
-  }, [editId, allTransactions]);
+    if (!editTx) return;
+    setType(editTx.type === "debt_borrow" ? "debt_borrow" : "debt_lend");
+    setAmountStr(String(editTx.amount / 100));
+    setDate(editTx.date instanceof Date ? editTx.date : new Date(editTx.date as number));
+    setAccountId(editTx.accountId);
+    setContactId(editTx.contactId ?? null);
+    setNote(editTx.note ?? "");
+    setDueDate(
+      editTx.dueDate
+        ? editTx.dueDate instanceof Date
+          ? editTx.dueDate
+          : new Date(editTx.dueDate as number)
+        : null,
+    );
+  }, [editTx]);
 
   const dateDisplay = useMemo(() => {
     const dd = String(date.getDate()).padStart(2, "0");
