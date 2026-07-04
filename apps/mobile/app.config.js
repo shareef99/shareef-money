@@ -3,9 +3,9 @@
 // ONE device with fully separate storage (separate on-device expo-sqlite
 // databases) — the dev build syncs to the dev backend, prod to prod, no mixing.
 //
-//   APP_VARIANT=production  → the real app:  "Shareef Money"        / com.shareef.mobile
+//   APP_VARIANT=production  → the real app:  "Shareef Money"        / com.shareef.money
 //   anything else (incl. unset, the default for `expo run:android`)
-//                           → the dev build: "Shareef Money (Dev)"  / com.shareef.mobile.dev
+//                           → the dev build: "Shareef Money (Dev)"  / com.shareef.money.dev
 //
 // android/ is gitignored and regenerated from this config, so after changing
 // APP_VARIANT regenerate the native project before building:
@@ -27,7 +27,7 @@ module.exports = ({ config }) => ({
   name: IS_PROD ? "Shareef Money" : "Shareef Money (Dev)",
   android: {
     ...config.android,
-    package: IS_PROD ? "com.shareef.mobile" : "com.shareef.mobile.dev",
+    package: IS_PROD ? "com.shareef.money" : "com.shareef.money.dev",
   },
   extra: {
     ...config.extra,
