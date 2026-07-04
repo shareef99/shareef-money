@@ -13,7 +13,7 @@ import type {
 import { AppError } from "../../lib/error.js";
 import type { AppDatabase } from "../../db.js";
 
-export function list(db: AppDatabase, userId: string, filters: TransactionFilters) {
+export async function list(db: AppDatabase, userId: string, filters: TransactionFilters) {
   // Exclude soft-deleted (tombstoned) rows from the REST list.
   const conditions = [
     eq(transactionsTable.userId, userId),
@@ -75,8 +75,8 @@ export function list(db: AppDatabase, userId: string, filters: TransactionFilter
     .all();
 }
 
-export function getById(db: AppDatabase, userId: string, id: number) {
-  const transaction = db
+export async function getById(db: AppDatabase, userId: string, id: number) {
+  const transaction = await db
     .select({
       id: transactionsTable.id,
       userId: transactionsTable.userId,
@@ -113,7 +113,7 @@ export function getById(db: AppDatabase, userId: string, id: number) {
     throw new AppError("Transaction not found", 404);
   }
 
-  const contacts = db
+  const contacts = await db
     .select({ contactId: transactionContactsTable.contactId })
     .from(transactionContactsTable)
     .where(eq(transactionContactsTable.transactionId, id))
@@ -125,10 +125,10 @@ export function getById(db: AppDatabase, userId: string, id: number) {
   };
 }
 
-export function create(db: AppDatabase, userId: string, payload: TransactionCreateInput) {
+export async function create(db: AppDatabase, userId: string, payload: TransactionCreateInput) {
   const { contactIds, ...transactionData } = payload;
 
-  const transaction = db
+  const transaction = await db
     .insert(transactionsTable)
     .values({
       userId,
@@ -152,7 +152,8 @@ export function create(db: AppDatabase, userId: string, payload: TransactionCrea
 
   if (contactIds?.length) {
     for (const contactId of contactIds) {
-      db.insert(transactionContactsTable)
+      await db
+        .insert(transactionContactsTable)
         .values({ transactionId: transaction.id, contactId })
         .run();
     }
@@ -161,8 +162,8 @@ export function create(db: AppDatabase, userId: string, payload: TransactionCrea
   return transaction;
 }
 
-export function update(db: AppDatabase, userId: string, id: number, payload: TransactionUpdateInput) {
-  const existing = db
+export async function update(db: AppDatabase, userId: string, id: number, payload: TransactionUpdateInput) {
+  const existing = await db
     .select({ id: transactionsTable.id })
     .from(transactionsTable)
     .where(and(eq(transactionsTable.id, id), eq(transactionsTable.userId, userId)))
@@ -189,7 +190,7 @@ export function update(db: AppDatabase, userId: string, id: number, payload: Tra
   if (updateData.note !== undefined) setData.note = updateData.note;
   if (updateData.date !== undefined) setData.date = new Date(updateData.date);
 
-  const transaction = db
+  const transaction = await db
     .update(transactionsTable)
     .set(setData)
     .where(and(eq(transactionsTable.id, id), eq(transactionsTable.userId, userId)))
@@ -197,12 +198,14 @@ export function update(db: AppDatabase, userId: string, id: number, payload: Tra
     .get();
 
   if (contactIds !== undefined) {
-    db.delete(transactionContactsTable)
+    await db
+      .delete(transactionContactsTable)
       .where(eq(transactionContactsTable.transactionId, id))
       .run();
 
     for (const contactId of contactIds) {
-      db.insert(transactionContactsTable)
+      await db
+        .insert(transactionContactsTable)
         .values({ transactionId: id, contactId })
         .run();
     }
@@ -211,8 +214,8 @@ export function update(db: AppDatabase, userId: string, id: number, payload: Tra
   return transaction;
 }
 
-export function archive(db: AppDatabase, userId: string, id: number) {
-  const existing = db
+export async function archive(db: AppDatabase, userId: string, id: number) {
+  const existing = await db
     .select({ id: transactionsTable.id })
     .from(transactionsTable)
     .where(and(eq(transactionsTable.id, id), eq(transactionsTable.userId, userId)))
@@ -222,7 +225,8 @@ export function archive(db: AppDatabase, userId: string, id: number) {
     throw new AppError("Transaction not found", 404);
   }
 
-  db.delete(transactionsTable)
+  await db
+    .delete(transactionsTable)
     .where(and(eq(transactionsTable.id, id), eq(transactionsTable.userId, userId)))
     .run();
 }

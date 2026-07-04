@@ -7,7 +7,7 @@ import type {
 import { AppError } from "../../lib/error.js";
 import type { AppDatabase } from "../../db.js";
 
-export function list(db: AppDatabase, userId: string) {
+export async function list(db: AppDatabase, userId: string) {
   return db
     .select()
     .from(contactsTable)
@@ -16,8 +16,8 @@ export function list(db: AppDatabase, userId: string) {
     .all();
 }
 
-export function getById(db: AppDatabase, userId: string, id: number) {
-  const contact = db
+export async function getById(db: AppDatabase, userId: string, id: number) {
+  const contact = await db
     .select()
     .from(contactsTable)
     .where(and(eq(contactsTable.id, id), eq(contactsTable.userId, userId)))
@@ -30,7 +30,7 @@ export function getById(db: AppDatabase, userId: string, id: number) {
   return contact;
 }
 
-export function create(db: AppDatabase, userId: string, payload: ContactCreateInput) {
+export async function create(db: AppDatabase, userId: string, payload: ContactCreateInput) {
   return db
     .insert(contactsTable)
     .values({ userId, name: payload.name })
@@ -38,13 +38,13 @@ export function create(db: AppDatabase, userId: string, payload: ContactCreateIn
     .get();
 }
 
-export function update(
+export async function update(
   db: AppDatabase,
   userId: string,
   id: number,
   payload: ContactUpdateInput,
 ) {
-  getById(db, userId, id);
+  await getById(db, userId, id);
 
   return db
     .update(contactsTable)
@@ -54,10 +54,11 @@ export function update(
     .get();
 }
 
-export function archive(db: AppDatabase, userId: string, id: number) {
-  getById(db, userId, id);
+export async function archive(db: AppDatabase, userId: string, id: number) {
+  await getById(db, userId, id);
 
-  db.update(contactsTable)
+  await db
+    .update(contactsTable)
     .set({ isArchived: true, updatedAt: new Date() })
     .where(and(eq(contactsTable.id, id), eq(contactsTable.userId, userId)))
     .run();

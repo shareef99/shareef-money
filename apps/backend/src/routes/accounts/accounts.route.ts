@@ -26,10 +26,10 @@ const listRoute = createRoute({
   },
 });
 
-accountsRoute.openapi(listRoute, (c) => {
+accountsRoute.openapi(listRoute, async (c) => {
   const db = c.get("db");
   const userId = c.get("userId");
-  const accounts = accountsService.list(db, userId);
+  const accounts = await accountsService.list(db, userId);
   return c.json(accounts, 200);
 });
 
@@ -50,11 +50,11 @@ const createAccountRoute = createRoute({
   },
 });
 
-accountsRoute.openapi(createAccountRoute, (c) => {
+accountsRoute.openapi(createAccountRoute, async (c) => {
   const db = c.get("db");
   const userId = c.get("userId");
   const body = c.req.valid("json");
-  const account = accountsService.create(db, userId, body);
+  const account = await accountsService.create(db, userId, body);
   return c.json(account, 201);
 });
 
@@ -79,13 +79,13 @@ const getAccountRoute = createRoute({
   },
 });
 
-accountsRoute.openapi(getAccountRoute, (c) => {
+accountsRoute.openapi(getAccountRoute, async (c) => {
   const db = c.get("db");
   const userId = c.get("userId");
   const { id } = c.req.valid("param");
 
   try {
-    const account = accountsService.getById(db, userId, id);
+    const account = await accountsService.getById(db, userId, id);
     return c.json(account, 200);
   } catch (error) {
     if (error instanceof AppError) {
@@ -117,14 +117,14 @@ const updateAccountRoute = createRoute({
   },
 });
 
-accountsRoute.openapi(updateAccountRoute, (c) => {
+accountsRoute.openapi(updateAccountRoute, async (c) => {
   const db = c.get("db");
   const userId = c.get("userId");
   const { id } = c.req.valid("param");
   const body = c.req.valid("json");
 
   try {
-    const account = accountsService.update(db, userId, id, body);
+    const account = await accountsService.update(db, userId, id, body);
     return c.json(account, 200);
   } catch (error) {
     if (error instanceof AppError) {
@@ -155,13 +155,13 @@ const deleteAccountRoute = createRoute({
   },
 });
 
-accountsRoute.openapi(deleteAccountRoute, (c) => {
+accountsRoute.openapi(deleteAccountRoute, async (c) => {
   const db = c.get("db");
   const userId = c.get("userId");
   const { id } = c.req.valid("param");
 
   try {
-    accountsService.archive(db, userId, id);
+    await accountsService.archive(db, userId, id);
     return c.json({ message: "Account archived" }, 200);
   } catch (error) {
     if (error instanceof AppError) {

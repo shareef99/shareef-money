@@ -41,7 +41,7 @@ const listRoute = createRoute({
   },
 });
 
-transactionsRoute.openapi(listRoute, (c) => {
+transactionsRoute.openapi(listRoute, async (c) => {
   const db = c.get("db");
   const userId = c.get("userId");
   const query = c.req.valid("query");
@@ -60,7 +60,7 @@ transactionsRoute.openapi(listRoute, (c) => {
     offset: query.offset,
   };
 
-  const transactions = transactionsService.list(db, userId, filters);
+  const transactions = await transactionsService.list(db, userId, filters);
   return c.json(transactions, 200);
 });
 
@@ -83,11 +83,11 @@ const createTransactionRoute = createRoute({
   },
 });
 
-transactionsRoute.openapi(createTransactionRoute, (c) => {
+transactionsRoute.openapi(createTransactionRoute, async (c) => {
   const db = c.get("db");
   const userId = c.get("userId");
   const body = c.req.valid("json");
-  const transaction = transactionsService.create(db, userId, body);
+  const transaction = await transactionsService.create(db, userId, body);
   return c.json(transaction, 201);
 });
 
@@ -112,13 +112,13 @@ const getTransactionRoute = createRoute({
   },
 });
 
-transactionsRoute.openapi(getTransactionRoute, (c) => {
+transactionsRoute.openapi(getTransactionRoute, async (c) => {
   const db = c.get("db");
   const userId = c.get("userId");
   const { id } = c.req.valid("param");
 
   try {
-    const transaction = transactionsService.getById(db, userId, id);
+    const transaction = await transactionsService.getById(db, userId, id);
     return c.json(transaction, 200);
   } catch (error) {
     if (error instanceof AppError) {
@@ -152,14 +152,14 @@ const updateTransactionRoute = createRoute({
   },
 });
 
-transactionsRoute.openapi(updateTransactionRoute, (c) => {
+transactionsRoute.openapi(updateTransactionRoute, async (c) => {
   const db = c.get("db");
   const userId = c.get("userId");
   const { id } = c.req.valid("param");
   const body = c.req.valid("json");
 
   try {
-    const transaction = transactionsService.update(db, userId, id, body);
+    const transaction = await transactionsService.update(db, userId, id, body);
     return c.json(transaction, 200);
   } catch (error) {
     if (error instanceof AppError) {
@@ -192,13 +192,13 @@ const deleteTransactionRoute = createRoute({
   },
 });
 
-transactionsRoute.openapi(deleteTransactionRoute, (c) => {
+transactionsRoute.openapi(deleteTransactionRoute, async (c) => {
   const db = c.get("db");
   const userId = c.get("userId");
   const { id } = c.req.valid("param");
 
   try {
-    transactionsService.archive(db, userId, id);
+    await transactionsService.archive(db, userId, id);
     return c.json({ message: "Transaction deleted" }, 200);
   } catch (error) {
     if (error instanceof AppError) {

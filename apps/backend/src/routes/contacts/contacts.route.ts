@@ -29,10 +29,10 @@ const listRoute = createRoute({
   },
 });
 
-contactsRoute.openapi(listRoute, (c) => {
+contactsRoute.openapi(listRoute, async (c) => {
   const db = c.get("db");
   const userId = c.get("userId");
-  return c.json(contactsService.list(db, userId), 200);
+  return c.json(await contactsService.list(db, userId), 200);
 });
 
 const createContactRoute = createRoute({
@@ -52,11 +52,11 @@ const createContactRoute = createRoute({
   },
 });
 
-contactsRoute.openapi(createContactRoute, (c) => {
+contactsRoute.openapi(createContactRoute, async (c) => {
   const db = c.get("db");
   const userId = c.get("userId");
   const body = c.req.valid("json");
-  return c.json(contactsService.create(db, userId, body), 201);
+  return c.json(await contactsService.create(db, userId, body), 201);
 });
 
 const updateContactRoute = createRoute({
@@ -81,14 +81,14 @@ const updateContactRoute = createRoute({
   },
 });
 
-contactsRoute.openapi(updateContactRoute, (c) => {
+contactsRoute.openapi(updateContactRoute, async (c) => {
   const db = c.get("db");
   const userId = c.get("userId");
   const { id } = c.req.valid("param");
   const body = c.req.valid("json");
 
   try {
-    return c.json(contactsService.update(db, userId, id, body), 200);
+    return c.json(await contactsService.update(db, userId, id, body), 200);
   } catch (error) {
     if (error instanceof AppError) {
       return c.json({ message: error.message }, error.status as 404);
@@ -116,13 +116,13 @@ const deleteContactRoute = createRoute({
   },
 });
 
-contactsRoute.openapi(deleteContactRoute, (c) => {
+contactsRoute.openapi(deleteContactRoute, async (c) => {
   const db = c.get("db");
   const userId = c.get("userId");
   const { id } = c.req.valid("param");
 
   try {
-    contactsService.archive(db, userId, id);
+    await contactsService.archive(db, userId, id);
     return c.json({ message: "Contact archived" }, 200);
   } catch (error) {
     if (error instanceof AppError) {
