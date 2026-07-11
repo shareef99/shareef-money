@@ -17,7 +17,7 @@ import {
 } from "../../../services/recurring-service";
 import { useSettings } from "../../../queries/use-settings";
 import { useCategories } from "../../../queries/use-categories";
-import { useAccounts } from "../../../queries/use-accounts";
+import { useAccountsWithBalances } from "../../../queries/use-accounts";
 import { useLocations, useCreateLocation } from "../../../queries/use-locations";
 import { useContacts, useCreateContact } from "../../../queries/use-contacts";
 import { TransactionTypeTabs } from "../../../components/transaction-type-tabs";
@@ -63,7 +63,13 @@ export default function AddTransactionScreen() {
   const { data: categories = [] } = useCategories(
     type === "income" || type === "expense" ? type : undefined,
   );
-  const { data: accounts = [] } = useAccounts();
+  // Live balances so the account picker shows real amounts (not the always-zero
+  // stored opening balance). Hidden accounts aren't selectable for new entries.
+  const { data: accountsData } = useAccountsWithBalances();
+  const accounts = useMemo(
+    () => accountsData.accounts.filter((a) => !a.isHidden),
+    [accountsData],
+  );
   const { data: locations = [] } = useLocations();
   const { data: contacts = [] } = useContacts();
   const { data: editTx } = useTransaction(editId);

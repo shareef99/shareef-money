@@ -138,7 +138,10 @@ export function StatsDashboard() {
     <View className="flex-1">
       <StatsFilterBar />
       <GestureDetector gesture={swipe}>
-        <ScrollView contentContainerStyle={{ paddingTop: 8, paddingBottom: 40 }}>
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{ paddingTop: 8, paddingBottom: 40 }}
+        >
           <SummaryCards summary={summary} />
           {prevFilter ? (
             <PeriodComparisonCard current={summary} previous={prevSummary} />

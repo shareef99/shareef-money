@@ -1,5 +1,6 @@
-import { Pressable, Text, View } from "react-native";
+import { Pressable, Text, View, useColorScheme } from "react-native";
 import { Delete } from "lucide-react-native";
+import { getColors } from "../lib/colors";
 
 type Props = {
   value: string;
@@ -15,6 +16,7 @@ const KEYS = [
 ];
 
 export function NumericKeypad({ value, onChange, onDone }: Props) {
+  const c = getColors(useColorScheme());
   const handlePress = (key: string) => {
     if (key === "backspace") {
       onChange(value.slice(0, -1));
@@ -53,7 +55,7 @@ export function NumericKeypad({ value, onChange, onDone }: Props) {
               onPress={() => handlePress(key)}
             >
               {key === "backspace" ? (
-                <Delete size={24} className="text-text" />
+                <Delete size={24} color={c.text} />
               ) : (
                 <Text className="text-xl font-medium text-text">{key}</Text>
               )}

@@ -16,6 +16,12 @@ import { useDebtReminders } from "../../../queries/use-debts";
 import { useMaterializeRecurring } from "../../../queries/use-recurring";
 import { useSettings } from "../../../queries/use-settings";
 
+// Transactions sits in the centre of the bar but is still the default landing
+// tab, so anchor the navigator to it (the start-screen setting can override).
+export const unstable_settings = {
+  initialRouteName: "transactions",
+};
+
 export default function TabLayout() {
   const scheme = useColorScheme();
   const c = getColors(scheme);
@@ -66,12 +72,13 @@ export default function TabLayout() {
         },
       }}
     >
+      {/* Order: Debts · Stats · Trans. (center) · Accounts · More */}
       <Tabs.Screen
-        name="transactions"
+        name="debts"
         options={{
-          title: "Trans.",
+          title: "Debts",
           tabBarIcon: ({ color, size }) => (
-            <ArrowLeftRight size={size} color={color} strokeWidth={1.5} />
+            <HandCoins size={size} color={color} strokeWidth={1.5} />
           ),
         }}
       />
@@ -85,20 +92,20 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="transactions"
+        options={{
+          title: "Trans.",
+          tabBarIcon: ({ color, size }) => (
+            <ArrowLeftRight size={size} color={color} strokeWidth={1.5} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="accounts"
         options={{
           title: "Accounts",
           tabBarIcon: ({ color, size }) => (
             <Wallet size={size} color={color} strokeWidth={1.5} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="debts"
-        options={{
-          title: "Debts",
-          tabBarIcon: ({ color, size }) => (
-            <HandCoins size={size} color={color} strokeWidth={1.5} />
           ),
         }}
       />

@@ -18,7 +18,7 @@ import {
   useUpdateTransaction,
   useDeleteTransaction,
 } from "../../../queries/use-transactions";
-import { useAccounts } from "../../../queries/use-accounts";
+import { useAccountsWithBalances } from "../../../queries/use-accounts";
 import { useContacts, useCreateContact } from "../../../queries/use-contacts";
 import { NumericKeypad } from "../../../components/numeric-keypad";
 import { AccountPicker } from "../../../components/account-picker";
@@ -58,7 +58,11 @@ export default function AddDebtScreen() {
   const [showContactPicker, setShowContactPicker] = useState(false);
   const [showKeypad, setShowKeypad] = useState(true);
 
-  const { data: accounts = [] } = useAccounts();
+  const { data: accountsData } = useAccountsWithBalances();
+  const accounts = useMemo(
+    () => accountsData.accounts.filter((a) => !a.isHidden),
+    [accountsData],
+  );
   const { data: contacts = [] } = useContacts();
   const { data: editTx } = useTransaction(editId);
 

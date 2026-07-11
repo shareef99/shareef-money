@@ -9,7 +9,9 @@ type Props = {
   visible: boolean;
   onClose: () => void;
   onSelect: (account: Account) => void;
-  accounts: Account[];
+  // Accounts may carry a computed live `balance`; when absent we fall back to
+  // the stored opening balance.
+  accounts: (Account & { balance?: number })[];
   title?: string;
 };
 
@@ -41,7 +43,7 @@ export function AccountPicker({
               >
                 <Text className="text-base text-text">{item.name}</Text>
                 <Text className="text-sm text-text-secondary">
-                  {formatCurrency(item.initialBalance)}
+                  {formatCurrency(item.balance ?? item.initialBalance)}
                 </Text>
               </Pressable>
             )}
