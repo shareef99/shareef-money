@@ -22,19 +22,20 @@ built but **parked** — sync is dormant behind `SYNC_ENABLED = false` in
     biometric-recheck nits.
 
 **Builds (EAS · `com.shareef.money` · new icon + audit fixes)**
-- Production `.aab` **versionCode 5** — the artifact to upload to Play (supersedes
-  the stale v4 icon-only builds).
-- Preview `.apk` — for on-device QA.
+- Production `.aab` **versionCode 6** (commit `5d5e8ab`, includes the net-worth
+  fix) — the artifact to upload to Play. Supersedes v5/v4.
+- Preview `.apk` — used for on-device QA.
 
-**Next up (resume here)**
-- Install the preview APK, run the full on-device QA pass (esp. the fixed paths:
-  recurring posts, transfer-without-destination is blocked, backup with a due-dated
-  debt round-trips, edit an old transaction via Search).
-- Upload AAB **v5** to Play → closed testing (personal account = 12 testers / 14 days).
-- **Blocker for Play "App content":** a hosted **privacy policy URL** — draft is
-  ready in [BACKLOG.md](../BACKLOG.md).
-- Then: marketing site + privacy/terms pages; later (~1 month) re-enable sync +
-  dashboards (see BACKLOG.md).
+**Next up — see [PLAY_STORE_SUBMISSION.md](./PLAY_STORE_SUBMISSION.md)**
+- On-device QA: **done** (18-month seed data restores + persists across cold
+  restart; app fully standalone).
+- Privacy + Terms: **done** — hosted at `money.shareefsolutions.in/privacy` and
+  `/terms` (the Play "App content" blocker is cleared).
+- Store assets: **done** — 512 icon, 1024×500 feature graphic, 10 screenshots
+  (in `Pictures\shareef-money-marketing\`).
+- Remaining: Play Console setup + the mandatory **14-day closed test** (≥12
+  testers). Then apply for production access → publish.
+- Later (~1 month): re-enable sync + dashboards (see BACKLOG.md).
 
 ---
 
