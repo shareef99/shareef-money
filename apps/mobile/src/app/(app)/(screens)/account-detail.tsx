@@ -138,18 +138,20 @@ export default function AccountDetailScreen() {
           visible={showEdit}
           title="Edit Account"
           initialName={account.name}
-          initialBalance={account.initialBalance}
           initialDescription={account.description}
           initialColor={account.color}
           initialHidden={account.isHidden}
           showHideToggle
+          // Balance is derived from the opening-balance income entry; editing a
+          // raw initialBalance here would double-count it, so hide the field and
+          // never send it on update.
+          showBalance={false}
           onClose={() => setShowEdit(false)}
           onSubmit={(values) => {
             updateAccount.mutate({
               id: account.id,
               payload: {
                 name: values.name,
-                initialBalance: values.initialBalance,
                 description: values.description,
                 color: values.color,
                 isHidden: values.isHidden,

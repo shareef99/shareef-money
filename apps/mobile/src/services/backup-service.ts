@@ -39,7 +39,7 @@ const DATE_FIELDS = {
   categories: ["createdAt", "updatedAt"],
   contacts: ["createdAt", "updatedAt"],
   locations: ["createdAt", "updatedAt"],
-  transactions: ["date", "createdAt", "updatedAt"],
+  transactions: ["date", "dueDate", "createdAt", "updatedAt"],
   recurringRules: [
     "startDate",
     "endDate",

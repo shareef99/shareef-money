@@ -6,6 +6,7 @@ import { getColors } from "../lib/colors";
 import {
   verifyPasscode,
   isBiometricEnabled,
+  canUseBiometrics,
   authenticateBiometric,
   getLockoutState,
   recordFailedAttempt,
@@ -53,15 +54,18 @@ export function LockScreen({ onUnlock }: Props) {
     }
   }, [onUnlock]);
 
-  // On mount, if biometric unlock is enabled, surface the button and prompt
-  // the OS dialog automatically.
+  // On mount, if biometric unlock is enabled AND still usable (hardware present
+  // with an enrolled fingerprint/face — the user may have removed it since),
+  // surface the button and prompt the OS dialog automatically.
   useEffect(() => {
     let cancelled = false;
-    isBiometricEnabled().then((enabled) => {
-      if (cancelled || !enabled) return;
-      setBiometricOn(true);
-      tryBiometric();
-    });
+    Promise.all([isBiometricEnabled(), canUseBiometrics()]).then(
+      ([enabled, usable]) => {
+        if (cancelled || !enabled || !usable) return;
+        setBiometricOn(true);
+        tryBiometric();
+      },
+    );
     return () => {
       cancelled = true;
     };

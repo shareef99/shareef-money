@@ -38,6 +38,7 @@ export function useMigrateOpeningBalances() {
         queryClient.invalidateQueries({ queryKey: accountKeys.all });
         queryClient.invalidateQueries({ queryKey: ["transactions"] });
         queryClient.invalidateQueries({ queryKey: ["categories"] });
+        queryClient.invalidateQueries({ queryKey: ["debts"] });
         triggerSync();
       }
       return migrated;
@@ -75,6 +76,9 @@ export function useCreateAccount() {
       // (and its category), so refresh those caches too.
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["categories"] });
+      // Net worth (Accounts header + net-worth stats) is derived under the debts
+      // key, so an account's opening balance must refresh it too.
+      queryClient.invalidateQueries({ queryKey: ["debts"] });
       triggerSync();
     },
   });
@@ -93,6 +97,8 @@ export function useUpdateAccount() {
     }) => accountService.updateAccount(db, user!.id, id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: accountKeys.all });
+      // Hiding/unhiding an account changes total assets → net worth.
+      queryClient.invalidateQueries({ queryKey: ["debts"] });
       triggerSync();
     },
   });
@@ -108,6 +114,8 @@ export function useArchiveAccount() {
     mutationFn: (id: number) => accountService.archiveAccount(db, user!.id, id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: accountKeys.all });
+      // Archiving removes the account's balance from net worth.
+      queryClient.invalidateQueries({ queryKey: ["debts"] });
       triggerSync();
     },
   });

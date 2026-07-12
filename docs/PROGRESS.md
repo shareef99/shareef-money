@@ -1,5 +1,44 @@
 # Shareef Money — Implementation Progress
 
+## Current status — 2026-07-04 (pre-Play-Store release)
+
+The app pivoted to **local-first** (no accounts, no cloud sync) to ship to the Play
+Store now. The cloud backend / sync / web items in the phase checklist below are
+built but **parked** — sync is dormant behind `SYNC_ENABLED = false` in
+`apps/mobile/src/providers/sync-provider.tsx` — for a post-launch pass. Treat the
+`[ ]` items below as reflecting the *old* cloud-first plan, not current TODOs.
+
+**Done**
+- Local-first conversion: device-local synthesized user, cloud auth/sync removed or
+  dormant, `(auth)` routes deleted. Package renamed to `com.shareef.money`.
+- New brand identity (infinity mark) across icon / splash / adaptive assets.
+- Pre-release code audit (strict typecheck + multi-area review): 8 bugs + 3 nits
+  found and **all fixed** in commit `16c8ec0`:
+  - Recurring auto-post revived (had gone dead when sync went dormant), transfer
+    now requires a distinct destination, backup restore due-date fix, account-edit
+    balance no longer double-counts, passcode lock engages on cold start, edit
+    modals load by id, soft-deleted recurring templates stop regenerating,
+    recurring clones carry the counterparty; + search-join / color-picker /
+    biometric-recheck nits.
+
+**Builds (EAS · `com.shareef.money` · new icon + audit fixes)**
+- Production `.aab` **versionCode 6** (commit `5d5e8ab`, includes the net-worth
+  fix) — the artifact to upload to Play. Supersedes v5/v4.
+- Preview `.apk` — used for on-device QA.
+
+**Next up — see [PLAY_STORE_SUBMISSION.md](./PLAY_STORE_SUBMISSION.md)**
+- On-device QA: **done** (18-month seed data restores + persists across cold
+  restart; app fully standalone).
+- Privacy + Terms: **done** — hosted at `money.shareefsolutions.in/privacy` and
+  `/terms` (the Play "App content" blocker is cleared).
+- Store assets: **done** — 512 icon, 1024×500 feature graphic, 10 screenshots
+  (in `Pictures\shareef-money-marketing\`).
+- Remaining: Play Console setup + the mandatory **14-day closed test** (≥12
+  testers). Then apply for production access → publish.
+- Later (~1 month): re-enable sync + dashboards (see BACKLOG.md).
+
+---
+
 ## Phase 1: Foundation (no UI)
 
 - [x] `packages/db` — Drizzle schema for all tables (users, sessions, accounts, categories, contacts, locations, transactions, transaction_contacts, recurring_rules, settings, sync_log)

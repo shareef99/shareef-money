@@ -2,6 +2,7 @@ import { eq, and, gte, lte, desc, sql, inArray, or, isNull } from "drizzle-orm";
 import {
   transactionsTable,
   transactionContactsTable,
+  recurringRulesTable,
 } from "@shareef-money/db/schema";
 import type { TransactionType } from "@shareef-money/shared/types";
 import type { Db } from "../db/client";
@@ -51,6 +52,28 @@ export async function getTransactions(db: Db, userId: string, filters: Transacti
     orderBy: desc(transactionsTable.date),
     limit: filters.limit ?? 500,
     offset: filters.offset ?? 0,
+    with: {
+      category: true,
+      account: true,
+      toAccount: true,
+      contact: true,
+      location: true,
+      transactionContacts: true,
+    },
+  });
+}
+
+// A single transaction by id, with all relations. Used to hydrate the edit modal
+// directly, instead of searching the (capped) transactions list — which misses
+// any record older than the most-recent page, yet those are reachable to edit via
+// Search and the uncapped account history.
+export async function getTransactionById(db: Db, userId: string, id: number) {
+  return db.query.transactionsTable.findFirst({
+    where: and(
+      eq(transactionsTable.id, id),
+      eq(transactionsTable.userId, userId),
+      isNull(transactionsTable.deletedAt),
+    ),
     with: {
       category: true,
       account: true,
@@ -284,4 +307,18 @@ export async function deleteTransaction(db: Db, userId: string, id: number) {
     .update(transactionsTable)
     .set({ deletedAt: Date.now(), updatedAt: new Date() })
     .where(and(eq(transactionsTable.id, id), eq(transactionsTable.userId, userId)));
+
+  // If this transaction is a recurring template, cancel its rule too. Otherwise
+  // the rule keeps pointing at the tombstoned template and would regenerate it
+  // (and it would linger on the Recurring screen). Deleting a materialized clone
+  // is unaffected — clones aren't a rule's transactionId.
+  await db
+    .update(recurringRulesTable)
+    .set({ deletedAt: Date.now(), updatedAt: new Date() })
+    .where(
+      and(
+        eq(recurringRulesTable.transactionId, id),
+        eq(recurringRulesTable.userId, userId),
+      ),
+    );
 }

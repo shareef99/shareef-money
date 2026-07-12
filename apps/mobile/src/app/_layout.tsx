@@ -8,7 +8,10 @@ import { ThemedRoot } from "../components/themed-root";
 import { LockScreen } from "../components/lock-screen";
 
 function LockGate() {
-  const { isLocked, unlock } = useLock();
+  const { isLocked, checking, unlock } = useLock();
+  // Hold on the themed background until the passcode state is known, so a
+  // protected device never paints app content before the lock screen.
+  if (checking) return null;
   if (isLocked) {
     return <LockScreen onUnlock={unlock} />;
   }

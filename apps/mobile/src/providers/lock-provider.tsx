@@ -14,6 +14,9 @@ type LockContextValue = {
   isLocked: boolean;
   // A passcode is configured for this device.
   lockEnabled: boolean;
+  // True until the first passcode-state read resolves; the gate renders nothing
+  // (neither app nor lock screen) while this is true.
+  checking: boolean;
   unlock: () => void;
   // Re-read passcode state after enabling/disabling it in settings.
   refresh: () => Promise<void>;
@@ -34,11 +37,18 @@ export function LockProvider({ children }: { children: ReactNode }) {
   // Start locked until we know whether a passcode exists, so the UI never
   // flashes the app content before the lock screen on a protected device.
   const [isLocked, setIsLocked] = useState(true);
+  const [checking, setChecking] = useState(true);
 
   const refresh = useCallback(async () => {
-    const enabled = await hasPasscode();
-    setLockEnabled(enabled);
-    setIsLocked(enabled);
+    try {
+      const enabled = await hasPasscode();
+      setLockEnabled(enabled);
+      setIsLocked(enabled);
+    } finally {
+      // Always clear `checking`, even if the keystore read throws, so the gate
+      // can't get stuck on a blank screen (falls open to the app, as before).
+      setChecking(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -59,7 +69,7 @@ export function LockProvider({ children }: { children: ReactNode }) {
   const unlock = useCallback(() => setIsLocked(false), []);
 
   return (
-    <LockContext value={{ isLocked: lockEnabled && isLocked, lockEnabled, unlock, refresh }}>
+    <LockContext value={{ isLocked: lockEnabled && isLocked, lockEnabled, checking, unlock, refresh }}>
       {children}
     </LockContext>
   );

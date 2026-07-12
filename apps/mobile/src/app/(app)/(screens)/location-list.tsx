@@ -97,6 +97,7 @@ export default function LocationListScreen() {
           initialName={
             formTarget && formTarget !== "add" ? formTarget.name : undefined
           }
+          showColor={false}
           onClose={() => setFormTarget(null)}
           onSubmit={handleSubmit}
         />

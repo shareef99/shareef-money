@@ -6,7 +6,7 @@ import { useSync } from "../providers/sync-provider";
 import * as settingsService from "../services/settings-service";
 
 export type SwipeAction = "change_date" | "change_tab";
-export type StartScreen = "transactions" | "stats" | "accounts" | "more";
+export type StartScreen = "transactions" | "stats" | "accounts" | "debts";
 export type WeekStartDay = "sunday" | "monday";
 
 export type AppSettings = {
@@ -54,7 +54,7 @@ const DEFAULTS: AppSettings = {
   currencyCode: "INR",
 };
 
-const START_SCREENS: StartScreen[] = ["transactions", "stats", "accounts", "more"];
+const START_SCREENS: StartScreen[] = ["transactions", "stats", "accounts", "debts"];
 
 function parse(map: Record<string, string>): AppSettings {
   const bool = (k: string, d: boolean) =>

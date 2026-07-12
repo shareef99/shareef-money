@@ -230,7 +230,7 @@ export default function ConfigurationScreen() {
           <Pressable onPress={() => router.back()} className="p-2 -ml-2">
             <ArrowLeft size={24} color={c.text} />
           </Pressable>
-          <Text className="text-lg font-semibold text-text ml-2">Configuration</Text>
+          <Text className="text-lg font-semibold text-text ml-2">Settings</Text>
         </View>
 
         <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
@@ -298,7 +298,7 @@ export default function ConfigurationScreen() {
                 { key: "transactions", label: "Trans." },
                 { key: "stats", label: "Stats" },
                 { key: "accounts", label: "Accts" },
-                { key: "more", label: "More" },
+                { key: "debts", label: "Debts" },
               ]}
             />
           </View>

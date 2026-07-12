@@ -3,7 +3,7 @@ import { Pressable, ScrollView, Share, Text, View } from "react-native";
 import { useColorScheme } from "nativewind";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ArrowLeft, Share2 } from "lucide-react-native";
+import { ArrowDownLeft, ArrowLeft, ArrowUpRight, Share2 } from "lucide-react-native";
 import { formatCurrency } from "@shareef-money/shared/utils";
 import { useContactDebtEntries, useWriteOffDebt } from "../../../queries/use-debts";
 import { ConfirmModal } from "../../../components/confirm-modal";
@@ -23,6 +23,14 @@ export default function DebtLedgerScreen() {
   const name = data.name || params.name || "Person";
   const owesYou = data.net > 0;
   const settled = data.net === 0;
+
+  const openAdd = (type: "debt_lend" | "debt_borrow") => {
+    if (contactId == null) return;
+    router.push({
+      pathname: "/add-debt",
+      params: { type, contactId: String(contactId) },
+    });
+  };
 
   const settleUp = () => {
     if (settled || contactId == null) return;
@@ -113,6 +121,26 @@ export default function DebtLedgerScreen() {
             </View>
           )}
         </View>
+
+        {/* Quick-add a new entry for this person. */}
+        {contactId != null && (
+          <View className="flex-row gap-3 px-4 mb-2">
+            <Pressable
+              className="flex-1 flex-row items-center justify-center gap-2 h-11 rounded-xl bg-card border border-border active:opacity-70"
+              onPress={() => openAdd("debt_lend")}
+            >
+              <ArrowUpRight size={18} color={c.expense} />
+              <Text className="text-sm font-medium text-text">You gave</Text>
+            </Pressable>
+            <Pressable
+              className="flex-1 flex-row items-center justify-center gap-2 h-11 rounded-xl bg-card border border-border active:opacity-70"
+              onPress={() => openAdd("debt_borrow")}
+            >
+              <ArrowDownLeft size={18} color={c.income} />
+              <Text className="text-sm font-medium text-text">You got</Text>
+            </Pressable>
+          </View>
+        )}
 
         <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
           {data.entries.length === 0 ? (
