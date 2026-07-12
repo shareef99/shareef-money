@@ -6,7 +6,7 @@ Bring `apps/web` to feature parity with the mobile app. Decisions already made:
 
 ## Architecture
 
-- **Separate web app, NOT React Native Web.** Share *logic*, not *UI*. RNW would force either
+- **Separate web app, NOT React Native Web.** Share _logic_, not _UI_. RNW would force either
   offline-first-in-browser (rejected) or a full data-layer rewrite, drags in native-only deps
   (expo-sqlite / secure-store / notifications / gifted-charts), and yields phone-shaped desktop
   UI. The web keeps its web-native stack; we maximize sharing through the non-UI layers.
@@ -45,7 +45,7 @@ so mobile and web share one implementation:
 Then **refactor the mobile services** to fetch rows (db) and delegate to these — keeping their
 public signatures unchanged. The db-querying functions split into "fetch rows" (stays in the
 app) + "compute" (shared). Re-verify mobile (typecheck + device smoke) after the refactor.
-*Risk:* touching working mobile code — mitigated by pure extraction + re-verification.
+_Risk:_ touching working mobile code — mitigated by pure extraction + re-verification.
 
 ## Phase 0 — Backend + shared prep (no web UI yet)
 
@@ -79,8 +79,8 @@ app) + "compute" (shared). Re-verify mobile (typecheck + device smoke) after the
 
 - Dashboard: filter bar (period / type / account / category / location / contact / range),
   summary cards, category breakdown, income-vs-expense over time, net-worth line, debt summary
-  + debt trend, transfers, top locations/people, budget-vs-actual. Charts via Recharts, all
-  fed by the shared derive functions.
+  - debt trend, transfers, top locations/people, budget-vs-actual. Charts via Recharts, all
+    fed by the shared derive functions.
 
 ## Phase 4 — Debts + Budgets
 

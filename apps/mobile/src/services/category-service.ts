@@ -41,9 +41,11 @@ export async function ensureDefaultCategories(db: Db, userId: string): Promise<n
   let incomeOrder = 0;
   const all = [...defaultExpenseCategories, ...defaultIncomeCategories];
 
+  let categoryCount = 0;
   for (const cat of all) {
+    const parentId = generateSyncId();
     await db.insert(categoriesTable).values({
-      id: generateSyncId(),
+      id: parentId,
       userId,
       name: cat.name,
       type: cat.type,
@@ -52,9 +54,27 @@ export async function ensureDefaultCategories(db: Db, userId: string): Promise<n
       sortOrder: cat.type === "income" ? incomeOrder++ : expenseOrder++,
       isDefault: true,
     });
+    categoryCount++;
+
+    if (cat.subcategories) {
+      let subOrder = 0;
+      for (const sub of cat.subcategories) {
+        await db.insert(categoriesTable).values({
+          id: generateSyncId(),
+          userId,
+          name: sub.name,
+          type: cat.type,
+          color: sub.color,
+          parentId: parentId,
+          sortOrder: subOrder++,
+          isDefault: true,
+        });
+        categoryCount++;
+      }
+    }
   }
 
-  return all.length;
+  return categoryCount;
 }
 
 export const OPENING_BALANCE_CATEGORY = "Opening Balance";

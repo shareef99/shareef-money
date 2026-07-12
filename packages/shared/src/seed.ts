@@ -8,16 +8,71 @@ export interface SeedCategory {
 }
 
 export const defaultExpenseCategories: SeedCategory[] = [
-  { name: "Food", type: "expense", color: "#FF6B6B" },
-  { name: "Transport", type: "expense", color: "#4ECDC4" },
-  { name: "Mobile", type: "expense", color: "#45B7D1" },
-  { name: "Family", type: "expense", color: "#F7DC6F" },
-  { name: "Entertainment", type: "expense", color: "#BB8FCE" },
-  { name: "Charity", type: "expense", color: "#82E0AA" },
-  { name: "Games", type: "expense", color: "#F0B27A" },
-  { name: "Flowers", type: "expense", color: "#F1948A" },
-  { name: "My Self", type: "expense", color: "#85C1E9" },
-  { name: "Arshiya", type: "expense", color: "#D7BDE2" },
+  { 
+    name: "Food", type: "expense", color: "#FF6B6B",
+    subcategories: [
+      { name: "Groceries", color: "#FF9999" },
+      { name: "Restaurants", color: "#FF4D4D" },
+      { name: "Coffee", color: "#FFB366" },
+    ]
+  },
+  { 
+    name: "Transport", type: "expense", color: "#4ECDC4",
+    subcategories: [
+      { name: "Public Transit", color: "#79D9D2" },
+      { name: "Taxi/Ride", color: "#2EABA2" },
+      { name: "Fuel", color: "#A3E4DF" },
+    ]
+  },
+  { 
+    name: "Mobile", type: "expense", color: "#45B7D1",
+    subcategories: [
+      { name: "Plan/Recharge", color: "#70CDE2" },
+      { name: "Accessories", color: "#2B98B0" },
+    ]
+  },
+  { 
+    name: "Family", type: "expense", color: "#F7DC6F",
+    subcategories: [
+      { name: "Kids", color: "#F9E79F" },
+      { name: "Home Needs", color: "#F4D03F" },
+    ]
+  },
+  { 
+    name: "Entertainment", type: "expense", color: "#BB8FCE",
+    subcategories: [
+      { name: "Movies", color: "#D2B4DE" },
+      { name: "Subscriptions", color: "#A569BD" },
+    ]
+  },
+  { 
+    name: "Charity", type: "expense", color: "#82E0AA",
+    subcategories: [
+      { name: "Donations", color: "#A9DFBF" },
+      { name: "Zakat", color: "#58D68D" },
+    ]
+  },
+  { 
+    name: "Games", type: "expense", color: "#F0B27A",
+    subcategories: [
+      { name: "PC/Console", color: "#F5CBA7" },
+      { name: "In-App", color: "#EB984E" },
+    ]
+  },
+  { 
+    name: "Flowers", type: "expense", color: "#F1948A",
+    subcategories: [
+      { name: "Gifts", color: "#F5B7B1" },
+      { name: "Decor", color: "#EC7063" },
+    ]
+  },
+  { 
+    name: "My Self", type: "expense", color: "#85C1E9",
+    subcategories: [
+      { name: "Clothing", color: "#AED6F1" },
+      { name: "Personal Care", color: "#5DADE2" },
+    ]
+  },
 ];
 
 export const defaultIncomeCategories: SeedCategory[] = [
