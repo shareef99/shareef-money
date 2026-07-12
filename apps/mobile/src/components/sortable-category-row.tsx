@@ -11,7 +11,11 @@ type Props = {
   onDeletePress: () => void;
 };
 
-export function SortableCategoryRow({ category, onEditPress, onDeletePress }: Props) {
+export function SortableCategoryRow({
+  category,
+  onEditPress,
+  onDeletePress,
+}: Props) {
   const c = getColors(useColorScheme().colorScheme);
   return (
     <View className="flex-row items-center px-4 py-3 bg-background border-b border-border">
@@ -30,7 +34,7 @@ export function SortableCategoryRow({ category, onEditPress, onDeletePress }: Pr
       </Pressable>
       <Sortable.Handle>
         <View className="p-2 ml-1">
-          <Menu size={18} className="text-text-secondary" />
+          <Menu size={18} color={c.textSecondary} />
         </View>
       </Sortable.Handle>
     </View>

@@ -44,7 +44,9 @@ export function ColorPicker({ value, onChange }: Props) {
             style={{ backgroundColor: color }}
             className="w-9 h-9 rounded-full items-center justify-center active:opacity-80"
           >
-            {selected ? <Check size={18} color="#FFFFFF" strokeWidth={3} /> : null}
+            {selected ? (
+              <Check size={18} color="#FFFFFF" strokeWidth={3} />
+            ) : null}
           </Pressable>
         );
       })}
