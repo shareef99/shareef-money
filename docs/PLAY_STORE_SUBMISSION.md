@@ -3,9 +3,10 @@
 Step-by-step to publish, with our real values filled in. Ordered so the
 **14-day closed test** (the long pole) starts as early as possible.
 
-> Status as of 2026-07-11: code, build, privacy/terms hosting, and store assets
-> are all **ready**. What remains is Play Console configuration + the mandatory
-> closed test.
+> Status as of 2026-07-17: closed testing release is **live** and **12 testers
+> are opted in** — the mandatory **14-day window is running**. Keep ≥12 testers
+> opted in continuously; "Apply for production" unlocks when the window
+> completes (~2026-07-31 if the 12th tester joined 2026-07-17).
 
 ---
 
@@ -15,7 +16,7 @@ Step-by-step to publish, with our real values filled in. Ordered so the
 | ------------------ | --------------------------------------------------------------------------------------- |
 | App name           | **Shareef Money**                                                                       |
 | Package name       | `com.shareef.money`                                                                     |
-| Artifact to upload | Production **`.aab`**, `versionName 1.0.0`, **`versionCode 6`** (EAS, commit `5d5e8ab`) |
+| Artifact to upload | Production **`.aab`**, `versionName 1.0.0`, **`versionCode 8`** (EAS, commit `0ba6850`) |
 | Category           | Finance                                                                                 |
 | Content rating     | Everyone (see §6)                                                                       |
 | Price              | Free · no ads · no in-app purchases                                                     |
@@ -37,7 +38,7 @@ Step-by-step to publish, with our real values filled in. Ordered so the
 ## 0. Prerequisites
 
 - [x] Play developer account active.
-- [x] Production AAB (versionCode 6) built on EAS.
+- [x] Production AAB (versionCode 8, includes the pre-release UI fixes) built on EAS.
 - [x] Privacy + Terms live (200 OK).
 - [x] Store icon + feature graphic + screenshots ready.
 
@@ -51,9 +52,9 @@ English (India), type **App**, **Free**. Accept the declarations.
 Two ways to upload:
 
 - **`eas submit` (smoothest):** from `apps/mobile/` run `eas submit --platform android`
-  and pick the latest **production** build (versionCode 6). Needs a Google Play
+  and pick the latest **production** build (versionCode 8). Needs a Google Play
   service-account key the first time — or use the interactive flow.
-- **Manual:** download the versionCode 6 `.aab` from the Expo dashboard (or
+- **Manual:** download the versionCode 8 `.aab` from the Expo dashboard (or
   `eas build:list`) and upload it under **Testing → Closed testing → Create release**.
 
 Upload it to a **Closed testing** track first (not Production) — see §7.
@@ -114,6 +115,17 @@ opt in and stay for ≥14 continuous days** before production access is granted.
 - Roll out the closed release; confirm testers install and stay enrolled 14 days.
 - Fill **Countries/regions** for the track.
 
+**Status: LIVE (2026-07-17) — release published, 12 testers opted in.** During the
+window:
+
+- Keep **≥12 opted in continuously** — if the count dips below 12, those days
+  don't count. Ask testers not to opt out or uninstall.
+- Have testers **actually use the app** — the production-access application asks
+  about engagement, feedback received, and what you changed in response.
+- Shipping updates to the closed track is fine (and looks good); it does **not**
+  reset the clock.
+- Open **"Preview questions"** on the Production page now and draft answers.
+
 ## 8. Draft full description (refine or replace)
 
 > **Shareef Money — private, on-device money tracking.**
@@ -148,12 +160,12 @@ US export laws, content guidelines.
 
 ### Quick status checklist
 
-- [x] AAB versionCode 6 built
+- [x] AAB versionCode 8 built (includes pre-release UI fixes)
 - [x] Privacy + Terms hosted
 - [x] Icon 512 + feature graphic 1024×500
 - [x] Screenshots (10)
-- [ ] App created in Play Console
-- [ ] Store listing filled
-- [ ] App content (privacy, ads, data safety, rating, audience, financial features)
-- [ ] 12+ testers added, closed test live
-- [ ] 14-day test elapsed → production access → publish
+- [x] App created in Play Console
+- [x] App content (required before a closed release can publish)
+- [x] 12+ testers added, closed test live (2026-07-17)
+- [ ] Store listing finalized (must be done before production rollout)
+- [ ] 14-day window elapsed (~2026-07-31) → apply for production → review → publish
