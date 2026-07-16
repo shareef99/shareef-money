@@ -1,10 +1,11 @@
-import { Pressable, Text, View } from "react-native";
+import { Platform, Pressable, Text, View } from "react-native";
 import { useColorScheme } from "nativewind";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import {
   Cog,
   MapPin,
+  MessageSquareText,
   Moon,
   PiggyBank,
   Repeat,
@@ -12,12 +13,14 @@ import {
   Sun,
   Users,
 } from "lucide-react-native";
+import { usePendingSmsCount } from "../../../../queries/use-sms-imports";
 import { getColors } from "../../../../lib/colors";
 
 export default function MoreScreen() {
   const router = useRouter();
   const { colorScheme, toggleColorScheme } = useColorScheme();
   const c = getColors(colorScheme);
+  const { data: pendingSms = 0 } = usePendingSmsCount();
 
   return (
     <View className="flex-1 bg-background">
@@ -62,6 +65,24 @@ export default function MoreScreen() {
             <Repeat size={28} strokeWidth={1.5} color={c.text} />
             <Text className="text-sm text-text">Recurring</Text>
           </Pressable>
+          {Platform.OS === "android" && (
+            <Pressable
+              className="w-1/3 items-center gap-2 py-6 active:opacity-70"
+              onPress={() => router.push("/sms-inbox")}
+            >
+              <View>
+                <MessageSquareText size={28} strokeWidth={1.5} color={c.text} />
+                {pendingSms > 0 && (
+                  <View className="absolute -top-1.5 -right-2.5 min-w-4 h-4 px-1 rounded-full bg-primary items-center justify-center">
+                    <Text className="text-[10px] text-primary-foreground font-bold">
+                      {pendingSms > 99 ? "99+" : pendingSms}
+                    </Text>
+                  </View>
+                )}
+              </View>
+              <Text className="text-sm text-text">SMS Inbox</Text>
+            </Pressable>
+          )}
           <Pressable
             className="w-1/3 items-center gap-2 py-6 active:opacity-70"
             onPress={() => router.push("/configuration")}

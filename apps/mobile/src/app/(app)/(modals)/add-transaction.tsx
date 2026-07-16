@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Pressable, ScrollView, Text, TextInput, useColorScheme, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -20,6 +20,10 @@ import { useCategories } from "../../../queries/use-categories";
 import { useAccountsWithBalances } from "../../../queries/use-accounts";
 import { useLocations, useCreateLocation } from "../../../queries/use-locations";
 import { useContacts, useCreateContact } from "../../../queries/use-contacts";
+import {
+  useSmsImportPrefill,
+  useLinkSmsImport,
+} from "../../../queries/use-sms-imports";
 import { TransactionTypeTabs } from "../../../components/transaction-type-tabs";
 import { NumericKeypad } from "../../../components/numeric-keypad";
 import { CategoryPicker } from "../../../components/category-picker";
@@ -34,8 +38,11 @@ import { TYPE_BG, TYPE_BORDER, TYPE_LABELS } from "../../../lib/transaction-type
 
 export default function AddTransactionScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ id?: string }>();
+  const params = useLocalSearchParams<{ id?: string; smsId?: string }>();
   const editId = params.id ? Number(params.id) : null;
+  // Importing a detected bank SMS: prefills the form and, on save, links the
+  // SMS + remembers the merchant/account choices for next time.
+  const smsId = params.smsId ? Number(params.smsId) : null;
 
   const [type, setType] = useState<TransactionType>("expense");
   const [amountStr, setAmountStr] = useState("");
@@ -74,6 +81,7 @@ export default function AddTransactionScreen() {
   const { data: contacts = [] } = useContacts();
   const { data: editTx } = useTransaction(editId);
   const { data: settings } = useSettings();
+  const { data: smsPrefill } = useSmsImportPrefill(smsId);
 
   const createTransaction = useCreateTransaction();
   const updateTransaction = useUpdateTransaction();
@@ -81,6 +89,7 @@ export default function AddTransactionScreen() {
   const createRecurringRule = useCreateRecurringRule();
   const createLocation = useCreateLocation();
   const createContact = useCreateContact();
+  const linkSmsImport = useLinkSmsImport();
 
   const selectedCategory = useMemo(
     () => categories.find((c) => c.id === categoryId),
@@ -126,6 +135,31 @@ export default function AddTransactionScreen() {
       setAccountId(accounts[0]!.id);
     }
   }, [accounts, accountId]);
+
+  // Prefill from a detected bank SMS (import flow): amount, direction, date,
+  // note, plus the remembered account/category for this bank & merchant. The
+  // ref guards against re-running if the query refetches while editing.
+  const smsPrefillApplied = useRef(false);
+  useEffect(() => {
+    if (!smsPrefill?.sms || editId || smsPrefillApplied.current) return;
+    smsPrefillApplied.current = true;
+    const { sms, mappedAccountId, rule } = smsPrefill;
+    setType(sms.type);
+    setAmountStr(String(sms.amount / 100));
+    setDate(
+      sms.receivedAt instanceof Date
+        ? sms.receivedAt
+        : new Date(sms.receivedAt as number),
+    );
+    setNote(sms.counterparty ?? "");
+    if (mappedAccountId != null) setAccountId(mappedAccountId);
+    if (rule) {
+      setCategoryId(rule.categoryId);
+      if (rule.locationId != null) setLocationId(rule.locationId);
+    }
+    // The amount is already parsed — drop straight into the form.
+    setShowKeypad(false);
+  }, [smsPrefill, editId]);
 
   useEffect(() => {
     if (!editTx) return;
@@ -231,6 +265,22 @@ export default function AddTransactionScreen() {
                 startDate: new Date(payload.date),
               });
             }
+            // Importing an SMS: link it and remember the choices so the next
+            // message from this merchant/bank is one tap (or auto-imported).
+            if (smsId && tx && smsPrefill?.sms) {
+              linkSmsImport.mutate({
+                smsImportId: smsId,
+                transactionId: tx.id,
+                choices: {
+                  counterparty: smsPrefill.sms.counterparty,
+                  categoryId: payload.categoryId ?? null,
+                  locationId: payload.locationId ?? null,
+                  bankCode: smsPrefill.sms.bankCode,
+                  accountLast4: smsPrefill.sms.accountLast4,
+                  accountId: payload.accountId,
+                },
+              });
+            }
             onSuccess();
           },
         });
@@ -241,6 +291,7 @@ export default function AddTransactionScreen() {
       locationId, contactIds, note, date, editId, repeat,
       createTransaction, updateTransaction, createRecurringRule,
       settings, categories, selectedCategory,
+      smsId, smsPrefill, linkSmsImport,
     ],
   );
 
@@ -510,7 +561,7 @@ export default function AddTransactionScreen() {
                 {isSaving ? "Saving..." : "Save"}
               </Text>
             </Pressable>
-            {!editId && (
+            {!editId && !smsId && (
               <Pressable
                 className="px-6 h-12 rounded-xl items-center justify-center border border-border"
                 onPress={handleContinue}

@@ -14,6 +14,7 @@ import { useEnsureDefaultCategories } from "../../../queries/use-categories";
 import { useMigrateOpeningBalances } from "../../../queries/use-accounts";
 import { useDebtReminders } from "../../../queries/use-debts";
 import { useMaterializeRecurring } from "../../../queries/use-recurring";
+import { useAutoImportSms } from "../../../queries/use-sms-imports";
 import { useSettings } from "../../../queries/use-settings";
 
 // Transactions sits in the centre of the bar but is still the default landing
@@ -38,6 +39,8 @@ export default function TabLayout() {
   useDebtReminders();
   // Post any recurring transactions that have come due (cold start + foreground).
   useMaterializeRecurring();
+  // Auto-import new bank SMSes from known merchants (when enabled, Android).
+  useAutoImportSms();
 
   // Honor the configured start screen on first load (default is transactions).
   // Route groups in parens aren't URL segments, so the tab href is just "/tab".

@@ -8,6 +8,9 @@ import {
   transactionContactsTable,
   recurringRulesTable,
   settingsTable,
+  smsImportsTable,
+  merchantRulesTable,
+  senderAccountsTable,
 } from "@shareef-money/db/schema";
 import type { Db } from "../db/client";
 
@@ -29,6 +32,10 @@ export type BackupData = {
     transactionContacts: Row[];
     recurringRules: Row[];
     settings: Row[];
+    // Added with the SMS-import feature; absent in older backups (valid).
+    smsImports?: Row[];
+    merchantRules?: Row[];
+    senderAccounts?: Row[];
   };
 };
 
@@ -47,6 +54,9 @@ const DATE_FIELDS = {
     "createdAt",
     "updatedAt",
   ],
+  smsImports: ["receivedAt", "createdAt", "updatedAt"],
+  merchantRules: ["createdAt", "updatedAt"],
+  senderAccounts: ["createdAt", "updatedAt"],
 } as const;
 
 function serialize(rows: Row[]): Row[] {
@@ -89,6 +99,9 @@ export function exportAll(db: Db, userId: string): BackupData {
       ),
       recurringRules: serialize(byUser(db, recurringRulesTable as never, userId)),
       settings: serialize(byUser(db, settingsTable as never, userId)),
+      smsImports: serialize(byUser(db, smsImportsTable as never, userId)),
+      merchantRules: serialize(byUser(db, merchantRulesTable as never, userId)),
+      senderAccounts: serialize(byUser(db, senderAccountsTable as never, userId)),
     },
   };
 }
@@ -155,6 +168,25 @@ export function isValidBackup(obj: unknown): obj is BackupData {
     validRows(d.settings, [
       { key: "key", type: "string" },
       { key: "value", type: "string" },
+    ]) &&
+    validRows(d.smsImports, [
+      { key: "id", type: "number" },
+      { key: "smsHash", type: "string" },
+      { key: "body", type: "string" },
+      { key: "receivedAt", type: "number" },
+      { key: "amount", type: "number" },
+      { key: "type", type: "string" },
+      { key: "status", type: "string" },
+    ]) &&
+    validRows(d.merchantRules, [
+      { key: "id", type: "number" },
+      { key: "merchant", type: "string" },
+      { key: "categoryId", type: "number" },
+    ]) &&
+    validRows(d.senderAccounts, [
+      { key: "id", type: "number" },
+      { key: "bankCode", type: "string" },
+      { key: "accountId", type: "number" },
     ])
   );
 }
@@ -207,8 +239,11 @@ export function importAll(db: Db, userId: string, backup: BackupData) {
     const t = tx as unknown as Tx;
     // Wipe in dependency order (children first) in case FKs are enforced.
     tx.delete(transactionContactsTable).run();
+    tx.delete(smsImportsTable).where(eq(smsImportsTable.userId, userId)).run();
     tx.delete(recurringRulesTable).where(eq(recurringRulesTable.userId, userId)).run();
     tx.delete(transactionsTable).where(eq(transactionsTable.userId, userId)).run();
+    tx.delete(merchantRulesTable).where(eq(merchantRulesTable.userId, userId)).run();
+    tx.delete(senderAccountsTable).where(eq(senderAccountsTable.userId, userId)).run();
     tx.delete(accountsTable).where(eq(accountsTable.userId, userId)).run();
     tx.delete(categoriesTable).where(eq(categoriesTable.userId, userId)).run();
     tx.delete(contactsTable).where(eq(contactsTable.userId, userId)).run();
@@ -226,6 +261,15 @@ export function importAll(db: Db, userId: string, backup: BackupData) {
       recurringRulesTable as never,
       d.recurringRules,
       DATE_FIELDS.recurringRules,
+      userId,
+    );
+    insertRows(t, smsImportsTable as never, d.smsImports, DATE_FIELDS.smsImports, userId);
+    insertRows(t, merchantRulesTable as never, d.merchantRules, DATE_FIELDS.merchantRules, userId);
+    insertRows(
+      t,
+      senderAccountsTable as never,
+      d.senderAccounts,
+      DATE_FIELDS.senderAccounts,
       userId,
     );
 

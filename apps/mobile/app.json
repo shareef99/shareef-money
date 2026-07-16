@@ -14,7 +14,8 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "package": "com.shareef.mobile"
+      "package": "com.shareef.mobile",
+      "permissions": ["android.permission.READ_SMS"]
     },
     "web": {
       "output": "static",

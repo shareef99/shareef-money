@@ -24,6 +24,8 @@ export type AppSettings = {
   reminderTime: string;
   // ISO 4217 currency code, e.g. "INR".
   currencyCode: string;
+  // Auto-create transactions from bank SMSes of known merchants (Android).
+  smsAutoImport: boolean;
 };
 
 export const SETTING_KEYS = {
@@ -38,6 +40,9 @@ export const SETTING_KEYS = {
   reminderEnabled: "reminder_enabled",
   reminderTime: "reminder_time",
   currencyCode: "currency_code",
+  smsAutoImport: "sms_auto_import",
+  // Epoch ms of the newest SMS seen by the scanner (incremental rescans).
+  smsLastScanMs: "sms_last_scan_ms",
 } as const;
 
 const DEFAULTS: AppSettings = {
@@ -52,6 +57,7 @@ const DEFAULTS: AppSettings = {
   reminderEnabled: false,
   reminderTime: "21:00",
   currencyCode: "INR",
+  smsAutoImport: false,
 };
 
 const START_SCREENS: StartScreen[] = ["transactions", "stats", "accounts", "debts"];
@@ -79,6 +85,7 @@ function parse(map: Record<string, string>): AppSettings {
     reminderEnabled: bool(SETTING_KEYS.reminderEnabled, DEFAULTS.reminderEnabled),
     reminderTime: map[SETTING_KEYS.reminderTime] || DEFAULTS.reminderTime,
     currencyCode: getCurrencyByCode(map[SETTING_KEYS.currencyCode]).code,
+    smsAutoImport: bool(SETTING_KEYS.smsAutoImport, DEFAULTS.smsAutoImport),
   };
 }
 

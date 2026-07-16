@@ -1,9 +1,25 @@
 import { useEffect, useState } from "react";
-import { Alert, Pressable, ScrollView, Switch, Text, View, useColorScheme } from "react-native";
+import {
+  Alert,
+  Linking,
+  Platform,
+  Pressable,
+  ScrollView,
+  Switch,
+  Text,
+  View,
+  useColorScheme,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useRouter } from "expo-router";
-import { ArrowLeft, Download, Save, Upload } from "lucide-react-native";
+import {
+  ArrowLeft,
+  Download,
+  MessageSquareText,
+  Save,
+  Upload,
+} from "lucide-react-native";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import * as DocumentPicker from "expo-document-picker";
@@ -24,6 +40,10 @@ import {
   setBiometricEnabled,
 } from "../../../lib/passcode";
 import { scheduleDailyReminder, cancelDailyReminder } from "../../../lib/notifications";
+import {
+  checkSmsPermission,
+  requestSmsPermission,
+} from "../../../lib/sms-permission";
 import { PasscodeSetupModal } from "../../../components/passcode-setup-modal";
 import { SwitchRow } from "../../../components/switch-row";
 import { transactionsToCsv } from "../../../lib/csv";
@@ -130,6 +150,37 @@ export default function ConfigurationScreen() {
     const time = `${hh}:${mm}`;
     setSetting.mutate({ key: SETTING_KEYS.reminderTime, value: time });
     if (settings.reminderEnabled) scheduleDailyReminder(time);
+  };
+
+  // Turning auto-import ON needs the READ_SMS permission; handle the granted,
+  // denied, and denied-forever ("blocked") outcomes explicitly.
+  const handleAutoImportToggle = async (value: boolean) => {
+    if (!value) {
+      toggle(SETTING_KEYS.smsAutoImport, false);
+      return;
+    }
+    if (await checkSmsPermission()) {
+      toggle(SETTING_KEYS.smsAutoImport, true);
+      return;
+    }
+    const result = await requestSmsPermission();
+    if (result === "granted") {
+      toggle(SETTING_KEYS.smsAutoImport, true);
+    } else if (result === "blocked") {
+      Alert.alert(
+        "SMS permission needed",
+        "SMS access is turned off for Shareef Money. Enable it in system settings to use auto-import.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Open settings", onPress: () => Linking.openSettings() },
+        ],
+      );
+    } else {
+      Alert.alert(
+        "SMS permission needed",
+        "Auto-import reads your bank's transaction alerts on this device only — nothing is uploaded. Allow SMS access to turn it on.",
+      );
+    }
   };
 
   const handleBiometricToggle = async (value: boolean) => {
@@ -444,6 +495,30 @@ export default function ConfigurationScreen() {
               <Text className="text-base text-text">Reminder time</Text>
               <Text className="text-base text-primary">{settings.reminderTime}</Text>
             </Pressable>
+          )}
+
+          {Platform.OS === "android" && (
+            <>
+              <SectionHeader title="SMS import" />
+              <Pressable
+                className="flex-row items-center px-4 py-3.5 border-b border-border active:bg-card"
+                onPress={() => router.push("/sms-inbox")}
+              >
+                <MessageSquareText size={20} color={c.text} />
+                <View className="flex-1 ml-3">
+                  <Text className="text-base text-text">SMS inbox</Text>
+                  <Text className="text-xs text-text-muted mt-0.5">
+                    Review your bank&apos;s transaction messages and import them.
+                  </Text>
+                </View>
+              </Pressable>
+              <SwitchRow
+                label="Auto-import known merchants"
+                description="New bank SMSes from merchants you've imported before become transactions automatically."
+                value={settings.smsAutoImport}
+                onValueChange={handleAutoImportToggle}
+              />
+            </>
           )}
 
           <SectionHeader title="Data" />
