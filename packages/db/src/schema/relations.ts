@@ -8,6 +8,11 @@ import { transactionsTable, transactionContactsTable } from "./transactions";
 import { recurringRulesTable } from "./recurring-rules";
 import { settingsTable } from "./settings";
 import { syncLogTable } from "./sync-log";
+import {
+  smsImportsTable,
+  merchantRulesTable,
+  senderAccountsTable,
+} from "./sms-imports";
 
 // All relations live here (not in the table files) so the schema import
 // graph stays one-directional: table files only import their FK targets,
@@ -149,3 +154,46 @@ export const syncLogRelations = relations(syncLogTable, ({ one }) => ({
     references: [usersTable.id],
   }),
 }));
+
+export const smsImportsRelations = relations(smsImportsTable, ({ one }) => ({
+  user: one(usersTable, {
+    fields: [smsImportsTable.userId],
+    references: [usersTable.id],
+  }),
+  transaction: one(transactionsTable, {
+    fields: [smsImportsTable.transactionId],
+    references: [transactionsTable.id],
+  }),
+}));
+
+export const merchantRulesRelations = relations(
+  merchantRulesTable,
+  ({ one }) => ({
+    user: one(usersTable, {
+      fields: [merchantRulesTable.userId],
+      references: [usersTable.id],
+    }),
+    category: one(categoriesTable, {
+      fields: [merchantRulesTable.categoryId],
+      references: [categoriesTable.id],
+    }),
+    location: one(locationsTable, {
+      fields: [merchantRulesTable.locationId],
+      references: [locationsTable.id],
+    }),
+  }),
+);
+
+export const senderAccountsRelations = relations(
+  senderAccountsTable,
+  ({ one }) => ({
+    user: one(usersTable, {
+      fields: [senderAccountsTable.userId],
+      references: [usersTable.id],
+    }),
+    account: one(accountsTable, {
+      fields: [senderAccountsTable.accountId],
+      references: [accountsTable.id],
+    }),
+  }),
+);

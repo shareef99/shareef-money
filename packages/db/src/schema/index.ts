@@ -11,6 +11,11 @@ export { recurringRulesTable } from "./recurring-rules";
 export { settingsTable } from "./settings";
 export { syncLogTable } from "./sync-log";
 export {
+  smsImportsTable,
+  merchantRulesTable,
+  senderAccountsTable,
+} from "./sms-imports";
+export {
   usersRelations,
   sessionsRelations,
   accountsRelations,
@@ -22,6 +27,9 @@ export {
   recurringRulesRelations,
   settingsRelations,
   syncLogRelations,
+  smsImportsRelations,
+  merchantRulesRelations,
+  senderAccountsRelations,
 } from "./relations";
 
 import type { usersTable } from "./users";
@@ -37,6 +45,11 @@ import type {
 import type { recurringRulesTable } from "./recurring-rules";
 import type { settingsTable } from "./settings";
 import type { syncLogTable } from "./sync-log";
+import type {
+  smsImportsTable,
+  merchantRulesTable,
+  senderAccountsTable,
+} from "./sms-imports";
 
 export type User = typeof usersTable.$inferSelect;
 export type UserInsert = typeof usersTable.$inferInsert;
@@ -71,3 +84,12 @@ export type SettingInsert = typeof settingsTable.$inferInsert;
 
 export type SyncLog = typeof syncLogTable.$inferSelect;
 export type SyncLogInsert = typeof syncLogTable.$inferInsert;
+
+export type SmsImport = typeof smsImportsTable.$inferSelect;
+export type SmsImportInsert = typeof smsImportsTable.$inferInsert;
+
+export type MerchantRule = typeof merchantRulesTable.$inferSelect;
+export type MerchantRuleInsert = typeof merchantRulesTable.$inferInsert;
+
+export type SenderAccount = typeof senderAccountsTable.$inferSelect;
+export type SenderAccountInsert = typeof senderAccountsTable.$inferInsert;
